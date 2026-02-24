@@ -367,47 +367,12 @@ end
 
 -- fonts:   getBigFont, getSmallFont
 do
+
 ---@type table<integer, love.Font>
-local bigCache = {}
----@type table<integer, love.Font>
-local smolCache = {}
----@type table<integer, love.Font>
-local fbCache = {}
-
----@param size integer
-local function getFallbackFonts(size)
-    if not fbCache[size] then
-        local f = love.graphics.newFont("assets/fonts/unifont-17.0.03.otf", size, "mono", size / 16)
-        fbCache[size] = f
-    end
-
-    return fbCache[size]
-end
-
----@param size number
-function g.getBigFont(size)
-    assert(size % 16 == 0, "Size must by divisible by 16")
-    if not bigCache[size] then
-        local f = love.graphics.newFont("assets/fonts/Smart 9h.ttf", size,"mono",1)
-        f:setFallbacks(getFallbackFonts(size))
-        bigCache[size] = f
-    end
-    return bigCache[size]
-end
-
----@param size number
-function g.getSmallFont(size)
-    if not smolCache[size] then
-        local f = love.graphics.newFont("assets/fonts/Match 7h.ttf", size,"mono",1)
-        f:setFallbacks(getFallbackFonts(size))
-        smolCache[size] = f
-    end
-    return smolCache[size]
-end
-
 local mainFontCache = {}
 local mainFontScaling = 0
 
+---@param size integer
 function g.getMainFont(size)
     local scaling = love.graphics.getDPIScale() * math.max(ui.getUIScaling(), 1)
     if mainFontScaling ~= scaling then
@@ -421,6 +386,18 @@ function g.getMainFont(size)
         mainFontCache[size] = f
     end
     return mainFontCache[size]
+end
+
+---@deprecated Use `g.getMainFont()` instead
+---@param size integer
+function g.getBigFont(size)
+    return g.getMainFont(size)
+end
+
+---@deprecated Use `g.getMainFont()` instead
+---@param size integer
+function g.getSmallFont(size)
+    return g.getMainFont(size)
 end
 
 end
@@ -569,6 +546,7 @@ do
     -- Now define it to be 1x1 instead of 3x3
     q:setViewport(x + 1, y + 1, 1, 1, g.getAtlas():getDimensions())
     nameToQuad["1x1"] = q
+    nameToQuad["null_image"] = q
 end
 
 -- Load other images
@@ -879,40 +857,35 @@ function g.defineResource(resId, tabl)
     RESOURCES[resId] = tabl
     g.defineStat(tabl.limitStat, tabl.startingLimit or 100, tabl.limitStatName)
     table.insert(g.RESOURCE_LIST, resId)
-    pcall(richtext.defineImage, tabl.image, g.getAtlas(), g.getImageQuad(tabl.image))
+    -- TODO: Fix this
+    --pcall(richtext.defineImage, tabl.image, g.getAtlas(), g.getImageQuad(tabl.image))
 end
 
 
-g.defineResource("money", {
-    image="money",
-    limitStat="MoneyLimit",
-    limitStatName="Money Limit",
+g.defineResource("triangle", {
+    image="triangle",
+    limitStat="TriangleLimit",
+    limitStatName="Triangle Limit",
     startingLimit=1000,
-    color = objects.Color("#".."FFF7D127"),
+    color = objects.Color("FFF7D127"),
 })
-g.defineResource("juice", {
-    image="juice",
-    limitStat="JuiceLimit",
-    limitStatName="Juice Limit",
-    color=objects.Color("#".."FF8A2E59")
+g.defineResource("rectangle", {
+    image="rectangle",
+    limitStat="RectangleLimit",
+    limitStatName="Rectangle Limit",
+    color=objects.Color("FF8A2E59")
 })
-g.defineResource("fabric", {
-    image="fabric",
-    limitStat="FabricLimit",
-    limitStatName="Fabric Limit",
-    color=objects.Color("#".."FFF353FB")
+g.defineResource("hexagon", {
+    image="hexagon",
+    limitStat="HexagonLimit",
+    limitStatName="Hexagon Limit",
+    color=objects.Color("FFF353FB")
 })
-g.defineResource("bread", {
-    image="bread",
-    limitStat="BreadLimit",
-    limitStatName="Bread Limit",
-    color=objects.Color("#".."FFB78652")
-})
-g.defineResource("fish", {
-    image="fish",
-    limitStat="FishLimit",
-    limitStatName="Fish Limit",
-    color=objects.Color("#".."FF305FCD")
+g.defineResource("circle", {
+    image="circle",
+    limitStat="CircleLimit",
+    limitStatName="Circle Limit",
+    color=objects.Color("FFB78652")
 })
 
 
@@ -2497,12 +2470,12 @@ end
 
 -- We cannot use g.walkDirectory because we need all the files first then register
 -- the BGM in one go using `bgm.register`.
-registerBGMFromDirectories("assets/bgm/boss", g.BGMID.BOSS, false)
-registerBGMFromDirectories("assets/bgm/customization", g.BGMID.CUSTOMIZATION, true)
-registerBGMFromDirectories("assets/bgm/harvest", g.BGMID.HARVEST, true)
-registerBGMFromDirectories("assets/bgm/map", g.BGMID.MAP, true)
-registerBGMFromDirectories("assets/bgm/title", g.BGMID.TITLE, true)
-registerBGMFromDirectories("assets/bgm/upgrades", g.BGMID.UPGRADE, true)
+-- registerBGMFromDirectories("assets/bgm/boss", g.BGMID.BOSS, false)
+-- registerBGMFromDirectories("assets/bgm/customization", g.BGMID.CUSTOMIZATION, true)
+-- registerBGMFromDirectories("assets/bgm/harvest", g.BGMID.HARVEST, true)
+-- registerBGMFromDirectories("assets/bgm/map", g.BGMID.MAP, true)
+-- registerBGMFromDirectories("assets/bgm/title", g.BGMID.TITLE, true)
+-- registerBGMFromDirectories("assets/bgm/upgrades", g.BGMID.UPGRADE, true)
 
 
 ---Request playing specific BGM ID

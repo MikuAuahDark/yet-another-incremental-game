@@ -164,7 +164,6 @@ setmetatable(_G, {
 local crt = require("src.modules.crt")
 local vignette = require("src.modules.vignette.vignette")
 vignette.setStrength(consts.VIGNETTE_STRENGTH)
-local subpixel = require("src.modules.subpixel")
 
 require("src.ev_q_definitions")
 
@@ -242,8 +241,8 @@ function love.load(arg)
             steamid = tostring(luasteam.user.getSteamID())
         end
 
-        analytics.init(steamid)
-        sceneManager.gotoScene("title_scene")
+        analytics.init(nil)
+        sceneManager.gotoScene("asteroid_scene")
     end
 
     if consts.TEST then
@@ -336,7 +335,6 @@ function love.draw()
     if crtActive then
         crt.start()
     end
-    love.graphics.setShader(subpixel.shader)
     local sc, scname = sceneManager.getCurrentScene()
     if sc and sc.draw then
         prof_push("scene "..scname..":draw")
@@ -355,14 +353,12 @@ function love.draw()
         love.graphics.print(t, 4, 4)
         log.info(t)
     end
-    love.graphics.setShader()
     if crtActive then
         crt.finish()
     end
 
     -- Yes, we need this check instead of just calling `love.window.setFullscreen`
-    -- without any conditions. Otherwise, mouse will get jittery on setting scene,
-    -- at least in Windows.
+    -- without any conditions. Otherwise, mouse will get jittery, at least in Windows.
     if settings.isFullscreen() ~= love.window.getFullscreen() then
         love.window.setFullscreen(settings.isFullscreen(), "desktop")
     end
