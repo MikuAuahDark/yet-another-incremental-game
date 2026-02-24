@@ -12,12 +12,6 @@ local DataCollector = require(".data_collector")
 local table_clear = require("table.clear")
 local sceneManager = require("src.scenes.sceneManager")
 
----@class g.World.Decor
----@field x number
----@field y number
----@field image string
-local Decor
-
 
 ---@class g.World: objects.Class
 ---@field entities objects.BufferedSet
@@ -73,9 +67,6 @@ function World:init()
 
     ---@type {color:objects.Color,number:number,x:number,y:number,lifetime:number}[]
     self.damageNumbers = {}
-
-    -- Create tile atlas
-    self.tilemap = helper.splitTileImage("harvestarea_tilemap_0", consts.WORLD_TILE_SIZE)
 
     -- Player avatar. Cannot initialize it in here due to cyclic dependency with g.spawnEntity and this world.
     ---@type g.Entity|nil
@@ -502,78 +493,6 @@ end
 function World:_draw()
     prof_push("world:_draw")
 
-    -- local w,h = g.getWorldDimensions()
-    -- love.graphics.setColor(0,0,0)
-    -- love.graphics.rectangle("line", 0,0, w,h)
-    prof_push("draw_tiles")
-    love.graphics.setColor(1, 1, 1)
-
-    local wtz = consts.WORLD_TILE_SIZE
-    local wtw, wth = g.getWorldTileDimensions()
-    -- Lua loops are both inclusive. So subtract by 1.
-    wtw, wth = wtw - 1, wth - 1
-    local atlas = g.getAtlas()
-    for y = 0, wth do
-        for x = 0, wtw do
-            local targetQuad = nil
-
-            -- Border specializations
-            if y == 0 then
-                if x == 0 then
-                    -- Top left
-                    love.graphics.draw(atlas, self.tilemap[1][2], x * wtz, (y - 1) * wtz)
-                    love.graphics.draw(atlas, self.tilemap[2][1], (x - 1) * wtz, y * wtz)
-                    targetQuad = self.tilemap[2][2]
-                elseif x == wtw then
-                    -- Top right
-                    love.graphics.draw(atlas, self.tilemap[1][4], x * wtz, (y - 1) * wtz)
-                    love.graphics.draw(atlas, self.tilemap[2][5], (x + 1) * wtz, y * wtz)
-                    targetQuad = self.tilemap[2][4]
-                else
-                    -- Top center
-                    love.graphics.draw(atlas, self.tilemap[1][3], x * wtz, (y - 1) * wtz)
-                    targetQuad = self.tilemap[2][3]
-                end
-            elseif y == wth then
-                if x == 0 then
-                    -- Bottom left
-                    love.graphics.draw(atlas, self.tilemap[4][1], (x - 1) * wtz, y * wtz)
-                    love.graphics.draw(atlas, self.tilemap[5][2], x * wtz, (y + 1) * wtz)
-                    love.graphics.draw(atlas, self.tilemap[6][2], x * wtz, (y + 2) * wtz)
-                    targetQuad = self.tilemap[4][2]
-                elseif x == wtw then
-                    -- Bottom right
-                    love.graphics.draw(atlas, self.tilemap[4][5], (x + 1) * wtz, y * wtz)
-                    love.graphics.draw(atlas, self.tilemap[5][4], x * wtz, (y + 1) * wtz)
-                    love.graphics.draw(atlas, self.tilemap[6][4], x * wtz, (y + 2) * wtz)
-                    targetQuad = self.tilemap[4][4]
-                else
-                    -- Bottom center
-                    love.graphics.draw(atlas, self.tilemap[5][3], x * wtz, (y + 1) * wtz)
-                    love.graphics.draw(atlas, self.tilemap[6][3], x * wtz, (y + 2) * wtz)
-                    targetQuad = self.tilemap[4][3]
-                end
-            else
-                if x == 0 then
-                    -- Left center
-                    love.graphics.draw(atlas, self.tilemap[3][1], (x - 1) * wtz, y * wtz)
-                    targetQuad = self.tilemap[3][2]
-                elseif x == wtw then
-                    -- Right center
-                    love.graphics.draw(atlas, self.tilemap[3][5], (x + 1) * wtz, y * wtz)
-                    targetQuad = self.tilemap[3][4]
-                else
-                    -- Center
-                    targetQuad = self.tilemap[3][3]
-                end
-            end
-
-            -- Draw tile
-            love.graphics.draw(atlas, targetQuad, x * wtz, y * wtz)
-        end
-    end
-    prof_pop() -- prof_push("draw_tiles")
-
     prof_push("draw_world_decor")
     -- Draw decoration:
     -- Hashing to provide pseudorandom+deterministic decoration placement
@@ -634,7 +553,7 @@ function World:_draw()
         )
     end
 
-    prof_pop()
+    prof_pop() -- prof_push("world:_draw")
 end
 
 
@@ -722,7 +641,7 @@ end
 
 
 local function isInHarvestScene()
-    return select(2, sceneManager.getCurrentScene()) == "harvest_scene"
+    return select(2, sceneManager.getCurrentScene()) == "astroid_scene"
 end
 
 
@@ -822,65 +741,6 @@ local WORLD_TILESETS = {
 }
 
 
----@param self g.World
-local function tryUpdateDecorations(self)
-    local tw,th = g.getWorldTileDimensions()
-    tw,th = tw-1, th-1
-    local pres = g.getPrestige()
-    local ls = self.lastSeenDimensions
-    if tw == ls.x and th == ls.y and ls.prestige == pres then
-        return -- Nothing to generate; return early.
-    end
-
-    self.lastSeenDimensions = {x=tw, y=th, prestige=pres}
-    self.decorations = {}
-
-    local w,h = g.getWorldDimensions()
-
-    local ts = WORLD_TILESETS[pres % 3 + 1]
-    local darkcol = ts.dark
-    local lightcol = ts.light
-
-    -- Create new tile atlas
-    self.tilemap = helper.splitTileImage(ts.tileset, consts.WORLD_TILE_SIZE)
-
-    local SIZE_MULT = math.sqrt(g.stats.WorldTileSize / g.getStatBaseValue("WorldTileSize"))
-    --====== add big-splotch decorations:  ======
-    local BIGPAD=30
-    for i=1,40*SIZE_MULT do
-        table.insert(self.decorations, {
-            x = math.floor(helper.lerp(BIGPAD, w-BIGPAD, love.math.random())),
-            y = math.floor(helper.lerp(BIGPAD, h-BIGPAD, love.math.random())),
-            image = "decor_big_" .. love.math.random(1,4),
-            color = darkcol
-        })
-    end
-
-    --====== add splotch decorations:  ======
-    -- local originalCol = "#" .. "ff2bae62"
-    -- local col = objects.Color("#" .. "FF1E954F")
-    local PAD=12
-    for i=1,60*SIZE_MULT do
-        table.insert(self.decorations, {
-            x = math.floor(helper.lerp(PAD, w-PAD*2, love.math.random())),
-            y = math.floor(helper.lerp(PAD, h-PAD*2, love.math.random())),
-            image = "decor_splotch_" .. love.math.random(1,5),
-            color = darkcol
-        })
-    end
-
-    local TPAD=30
-    for i=1,30*SIZE_MULT do
-        table.insert(self.decorations, {
-            x = math.floor(helper.lerp(TPAD, w-TPAD*2, love.math.random())),
-            y = math.floor(helper.lerp(TPAD, h-TPAD*2, love.math.random())),
-            image = "decor_tex_" .. love.math.random(1,5),
-            color = lightcol
-        })
-    end
-end
-
-
 
 ---@param tok g.Token
 ---@param isPlayerCurrentlyHarvesting boolean
@@ -890,8 +750,6 @@ end
 
 ---@param dt number
 function World:_update(dt)
-    tryUpdateDecorations(self)
-
     self.entities:flush()
     self.tokens:flush()
 
@@ -1055,7 +913,8 @@ function World:_update(dt)
             self.entitiesToHitCooldown[e] = cooldown
 
             if cooldown <= 0 then
-                self.tokenPartition:query(e.x, e.y, collectCollidedTokens, e.hitToken.radius)
+                -- TODO: Query by hit test, not by radius
+                self.tokenPartition:query(e.x, e.y, collectCollidedTokens, e.hitToken.radius or 16)
 
                 if #collidedTokens > 0 then
                     local tok = selectNearestToken(e.x, e.y, e.hitToken.radius, collidedTokens)

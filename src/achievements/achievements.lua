@@ -26,6 +26,9 @@ local achievements = {}
 
 
 function achievements.emitPerSecondUpdate()
+    -- TODO: Rewrite achievements
+    if true then return end
+
     local money = g.getResource("money")
     if money > 1000 then
         achievements.unlockAchievement("RICH_1")

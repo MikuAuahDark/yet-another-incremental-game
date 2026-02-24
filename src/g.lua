@@ -707,11 +707,11 @@ end
 
 
 
----@alias g.ResourceType "money"|"fabric"|"bread"|"juice"|"fish"
+---@alias g.ResourceType "triangle"|"rectangle"|"hexagon"|"circle"
 
 -- i wish we could define this as { [g.ResourceType]: number } but it doesnt work that way
----@alias g.Bundle {money?: number, fabric?: number, bread?: number, juice?: number, fish?: number}
----@alias g.Resources {money: number, fabric: number, bread: number, juice: number, fish: number}
+---@alias g.Bundle {triangle?: number, rectangle?: number, hexagon?: number, circle?: number}
+---@alias g.Resources {triangle: number, rectangle: number, hexagon: number, circle: number}
 
 
 ---@alias g.PrestigeRange {lower: integer, upper: integer}
@@ -794,6 +794,7 @@ local g_UpgradeDefinition = {}
 ---@field tokenHit (fun(tok: g.Token))?
 ---@field tokenDestroyed (fun(tok: g.Token))?
 ---@field tokenDamaged (fun(tok: g.Token, dmg:number))?
+---@field hitTest (fun(tok: g.Token, px: number, py: number): boolean)?
 ---@field upgradeDefinition table<string, function>? Extra definitions for the corresponding upgrade
 local g_TokenDefinition = {}
 
@@ -1775,9 +1776,8 @@ do
 ---@field perSecondUpdate (fun(e:g.Entity, seconds:integer))?
 ---@field drawBelow (fun(ent: g.Entity))?
 ---@field draw (fun(ent: g.Entity))?
----@field hitToken {radius:number,collision:fun(self:g.Entity,tok:g.Token),cooldown:number?}?
+---@field hitToken {getPoints:(fun(self:g.Entity):[number,number][])?,collision:fun(self:g.Entity,tok:g.Token),cooldown:number?}?
 local Entity = {}
-
 
 ---@type table<string, table>
 local ENTITY_DEFS = {}
@@ -1881,6 +1881,8 @@ end
 ---@field timeSinceDamaged number
 ---@field timeAlive number
 ---@field drawToken (fun(tok: g.Token, x:number,y:number, rot:number?,sx:number?,sy:number?,kx:number?,ky:number?))?
+---@field hitTest fun(tok: g.Token, px: number, py: number): boolean
+---@field data any Token-specific additional data
 ---@field slimed boolean?
 ---@field starred boolean?
 ---@field wasSpawnedViaTokenPool boolean?
@@ -1928,6 +1930,14 @@ end
 
 
 
+---@param tok g.Token
+---@param x number
+---@param y number
+---@return boolean
+local function defaultHitTest(tok, x, y)
+    return helper.magnitude(tok.x - x, tok.y - y) < 16
+end
+
 -- each token is given a unique id. (Used for animations and stuff)
 local currentTokenId = 1
 
@@ -1957,6 +1967,8 @@ function g.spawnToken(tokType, x,y)
         timeSinceHitStart = 0xffffffffff,
         timeSinceHit = 0xffffffffff,
         timeSinceDamaged = 0xfffffffff,
+
+        hitTest = tabl.hitTest or defaultHitTest
     }, tokenMts[tokType])
     ---@cast tok g.Token
     tok.maxHealth = tabl.maxHealth * g.ask("getTokenMaxHealthMultiplier", tok)
@@ -2607,6 +2619,13 @@ g.COLORS = {
         [1] = objects.Color("#".."FF4A9EFF"), -- Rare (blue)
         [2] = objects.Color("#".."FFFFD700"), -- Legendary (gold)
     },
+
+    SHAPE_COLORS = {
+        SMALL = objects.Color("#edb868"),
+        MEDIUM = objects.Color("#ed6897"),
+        LARGE = objects.Color("#6d68ed"),
+    },
+    PLAYER_SPACESHIP = objects.Color("#26f0ad"),
 }
 
 do
