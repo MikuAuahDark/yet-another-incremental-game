@@ -353,12 +353,11 @@ local function drawScythe(tok, scytheImg)
 end
 
 
+---@param shadow string
+---@param x number
+---@param y number
 local function drawShadow(shadow, x,y)
-    love.graphics.setColor(g.COLORS.SHADOW)
-    shadow = shadow or "shadow_medium"
-    local dy = 1
-    if shadow == "shadow_big" then dy=3 end
-    g.drawImage(shadow, x, y+dy, 0)
+    -- TODO: Shadow
 end
 
 
@@ -417,9 +416,11 @@ local function drawToken(tok)
         g.drawImage("star_visual", tok.x-6,tok.y-5+s, 0, sc,1)
     end
 
+    if false then
     local scytheImg = g.getScytheInfo(g.getCurrentScythe()).image
     if tok.timeSinceHitStart < getSwingTime() then
         drawScythe(tok, scytheImg)
+    end
     end
 
     drawTokenHealthBar(tok)
@@ -570,10 +571,14 @@ if false then
     function TokenPool() end
 end
 
+---@param tokenId string
+---@param amount integer
 function TokenPool:add(tokenId, amount)
     self.tokens[tokenId] = (self.tokens[tokenId] or 0) + (amount or 1)
 end
 
+---@param tokenId string
+---@param amount integer
 function TokenPool:subtract(tokenId, amount)
     amount = amount or (self.tokens[tokenId] or 0)
     self.tokens[tokenId] = math.max(0, (self.tokens[tokenId] or 0) - amount)
@@ -767,7 +772,7 @@ function World:_update(dt)
     -- Player avatar
     if not self.playerAvatar or not self.entities:has(self.playerAvatar) then
         local wx, wy = g.getWorldDimensions()
-        self.playerAvatar = g.spawnEntity("avatar", wx / 2, wy / 2)
+        self.playerAvatar = g.spawnEntity("player_spaceship", wx / 2, wy / 2)
     end
 
     self.resourcesPerSecond = {}

@@ -118,6 +118,8 @@ _G.objects = require("src.modules.objects.objects")
 
 _G.godrays = require("src.modules.godrays.godrays")
 
+_G.gsman = require("src.modules.gsman.gsman")
+
 _G.helper = require("src.modules.helper.helper")
 
 _G.settings = require("src.settings")
@@ -213,12 +215,12 @@ end
 function love.load(arg)
     log.debug(love.graphics.getRendererInfo())
     assert(love.filesystem.createDirectory("saves"))
-    love.graphics.setLineStyle("rough")
     g.requireFolder("src/upgrades")
     g.requireFolder("src/entities")
     g.requireFolder("src/effects")
     g.requireFolder("src/bosses")
     g.requireFolder("src/scythes")
+    g.requireFolder("src/shapes")
     sceneManager.loadScenes()
 
     if arg[1] == "--simulate" then
