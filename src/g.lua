@@ -707,11 +707,11 @@ end
 
 
 
----@alias g.ResourceType "triangle"|"rectangle"|"hexagon"|"circle"
+---@alias g.ResourceType "money"
 
 -- i wish we could define this as { [g.ResourceType]: number } but it doesnt work that way
----@alias g.Bundle {triangle?: number, rectangle?: number, hexagon?: number, circle?: number}
----@alias g.Resources {triangle: number, rectangle: number, hexagon: number, circle: number}
+---@alias g.Bundle {money?: number}
+---@alias g.Resources {money: number}
 
 
 ---@alias g.PrestigeRange {lower: integer, upper: integer}
@@ -863,30 +863,12 @@ function g.defineResource(resId, tabl)
 end
 
 
-g.defineResource("triangle", {
-    image="triangle",
-    limitStat="TriangleLimit",
-    limitStatName="Triangle Limit",
+g.defineResource("money", {
+    image="coin",
+    limitStat="MoneyLimit",
+    limitStatName="Money Limit",
     startingLimit=1000,
     color = objects.Color("FFF7D127"),
-})
-g.defineResource("rectangle", {
-    image="rectangle",
-    limitStat="RectangleLimit",
-    limitStatName="Rectangle Limit",
-    color=objects.Color("FF8A2E59")
-})
-g.defineResource("hexagon", {
-    image="hexagon",
-    limitStat="HexagonLimit",
-    limitStatName="Hexagon Limit",
-    color=objects.Color("FFF353FB")
-})
-g.defineResource("circle", {
-    image="circle",
-    limitStat="CircleLimit",
-    limitStatName="Circle Limit",
-    color=objects.Color("FFB78652")
 })
 
 
@@ -2583,6 +2565,15 @@ end
 
 
 
+---@return "dark"|"light"
+function g.getSystemTheme()
+    local t = love.window.getSystemTheme()
+    if t == "unknown" then t = "light" end
+    return t
+end
+
+
+
 g.COLORS = {
 
     BUTTON_FADE_1 = objects.Color("#" .. "FF9F14F6"),
@@ -2620,12 +2611,19 @@ g.COLORS = {
         [2] = objects.Color("#".."FFFFD700"), -- Legendary (gold)
     },
 
-    SHAPE_COLORS = {
-        SMALL = objects.Color("#edb868"),
-        MEDIUM = objects.Color("#ed6897"),
-        LARGE = objects.Color("#6d68ed"),
-    },
-    PLAYER_SPACESHIP = objects.Color("#26f0ad"),
+    UI = {
+        MAIN = {
+            dark = {
+                PANEL = objects.Color("FF3E3E3E"),
+                TEXT = objects.Color.WHITE,
+            },
+            light = {
+                PANEL = objects.Color("#f0f0f0"),
+                TEXT = objects.Color.BLACK
+            }
+        },
+        BORDER = objects.Color("FF979797")
+    }
 }
 
 do
