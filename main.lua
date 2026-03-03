@@ -216,11 +216,11 @@ function love.load(arg)
     log.debug(love.graphics.getRendererInfo())
     assert(love.filesystem.createDirectory("saves"))
     g.requireFolder("src/upgrades")
+    g.requireFolder("src/items")
     g.requireFolder("src/entities")
     g.requireFolder("src/effects")
     g.requireFolder("src/bosses")
     g.requireFolder("src/scythes")
-    g.requireFolder("src/shapes")
     sceneManager.loadScenes()
 
     if arg[1] == "--simulate" then
@@ -244,7 +244,7 @@ function love.load(arg)
         end
 
         analytics.init(nil)
-        sceneManager.gotoScene("asteroid_scene")
+        sceneManager.gotoScene("main_scene")
     end
 
     if consts.TEST then
