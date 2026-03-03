@@ -1,0 +1,49 @@
+Datacenter Incremental Game
+
+Main Gameplay:
+The main goal is to reach highest compute/sec. The satisfaction will be seeing the servers crunching all the compute
+jobs and seeing the text that it finishes crunching job. Also many things going on at once in general. The game is
+considered "Complete" if player reach 1 billion compute/sec on average for 60 seconds.
+
+World:
+Your world consist of tiles to place servers. On start, you'll have small area to place servers. As you upgrade,
+you'll get more area to place them.
+
+Server:
+The main building where it can process "compute jobs". Servers may only able to process certain jobs (e.g. web host
+can only be in general server). Server has "Heat", "Tolerance Range", and "Load" property.
+* Your world has max amount of "Load". Think of this as your electricity budget. You cannot exceed this (to allow
+  player invest in more efficient servers).
+* Placing servers adjacent to the other increases the heat more. Think of it as Factorio nuclear reactor heat bonus
+  but it negatively affects your servers instead. For example, 2 server side-by-side each other makes both servers
+  emit 60 heat instead of 40 if you move them away.
+* Server can tolerate certain amount of heat. If the heat is exceeding the heat tolerance, then the overall server
+  performance is reduced. But if the heat is less than the tolerance range, the server performace is boosted.
+
+Compute Jobs:
+Main source of money. Servers will process compute jobs, then finished compute jobs will earn money. Certain compute
+job is faster if it's done by certain types of servers (e.g. AI inference is faster on AI servers). Compute jobs will
+be placed in queue. Player has max amount of queue.
+
+Tiles:
+Tiles is where you place servers. Certain tiles may provide benefits if server is placed on it. For example, the tile
+may be "Cold" which it reduces server heat, or "Efficient" tiles which reduce server load. There may be special tiles
+which doesn't allow placing servers on, but provides other benefits if placed near it. Consider "benefits" and "buffs"
+are interchangeable.
+
+Advertise:
+For starter, you have to "Advertise" to get a compute job in queue. Advertise costs money, except for web hosting
+(the starter) which is free. "Advertise" is just simple button click. Later on, it can advertise automatically through
+Technology. Do note that you cannot advertise if your queue is full.
+
+Technology:
+a.k.a. "Upgrades".
+This is where player can improve their datacenters, which are:
+* Unlock more server types
+* Unlock more compute job types
+* Boost server speed (faster processing)
+* Reduce server load (more servers -> more compute processed in parallel)
+* Less server heat (more crowded servers)
+* Increase world boundary (access more tiles)
+* Unlock automatic/faster Advertising
+* Increase max job queue.
