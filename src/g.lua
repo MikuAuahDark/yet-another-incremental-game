@@ -381,7 +381,7 @@ function g.getMainFont(size)
     end
 
     if not mainFontCache[size] then
-        local f = love.graphics.newFont("assets/fonts/Tektur-Regular.ttf", size, "normal", 1)
+        local f = love.graphics.newFont("assets/fonts/Tektur-Regular.ttf", size, "normal", scaling)
         -- TODO: fallbacks
         mainFontCache[size] = f
     end

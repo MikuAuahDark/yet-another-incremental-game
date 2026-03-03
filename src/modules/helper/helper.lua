@@ -710,4 +710,47 @@ end
 
 
 
+---Split region by exact amounts. Size of 0 on it automatically uses the rest
+---@param r kirigami.Region
+---@param direction "horizontal"|"vertical"
+---@param size1 number
+---@param size2 number
+---@param ... number
+---@return kirigami.Region ...
+function helper.splitRegionByExactSizes(r, direction, size1, size2, ...)
+    assert(direction == "horizontal" or direction == "vertical")
+    local size
+    if direction == "horizontal" then
+        size = r.w
+    else
+        size = r.h
+    end
+
+    local sizes = {size1, size2, ...}
+    local totalSize = 0
+    local zeros = 0
+    for _, s in ipairs(sizes) do
+        if s == 0 then
+            zeros = zeros + 1
+        else
+            totalSize = totalSize + s
+        end
+    end
+    local remaining = size - totalSize
+    local each = remaining / zeros
+    for i, s in ipairs(sizes) do
+        if s == 0 then
+            sizes[i] = each
+        end
+    end
+
+    if direction == "horizontal" then
+        return r:splitHorizontal(unpack(sizes))
+    else
+        return r:splitVertical(unpack(sizes))
+    end
+end
+
+
+
 return helper
