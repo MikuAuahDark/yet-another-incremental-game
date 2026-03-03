@@ -232,9 +232,10 @@ function g.getQuestionInfo(q)
     return questions[q]
 end
 
+---@generic T
 ---@param question string
----@param reducer fun(a:any, b:any): any
----@param defaultValue any
+---@param reducer fun(a:T, b:T): T
+---@param defaultValue T
 function g.defineQuestion(question, reducer, defaultValue)
     assert(isLoadTime())
     questions[question] = {
@@ -443,29 +444,6 @@ function g.drawImage(imageName, x,y, r,sx,sy,kx,ky)
     return g.drawImageOffset(imageName, x, y, r, sx, sy, 0.5, 0.5, kx, ky)
 end
 
-
----@param tinfo g.TokenInfo
----@param x number
----@param y number
----@param r number?
----@param sx number?
----@param sy number?
----@param kx number?
----@param ky number?
-function g.drawTokenImage(tinfo, x,y, r,sx,sy,kx,ky)
-    local stalkInfo = tinfo.growths and g.getStalkInfo(tinfo.growths.stalk)
-    if tinfo.image then
-        g.drawImage(tinfo.image, x,y, r, sx, sy, kx,ky)
-    end
-
-    if stalkInfo then
-        for _, pos in ipairs(stalkInfo.growthpos) do
-            g.drawImage(tinfo.growths.growth, x + pos.x, y + pos.y, r, sx, sy, kx, ky)
-        end
-    end
-end
-
-
 ---@param imageName string|love.Quad
 ---@param x number
 ---@param y number
@@ -510,10 +488,9 @@ function g.drawImageContained(imageName, x,y, w,h, rot)
 end
 
 
----@param imageName any
----@return boolean
+---@param imageName string
 function g.isImage(imageName)
-    return (nameToQuad[imageName] and true) or false
+    return not not nameToQuad[imageName]
 end
 
 
@@ -759,44 +736,10 @@ local g_UpgradeDefinition_ProcGen
 ---@field isHidden (fun(uinfo: g.UpgradeInfo): boolean)?
 ---@field getValues (fun(uinfo: g.UpgradeInfo, level: integer):number,number?,number?,number?)?
 ---@field valueFormatter ((string|(fun(x:number):string))[])?
----@field getEntityCount (fun(uinfo: g.UpgradeInfo, level: integer):integer)?
----@field spawnEntity (fun(uinfo: g.UpgradeInfo):g.Entity)?
 ---@field perSecondUpdate (fun(uinfo: g.UpgradeInfo, level: integer, seconds:integer))?
 ---@field drawUI (fun(uinfo: g.UpgradeInfo, level:integer, x:number,y:number,w:number,h:number))?
 local g_UpgradeDefinition = {}
 
-
----@class g.TokenDefinition
----@field maxHealth number
----@field resources g.Bundle
----@field nameContext string?
----@field image string?
----@field bossfight {healthToken:string?}?
----@field maxLevel integer?
----@field growths {stalk:string,growth:string}?
----@field flight {vx:number,vy:number}?
----@field flightCustomWings {image: string, distance: number}?
----@field description string?
----@field descriptionContext string?
----@field rawDescription string?
----@field upgradeNameContext string?
----@field upgradeDescriptionContext string?
----@field drawOrder number?
----@field particles string?
----@field category g.Category?
----@field shadow ("shadow_medium"|"shadow_small"|"shadow_big")?
----@field procGen {weight:number,distance:[integer,integer],needs:string?}?
----@field init (fun(tok:g.Token))?
----@field update (fun(tok: g.Token, dt:number))?
----@field drawBelow (fun(tok: g.Token))?
---- below this line are events (via g.call)
----@field drawToken (fun(tok: g.Token, x:number,y:number, rot:number?,sx:number?,sy:number?,kx:number?,ky:number?))?
----@field tokenHit (fun(tok: g.Token))?
----@field tokenDestroyed (fun(tok: g.Token))?
----@field tokenDamaged (fun(tok: g.Token, dmg:number))?
----@field hitTest (fun(tok: g.Token, px: number, py: number): boolean)?
----@field upgradeDefinition table<string, function>? Extra definitions for the corresponding upgrade
-local g_TokenDefinition = {}
 
 
 ---@class g.UpgradeInfo : g.UpgradeDefinition
@@ -806,8 +749,6 @@ local g_TokenDefinition = {}
 ---@field description localization.Interpolator?
 ---@field valueFormatter (string|(fun(x:number):string))[]
 
-
----@alias g.TokenInfo g.TokenDefinition|{type:string,name:string}
 
 
 ---@class g.EffectDefinition
@@ -1366,8 +1307,6 @@ end
 local SPECIAL_FUNCTIONS = {
     getValues = true,
     isHidden = true,
-    getEntityCount = true,
-    spawnEntity = true,
     getPriceOverride = true,
     drawUI = true
 }
@@ -1449,7 +1388,7 @@ end
 
 
 
-local STAT_UP_COLOR = objects.Color("#".."FFEF8EFC")
+local STAT_UP_COLOR = objects.Color("FFEF8EFC")
 
 ---@param uinfo g.UpgradeInfo
 ---@param level integer
@@ -1493,242 +1432,129 @@ end
 
 
 
+---------------------
+-- Items or Buildings
+---------------------
+
+do
 
 
+---@class g.MixinHasNameDefinition
+---@field public name string
+---@field public nameContext string?
+---@field public rawDescription string?
+---@field public description string?
+---@field public descriptionContext string?
+
+---@class g.MixinHasNameInfo
+---@field public name string
+---@field public description string?
 
 
+---@alias g.ItemType "server"|"data"|"booster"
 
----@type table<string, g.StalkDefinition>
-local STALKS = {}
+---@class g.ItemInfo: g.ItemDefinition
+---@field public id string
+---@field public type g.ItemType
+---@field public serverInfo g.ServerInfo?
+---@field public dataInfo g.DataInfo?
+---@field public boosterInfo g.BoosterInfo?
 
----@class g.StalkDefinition
----@field public image string?
----@field public dontFlip boolean?
----@field public growthpos {x: number, y: number}[] Position coordinate is in pixels, relative to stalk center
+
+---@alias g.RadiateAlgorithm "taxicab"|"chessboard"
+
+---@class g.ServerInfoCommon
+---@field public price number
+---@field public computePerSecond number
+---@field public computePreference string[]
+---@field public load number
+---@field public heatTolerance [number, number]
+---@field public heat number
+
+---@class g.ServerInfo: g.BusCommon, g.MixinHasNameInfo, g.ServerInfoCommon
+---@field public heatRadiate integer
+---@field public heatRadiateAlgorithm g.RadiateAlgorithm
+
+---@class g.ServerDefinition: g.BusCommon, g.MixinHasNameDefinition, g.ServerInfoCommon
+---@field public heatRadiate integer? 1 is default
+---@field public heatRadiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
+
+
+---@class g.DataInfoCommon: g.BusCommon
+---@field public dataPerSecond number
+---@field public wireLength integer
+---@field public wireCount integer|nil
+
+---@class g.DataInfo: g.DataInfoCommon, g.MixinHasNameInfo
+---@class g.DataDefinition: g.BusCommon, g.DataInfoCommon, g.MixinHasNameDefinition
+
+
+---@class g.BoosterInfo: g.BusCommon, g.MixinHasNameInfo
+---@field public radiate integer
+---@field public radiateAlgorithm g.RadiateAlgorithm
+
+---@class g.BoosterDefinition: g.BusCommon, g.MixinHasNameDefinition
+---@field public radiate integer? 1 is default
+---@field public radiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
+
+---@type g.ItemInfo[]
+g.ITEMS = {}
+local itemList = {}
+
+
+---@class g.ItemDefinition
+---@field public serverInfo g.ServerDefinition?
+---@field public dataInfo g.DataDefinition?
+---@field public boosterInfo g.BoosterInfo?
 
 ---@param id string
----@param def g.StalkDefinition
-function g.defineStalk(id, def)
-    helper.assert(not STALKS[id], "stalk", id, "already defined")
-    assert(def.growthpos and type(def.growthpos) == "table", "missing or invalid growth position table")
-    assert(#def.growthpos > 0, "missing growth position (must at least 1)")
-    def.image = def.image or id
-    helper.assert(g.isImage(def.image), "invalid image", def.image)
+---@param def g.ItemDefinition
+function g.defineItem(id, def)
+    if itemList[id] then
+        error("Redefined item: "..id)
+    end
 
-    STALKS[id] = def
-end
+    local si = def.serverInfo and 1 or 0
+    local di = def.dataInfo and 1 or 0
+    local bi = def.boosterInfo and 1 or 0
+    assert(si + di + bi == 1, "Definition must be exactly one of server, data, or booster")
 
----@param stalk string
-function g.getStalkInfo(stalk)
-    return (helper.assert(STALKS[stalk], "invalid stalk", stalk))
-end
+    local obj
+    if def.serverInfo then
+        obj = def.serverInfo
+        ---@cast obj g.ServerInfo
+        obj.heatRadiate = obj.heatRadiate or 1
+        obj.heatRadiateAlgorithm = obj.heatRadiateAlgorithm or "chessboard"
+        assert(#obj.computePreference > 0)
+    elseif def.dataInfo then
+        obj = def.dataInfo
+    elseif def.boosterInfo then
+        obj = def.boosterInfo
+        ---@cast obj g.BoosterInfo
+        obj.radiate = obj.radiate or 1
+        obj.radiateAlgorithm = obj.radiateAlgorithm or "chessboard"
+    end
 
+    ---@cast obj g.MixinHasNameDefinition
+    -- Set the name and description
+    obj.name = loc(obj.name, nil, {context = obj.nameContext})
+    assert(not (obj.rawDescription and obj.description), "raw description and description is mutually exclusive")
+    if obj.rawDescription then
+        obj.description = obj.rawDescription
+    elseif obj.description then
+        obj.description = loc(obj.description, nil, {context = obj.descriptionContext})
+    end
 
-
-
-
-
-
-
-
-
-
-
-
-local tokenDefinitions = {--[[
-    [tokenType] -> {
-        health = X,
-        
-        onUpdate = func,
-        onDestroyed = func
+    g.ITEMS[#g.ITEMS+1] = {
+        id = id,
+        type = (si and "server") or (di and "data") or "booster",
+        serverInfo = def.serverInfo,
+        dataInfo = def.dataInfo,
+        boosterInfo = def.boosterInfo,
     }
-]]}
----@cast tokenDefinitions table<string,g.TokenInfo>
-
-local tokenMts = {--[[
-    [tokenType] -> tokenMt
-]]}
----@type table<g.TokenInfo, true|nil>
-local reverseTokMt = {}
-
-g.TOKEN_LIST = {}
-
-
----@param name string
----@param tokType string
----@param tabl g.TokenDefinition
-function g.defineToken(tokType, name, tabl)
-    assert(not tabl.type, ".type is a reserved field!")
-    assert(tabl.maxHealth, "Tokens need .maxHealth")
-    assert(tabl.resources, "Tokens need .resources")
-    assert(not tokenDefinitions[tokType], "Duplicate token definition!")
-    if tabl.shadow then
-        assert(g.getImageQuad(tabl.shadow))
-    end
-
-    if tabl.category and not g.CATEGORIES[tabl.category] then
-        error("invalid category '"..tabl.category.."'")
-    end
-
-    if tabl.growths then
-        assert(tabl.growths.growth, "growth field is missing")
-        assert(tabl.growths.stalk, "stalk field is missing")
-        -- LuaLS why you not remove nil on assert of table field?
-        ---@type g.StalkDefinition
-        local stalkInfo = helper.assert(STALKS[tabl.growths.stalk], "invalid stalk", tabl.growths.stalk)
-
-        assert(not tabl.image, "cannot define image when defining stalk")
-        tabl.image = assert(stalkInfo.image)
-    end
-
-    if tabl.resources then
-        for resId,v in pairs(tabl.resources) do
-            assertValidResource(resId)
-            assert(v >= 0)
-        end
-    end
-
-    tabl.image = tabl.image or tokType
-
-    local oldDescription = tabl.description
-    assert(not (tabl.rawDescription and tabl.description), "raw description and description is mutually exclusive")
-    if tabl.rawDescription then
-        tabl.description = tabl.rawDescription
-    elseif tabl.description then
-        tabl.description = loc(tabl.description, nil, {context = tabl.descriptionContext})
-    end
-
-    tokenDefinitions[tokType] = tabl
-    ---@cast tabl g.Token
-    tabl.type = tokType
-    ---@diagnostic disable-next-line: inject-field
-    tabl.name = loc(name, nil, {context = tabl.nameContext})
-    local mt = {__index = tabl}
-    tokenMts[tokType] = mt
-    reverseTokMt[mt] = true
-    g.TOKEN_LIST[#g.TOKEN_LIST+1] = tokType
-
-    ---@type g.UpgradeDefinition
-    local upgradeDef = {
-        nameContext = tabl.upgradeNameContext or tabl.nameContext,
-        image = tabl.image,
-        populateTokenPool = function(self, level, tokens) ---@diagnostic disable-line
-            tokens:add(tokType, level)
-        end,
-        maxLevel = tabl.maxLevel or nil,
-        description = oldDescription,
-        descriptionContext = tabl.upgradeDescriptionContext or tabl.descriptionContext,
-        kind = "TOKEN",
-        tokenType = tokType,
-        procGen = tabl.procGen,
-    }
-    for k,v in pairs(tabl.upgradeDefinition or {}) do
-        upgradeDef[k]=v
-    end
-    g.defineUpgrade(tokType, name, upgradeDef)
 end
 
-
-
----@param obj any
-function g.isToken(obj)
-    local mt = getmetatable(obj)
-    return not not reverseTokMt[mt]
 end
-
----@param tokType string
-function g.getTokenInfo(tokType)
-    if not tokenDefinitions[tokType] then
-        error("token '"..tostring(tokType).."' does not exist")
-    end
-    return tokenDefinitions[tokType]
-end
-
-
-function g.drawTokenIcon(tokType, x,y, rot,sx,sy, kx,ky)
-    local tinfo = g.getTokenInfo(tokType)
-    if tinfo.image then
-        g.drawImage(tinfo.image, x, y, rot, sx, sy, kx,ky)
-    end
-
-    if tinfo.growths then
-        local stalkInfo = g.getStalkInfo(tinfo.growths.stalk)
-        for _, pos in ipairs(stalkInfo.growthpos) do
-            g.drawImage(tinfo.growths.growth, x + pos.x, y + pos.y, rot, sx, sy, kx, ky)
-        end
-    end
-end
-
-
-local DEFAULT_MIN_SPACING = 12
-
-
-function g.canSpawnTokenHere(x,y, minSpacing)
-    -- checks whether we are "too close" to another token,
-    --  and whether we could spawn a new token at this pos
-    minSpacing = minSpacing or DEFAULT_MIN_SPACING
-    local world = g.getSn().mainWorld
-
-    local tooClose = false
-    world.tokenPartition:query(x,y, function(tok)
-        local dx = x - tok.x
-        local dy = y - tok.y
-        local distSq = dx*dx + dy*dy
-        if distSq < minSpacing * minSpacing then
-            tooClose = true
-            return true -- stop iteration early
-        end
-    end)
-    return not tooClose
-end
-
-
----@param x number
----@param y number
----@param leeway number?
----@return number
----@return number
-function g.clampInsideWorld(x,y, leeway)
-    leeway = leeway or 8
-    local w,h = g.getWorldDimensions()
-    x = helper.clamp(x, leeway, w - leeway*2)
-    y = helper.clamp(y, leeway, h - leeway*2)
-    return x,y
-end
-
-
----@param x number
----@param y number
----@param w number
----@param h number
----@param minSpacing number?
----@param maxAttempts integer?
-local function getRandomPos(x, y, w, h, minSpacing, maxAttempts)
-    maxAttempts = maxAttempts or 20
-    minSpacing = minSpacing or DEFAULT_MIN_SPACING
-    for attempt = 1, maxAttempts do
-        local px = x + math.random() * w
-        local py = y + math.random() * h
-
-        if g.canSpawnTokenHere(px,py, minSpacing) then
-            return px, py
-        end
-    end
-
-    return nil, nil
-end
-
-
---[[
-
-IMPORTANT NOTE:
-
-These functions all tag into the main-world.
-In the future; if there are multiple-worlds; 
-we will want to make this more generic.
-
-]]
-
 
 
 -- ENTITY FUNCTIONS
@@ -1758,7 +1584,6 @@ do
 ---@field perSecondUpdate (fun(e:g.Entity, seconds:integer))?
 ---@field drawBelow (fun(ent: g.Entity))?
 ---@field draw (fun(ent: g.Entity))?
----@field hitToken {getPoints:(fun(self:g.Entity):[number,number][])?,collision:fun(self:g.Entity,tok:g.Token),cooldown:number?}?
 local Entity = {}
 
 ---@type table<string, table>
@@ -1773,10 +1598,6 @@ function g.defineEntity(type, etype)
     assert(etype.x == nil, "x is reserved field")
     assert(etype.y == nil, "y is reserved field")
     assert(etype.type == nil, "type is reserved field")
-    if etype.hitToken then
-        assert(etype.hitToken.radius, "missing radius")
-        assert(etype.hitToken.collision, "missing collision function")
-    end
     etype.type = type
     local mt = {__index=etype}
     ENTITY_DEFS[type] = mt
@@ -1802,10 +1623,6 @@ function g.spawnEntity(ename, x,y, ...)
         id = currentId,
         x=x,y=y, type=ename
     }, mt)
-
-    if ent.hitToken then
-        ent.hitToken = helper.shallowCopy(ent.hitToken)
-    end
 
     if ent.init then
         ent:init(...)
@@ -1842,489 +1659,6 @@ function g.removeEntity(ent)
     w.entities:removeBuffered(ent)
 end
 
-
-end
-
-
-
-
----@class g.Token: g.TokenDefinition
----@field type string
----@field x number
----@field y number
----@field id number
----@field laggedHealth number for lag-health-visual
----@field health number
----@field maxHealth number
----@field image string
----@field resources g.Bundle
----@field timeSinceHitStart number Time since last `tryHitToken` is initiated (it's not immediately hit).
----@field timeSinceHit number Time since `tryHitToken` actually hits the token.
----@field timeSinceDamaged number
----@field timeAlive number
----@field drawToken (fun(tok: g.Token, x:number,y:number, rot:number?,sx:number?,sy:number?,kx:number?,ky:number?))?
----@field hitTest fun(tok: g.Token, px: number, py: number): boolean
----@field data any Token-specific additional data
----@field slimed boolean?
----@field starred boolean?
----@field wasSpawnedViaTokenPool boolean?
----@field ___destroyed boolean?
-local g_Token = {}
-
-
-
-
----@param guarantee boolean? If true, get any random position even if it's too close to token.
----@overload fun():(number?,number?)
----@overload fun(guarantee:true):(number,number)
----@return number?,number?
-function g.getRandomPositionForToken(guarantee)
-    local worldW, worldH = g.getWorldDimensions()
-    local pad=4
-    local x, y = getRandomPos(pad,pad, worldW-pad*2,worldH-pad*2)
-
-    if not (x and y) and guarantee then
-        x = helper.lerp(pad, worldW - pad, love.math.random())
-        y = helper.lerp(pad, worldH - pad, love.math.random())
-    end
-
-    return x, y
-end
-
-
----@param filter (fun(tok:g.Token):boolean)?
----@return g.Token?
-function g.getRandomToken(filter)
-    local maxTries = 30
-    for _=1, maxTries do
-        local tokens = currentSession.mainWorld.tokens
-        local len = #tokens
-        local i = math.min(math.max(1, math.floor(love.math.random() * len)), len)
-        local tok = tokens[i]
-        if tok then
-            if (not filter) or filter(tok) then
-                return tok
-            end
-        end
-    end
-    return nil
-end
-
-
-
----@param tok g.Token
----@param x number
----@param y number
----@return boolean
-local function defaultHitTest(tok, x, y)
-    return helper.magnitude(tok.x - x, tok.y - y) < 16
-end
-
--- each token is given a unique id. (Used for animations and stuff)
-local currentTokenId = 1
-
----@param tokType string
----@param x number
----@param y number
----@return g.Token
-function g.spawnToken(tokType, x,y)
-    local w = g.getMainWorld()
-    assert(type(tokType) == "string")
-    assert(x and y)
-    local tabl = tokenDefinitions[tokType]
-    if not (tabl) then
-        error("Invalid token type: " .. tostring(tokType))
-    end
-
-    currentTokenId = currentTokenId + 1
-
-    local tok = setmetatable({
-        x = x,
-        y = y,
-        health = tabl.maxHealth,
-
-        id = currentTokenId,
-
-        timeAlive = 0,
-        timeSinceHitStart = 0xffffffffff,
-        timeSinceHit = 0xffffffffff,
-        timeSinceDamaged = 0xfffffffff,
-
-        hitTest = tabl.hitTest or defaultHitTest
-    }, tokenMts[tokType])
-    ---@cast tok g.Token
-    tok.maxHealth = tabl.maxHealth * g.ask("getTokenMaxHealthMultiplier", tok)
-    tok.health = tok.maxHealth
-    tok.laggedHealth = tok.health
-
-    if tok.init then
-        tok:init()
-    end
-
-    w.tokens:addBuffered(tok)
-    g.call("tokenSpawned", tok)
-    return tok
-end
-
-
-
--- difference between delete/destroy:
---[[
-Destroy = delete + earn resources, particles, etc.
-Delete = delete instantly. Nothing else.
-]]
-
----@param tok g.Token
----@return boolean
-function g.deleteToken(tok)
-    local w = g.getMainWorld()
-    if tok.___destroyed then
-        return false -- already been destroyed.
-    end
-    tok.___destroyed = true
-
-    if tok.wasSpawnedViaTokenPool then
-        -- if it was spawned via token-pool, then we should record its destroyTime!
-        --  (this way, world.lua will spawn it back in future)
-        if not w.tokenDestroyTime[tok.type] then
-            w.tokenDestroyTime[tok.type] = {}
-        end
-        table.insert(w.tokenDestroyTime[tok.type], g.getWorldTime())
-    end
-
-    w.tokens:removeBuffered(tok)
-    return true
-end
-
-
----@param tok g.Token
----@return boolean
-function g.destroyToken(tok)
-    if tok.___destroyed then
-        -- already been destroyed.
-        return false
-    end
-
-    if tok.category then
-        local name = "totalCategoryHarvested_"..tok.category
-        g.incrementMetric(name)
-    end
-    g.incrementMetric("totalTokensHarvested")
-
-    g.call("tokenDestroyed", tok)
-
-    g.addResourceFrom(tok, tok.resources)
-
-    if tok.slimed then
-        g.spawnParticle("slime", tok.x,tok.y, love.math.random(3,5))
-    end
-    if tok.particles then
-        g.spawnParticle(tok.particles, tok.x,tok.y, love.math.random(3,5))
-    end
-    if tok.growths then
-        local stalkInfo = g.getStalkInfo(tok.growths.stalk)
-        for _, pos in ipairs(stalkInfo.growthpos) do
-            g.spawnEntity("growth_falling", tok.x + pos.x, tok.y + pos.y, tok.growths.growth, tok.y + 8)
-        end
-    end
-
-    g.deleteToken(tok)
-
-    local cate = tok.category
-    -- g.playWorldSound("plop_on_destroy_1", 1.2,2.7, 0.3, 0.4)
-    -- g.playWorldSound("plop_on_destroy_2", 1.3,0.4, 0.2, 0.3)
-
-    -- g.playWorldSound("pop_on_destroy_1", 1.5,0.2, 0.2, 0.05)
-    g.playWorldSound("pop_on_destroy_2", 1.2,0.2, 0.2, 0.05)
-    do return true end
-    if (cate == "grass") or (cate == "berry") then
-        -- todo: this is hacky and not robust, concating the name
-        -- what if the sound doesnt exist? (fails at runtime)
-        local name = "hit_grass2"
-        g.playWorldSound(name, 1,0.4, 0.1)
-    else
-        local name = "chest_on_destroy_" .. love.math.random(1,3)
-        g.playWorldSound(name, 1,0.3, 0.1)
-    end
-    return true
-end
-
-
-
----@param tok g.Token
-function g.slimeToken(tok)
-    if not tok.slimed then
-        g.call("tokenSlimed",tok)
-    end
-    tok.slimed=true
-    worldutil.spawnSTSAnimation("slimed_visual2", tok.x,tok.y, 0.4, 5)
-end
-
----@param tok g.Token
-function g.starToken(tok)
-    if not tok.starred then
-        g.call("tokenStarred", tok)
-    end
-    tok.starred = true
-    worldutil.spawnSTSAnimation("star_visual", tok.x,tok.y, 0.5, 9)
-end
-
-
-
----@param tok g.Token
----@param dmg number
-function g.damageToken(tok, dmg)
-    if tok.health <= 0 then
-        return
-    end
-
-    local dmgMult = g.ask("getTokenDamageMultiplier", tok)
-    local dmgMod = g.ask("getTokenDamageModifier", tok)
-    dmg = (dmg + dmgMod) * dmgMult
-    if tok.slimed then
-        dmg = dmg * 1.2
-    end
-    local displayDmg = math.min(dmg, math.max(tok.health, 0))
-
-    -- Ensure lagged health number is updated first before tok.health
-    local t = helper.clamp(tok.timeSinceDamaged / consts.LAGGED_HEALTHBAR_DURATION, 0, 1)
-    t = helper.clamp(helper.EASINGS.easeInCubic(t), 0, 1)
-    tok.laggedHealth = helper.lerp(tok.laggedHealth, tok.health, t)
-
-    -- Now update tok.health
-    tok.health = math.max(tok.health - dmg, 0)
-    tok.timeSinceDamaged = 0
-    g.call("tokenDamaged", tok, dmg)
-
-    if tok.health <= 0 then
-        currentSession.mainWorld:_incrementCombo()
-    end
-
-    currentSession.mainWorld:_spawnDamageNumber(
-        displayDmg,
-        tok.x,
-        tok.y - 5,
-        g.COLORS.DAMAGE_NUMBERS_BY_CATEGORY[tok.category] or objects.Color.WHITE
-    )
-
-end
-
-
-function g.getHitDuration()
-    return consts.MAX_HIT_DURATION + (3 / g.stats.HitSpeed) ^ 0.9
-end
-
-
---- checks if a token is being hit
----@param tok g.Token
----@return boolean
-function g.isBeingHit(tok)
-    local time = tok.timeSinceHitStart
-    return time <= g.getHitDuration()
-end
-
----@param tok g.Token
-function g.tryHitToken(tok)
-    if tok.health > 0 and not g.isBeingHit(tok) then
-        tok.timeSinceHitStart = 0
-        g.call("tokenHitStart", tok)
-    end
-end
-
----@param tok g.Token
-function g.hitImmediately(tok)
-    -- hits a token immediately; no checks, no buildup.
-    local hitMult = g.ask("getTokenHitMultiplier", tok)
-    tok.timeSinceHit = 0
-    g.call("tokenHit", tok)
-    local dmg = hitMult * g.stats.HitDamage
-    g.damageToken(tok, dmg)
-
-    if love.math.random() < g.stats.CritChance then
-        g.critToken(tok, dmg)
-    end
-
-    local r = love.math.random()
-    if r < 0.333 then
-        g.spawnParticle("xp1", tok.x, tok.y, 2)
-    elseif r < 0.666 then
-        g.spawnParticle("xp2", tok.x, tok.y, 1)
-    else
-        g.spawnParticle("xp3", tok.x, tok.y, 2)
-    end
-
-    if love.math.random() < 0.5 then
-        -- hit_generic_1 is the softest and best. Ive tried all of em!
-        g.playWorldSound("hit_generic_1", 1,0.15,0.35,0.05)
-    else
-        g.playWorldSound("hit_generic_2", 1.3,0.07,0.25,0.02)
-    end
-
-    if tok.category == "grass" then
-        if love.math.random()<0.5 then
-            g.playWorldSound("hit_grass",1,0.2, 0.1)
-        else
-            g.playWorldSound("hit_grass2",1,0.3, 0.1)
-        end
-    else
-        g.playWorldSound("hit_soft", 1, 0.18, 0.3)
-        -- g.playWorldSound("hit_billiard", 1, 0.18, 0.3)
-    end
-end
-
-
-local CRIT = "{c r=1 g=0.3 b=0.2}{o}"..loc("CRIT!", {}, {
-    context = "As in, an abbreviation for a critical hit"
-}).."{/o}{/c}"
-
-function g.critToken(tok, dmg)
-    dmg = dmg * g.stats.CritDamageMultiplier
-    tok.health = tok.health - dmg
-    g.call("tokenCrit", tok, dmg)
-    worldutil.spawnText(CRIT, tok.x, tok.y-8, 0.45, 10)
-end
-
-
-
----@param x number
----@param y number
----@param radius number
----@param func fun(tok:g.Token)
-function g.iterateTokensInArea(x, y, radius, func)
-    g.getMainWorld().tokenPartition:query(x, y, function(tok)
-        if helper.magnitude(x-tok.x, y-tok.y) <= radius then
-            func(tok)
-        end
-    end, radius)
-end
-
-
-
-local MAX_QUEUED_TOKENS = 100
-
----@param tokenId string
----@param screenX number?
----@param screenY number?
----@param onSpawn fun(tok:g.Token)?
-function g.stackToken(tokenId, screenX,screenY, onSpawn)
-    assert(g.getTokenInfo(tokenId))
-    currentSession.tokenQueue[#currentSession.tokenQueue+1] = {
-        tokenId = tokenId,
-        onSpawn = onSpawn
-    }
-
-    while #currentSession.tokenQueue > MAX_QUEUED_TOKENS do
-        g.popStackedToken()
-    end
-
-    if screenX and screenY then
-        g.getHUD().profileHUD:spawnTokenVisual(tokenId, screenX, screenY)
-    end
-end
-
-
----@param duration number
----@param effectInfo g.EffectInfo
----@param screenX number?
----@param screenY number?
-function g.stackPotionToken(duration, effectInfo, screenX, screenY)
-    g.stackToken("abstract_potion_token", screenX, screenY, function (tok)
-        -- HACKY HACKY: Injecting shit here.
-        tok.image = effectInfo.image
-
-        ---@diagnostic disable-next-line
-        tok._effect = effectInfo.type
-        ---@diagnostic disable-next-line
-        tok._effectDuration = duration
-    end)
-end
-
-
----@return string?
----@return fun(tok:g.Token)? onSpawn
-function g.peekStackedToken()
-    local tabl = currentSession.tokenQueue[1]
-    if tabl then
-        return tabl.tokenId, tabl.onSpawn
-    end
-end
-
----@return string
-function g.popStackedToken()
-    assert(#currentSession.tokenQueue > 0, "token queue is empty")
-    local popped = table.remove(currentSession.tokenQueue, 1)
-    return popped.tokenId
-end
-
-
-
-
--- functions for bosses:
-do
----@type table<string, true>
-local VALID_BOSSES = {}
-
----@type table<integer, g.TokenInfo>
-local PRESTIGE_TO_BOSS = {}
----@type integer[]
-local MAX_PRESTIGE_INDICES = {}
-
-
----@param tok g.Token
-local function killBoss(tok)
-    local bossId = g.getBossIdForPrestige(g.getPrestige())
-    if not bossId then
-        log.error("another wat??")
-        return
-    end
-
-    local bossPrestige = g.getTokenInfo(bossId)
-    if bossPrestige and bossPrestige.type == tok.type then
-        achievements.unlockAchievement("SLAYER")
-        g.call("bossSlain")
-    else
-        log.error("wat??") -- wtf? what happened here?
-    end
-end
-
----@param id string
----@param prestige integer
----@param healthToken string|nil
----@param def g.TokenDefinition
-function g.defineBoss(id, prestige, healthToken, def)
-    def.bossfight = {healthToken=healthToken}
-    def.tokenDestroyed = killBoss
-    g.defineToken(id, "\0boss " .. prestige, def)
-    PRESTIGE_TO_BOSS[prestige] = g.getTokenInfo(id)
-    VALID_BOSSES[id] = true
-    MAX_PRESTIGE_INDICES[#MAX_PRESTIGE_INDICES+1] = prestige
-    table.sort(MAX_PRESTIGE_INDICES, function(a, b) return a > b end)
-end
-
-function g.summonBoss(bossId)
-    assert(VALID_BOSSES[bossId])
-    return g.spawnToken(bossId, 0,0)
-end
-
----@param prestige integer
----@return string?
-function g.getBossIdForPrestige(prestige)
-    for _, mul in ipairs(MAX_PRESTIGE_INDICES) do
-        if (prestige + 1) % (mul + 1) == 0 then
-            local tInfo = assert(PRESTIGE_TO_BOSS[mul])
-            return tInfo.type
-        end
-    end
-
-    return nil
-end
-
---- returns the boss token, if there's a bossfight happening
----@return g.Token?
-function g.getBossToken()
-    local w = g.getMainWorld()
-    return w.bossToken
-end
 
 end
 
@@ -2567,6 +1901,8 @@ end
 
 ---@return "dark"|"light"
 function g.getSystemTheme()
+    -- FIXME: Update my LOVE 12 API so I don't need line below
+    ---@diagnostic disable-next-line: undefined-field
     local t = love.window.getSystemTheme()
     if t == "unknown" then t = "light" end
     return t
@@ -2576,42 +1912,43 @@ end
 
 g.COLORS = {
 
-    BUTTON_FADE_1 = objects.Color("#" .. "FF9F14F6"),
-    BUTTON_FADE_2 = objects.Color("#" .. "FF3B12A4"),
+    BUTTON_FADE_1 = objects.Color("FF9F14F6"),
+    BUTTON_FADE_2 = objects.Color("FF3B12A4"),
 
     UPGRADE_KINDS = {
-        HARVESTING = objects.Color("#" .. "FFCB8B14"),
-        TOKEN = objects.Color("#" .. "FF1479CB"),
-        TOKEN_MODIFIER = objects.Color("#" .. "FF15C39A"),
-        MISC = objects.Color("#" .. "FFFFFFFF"),
+        HARVESTING = objects.Color("FFCB8B14"),
+        TOKEN = objects.Color("FF1479CB"),
+        TOKEN_MODIFIER = objects.Color("FF15C39A"),
+        MISC = objects.Color("FFFFFFFF"),
     },
 
     ---@type table<g.Category, objects.Color>
     DAMAGE_NUMBERS_BY_CATEGORY = {
-        grass = objects.Color("#".."FF84CDFA"),
-        wood = objects.Color("#".."FFF5D48E"),
-        mushroom = objects.Color("#".."FFFAFCC0"),
-        rock = objects.Color("#".."FFF7A8A6"),
+        grass = objects.Color("FF84CDFA"),
+        wood = objects.Color("FFF5D48E"),
+        mushroom = objects.Color("FFFAFCC0"),
+        rock = objects.Color("FFF7A8A6"),
     },
 
     SHADOW = objects.Color(0,0,0,0.4),
 
-    CRIT = objects.Color("#" .. "FFA43929"),
+    CRIT = objects.Color("FFA43929"),
 
-    CANT_AFFORD = objects.Color("#".."FFD72D2D"),
-    CAN_AFFORD = objects.Color("#".."FF73FF73"),
+    CANT_AFFORD = objects.Color("FFD72D2D"),
+    CAN_AFFORD = objects.Color("FF73FF73"),
 
-    MONEY = objects.Color("#".."FFF7D127"),
-    RECOMMENDED = objects.Color("#".."FF9DEC4E"),
-    UPGRADE_CONNECTOR = objects.Color("#".."FF000000"),
+    MONEY = objects.Color("FFF7D127"),
+    RECOMMENDED = objects.Color("FF9DEC4E"),
+    UPGRADE_CONNECTOR = objects.Color("FF000000"),
 
     RARITIES = {
-        [0] = objects.Color("#".."FF8A8A8A"), -- Common (grey)
-        [1] = objects.Color("#".."FF4A9EFF"), -- Rare (blue)
-        [2] = objects.Color("#".."FFFFD700"), -- Legendary (gold)
+        [0] = objects.Color("FF8A8A8A"), -- Common (grey)
+        [1] = objects.Color("FF4A9EFF"), -- Rare (blue)
+        [2] = objects.Color("FFFFD700"), -- Legendary (gold)
     },
 
     UI = {
+        -- Key matches g.getSystemTheme output.
         MAIN = {
             dark = {
                 PANEL = objects.Color("FF3E3E3E"),
