@@ -17,10 +17,9 @@ considering other constraints.
 The general gameloop would be as follows:
 1. Buy server
 2. Wire server to data processor
-3. Wire data processor to mainframe
-4. Server process jobs
-5. Gain money after job is processed
-6. Unlock upgrades or buy more servers.
+3. Server process jobs
+4. Gain money after job is processed
+5. Unlock upgrades or buy more servers.
 
 The game is considered "finished" once player reaches 1 billion CPS (Compute Per Second) on average.
 
@@ -153,7 +152,7 @@ Upgrades ranging as follows:
 * Improve server stats
 * Improve data processor stats
 * Improve booster stats
-* 
+* Unlock more area
 
 
 ### UI/UX
