@@ -2,7 +2,6 @@
 -- Includes doing first-time (login) bonus, getting friend code, and entering friend code.
 
 local asynchttp = require("src.modules.asynchttp.asynchttp")
-local cosmetics = require("src.cosmetics.cosmetics")
 local SteamTicket = require("src.steam.ticket")
 
 local User = {}
@@ -24,8 +23,6 @@ function User.init()
                     assert(jsondata.steam_id == tostring(steamid), "?")
                     hasSubmittedCode = jsondata.has_used_code --[[@as boolean]]
                     friendCode = jsondata.friend_code --[[@as string]]
-
-                    cosmetics.tryRefresh()
                 end
 
                 ticket:destroy()

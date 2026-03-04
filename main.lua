@@ -199,7 +199,6 @@ TESTS END
 
 
 local sceneManager = require("src.scenes.sceneManager")
-local cosmetics = require("src.cosmetics.cosmetics")
 local SteamTicket = require("src.steam.ticket")
 local SteamInventory = require("src.steam.inventory")
 local User = require("src.user")
@@ -261,7 +260,6 @@ function love.load(arg)
     SteamInventory.init()
     SteamTicket.init()
     User.init()
-    cosmetics.init()
 
     if heartbeat then
         heartbeat:StartCapture()

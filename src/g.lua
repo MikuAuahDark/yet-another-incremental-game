@@ -80,15 +80,10 @@ function g.incrementPrestige()
 
     local prestige = math.min(g.getFinalPrestige(), curr.prestige + 1)
     new.tree = (g.loadPrestigeTree(prestige))
-    new.level = 0
 
     -- copy over the important stuff:
     new.prestige = prestige
-    new.totalLevel = curr.totalLevel -- keep total-level tracking.
-    new.avatar = curr.avatar
     new.showTutorials = {harvest=false, upgrades=false}
-    new.unlockedPOI = objects.Set(curr.unlockedPOI)
-    new.fisherCatCount = curr.fisherCatCount
 
     currentSession = new
 end
@@ -176,7 +171,6 @@ end
 
 
 
-local callEffects, askEffects
 local definedEvents = objects.Set()
 
 function g.defineEvent(ev)
@@ -209,12 +203,6 @@ function g.call(ev, arg1, ...)
 
     local tree = g.getUpgTree()
     tree:callUpgrades(ev, arg1, ...)
-
-    local world = currentSession.mainWorld
-    if world:_isPlayerCurrentlyHarvesting() then
-        -- only apply effects if player is currently harvesting
-        callEffects(ev, arg1, ...)
-    end
 
     local sc = sceneManager.getCurrentScene()
     if sc and sc[ev] then
@@ -265,12 +253,6 @@ function g.ask(q, arg1, ...)
     end
 
     local tree = g.getUpgTree()
-
-    local mainWorld = currentSession.mainWorld
-    if mainWorld:_isPlayerCurrentlyHarvesting() then
-        -- effects should only be active when player is harvesting
-        val = reducer(val, askEffects(q, arg1, ...))
-    end
 
     return reducer(val, tree:askUpgrades(q, arg1, ...))
 end
@@ -845,8 +827,10 @@ end
 ---@return number resourcesPerSecond
 function g.getResourcesPerSecond(resId)
     assertValidResource(resId)
-    local world = g.getSn().mainWorld
-    return world.resourcesPerSecond[resId] or 0
+    -- TODO: Implement when we need it
+    -- local world = g.getSn().mainWorld
+    -- return world.resourcesPerSecond[resId] or 0
+    return 0
 end
 
 
@@ -984,13 +968,6 @@ function g.getResourceLimit(resId)
 end
 
 
----@param amount number
-function g.addXP(amount)
-    local sn = currentSession
-    sn.xp = sn.xp + amount
-end
-
-
 ---@param resId g.ResourceType
 function g.addResource(resId, amount)
     assertValidResource(resId)
@@ -1055,24 +1032,6 @@ end
 
 
 
----@param tok g.Token
----@param bundle g.Bundle
----@return g.Bundle
-function g.addResourceFrom(tok, bundle)
-    local mod = g.ask("getTokenResourceModifier", tok)
-    local mult = g.ask("getTokenResourceMultiplier", tok)
-
-    bundle = g.addBundles(bundle, mod)
-    bundle = g.multBundles(bundle, mult)
-
-    g.addResources(bundle)
-
-    g.call("tokenEarnedResources", tok, bundle)
-    return bundle
-end
-
-
-
 --------------------------------------------------
 -- Categories
 --------------------------------------------------
@@ -1117,135 +1076,6 @@ g.defineMetric("totalTokensHarvested")
 
 
 --------------------------------------------------
--- Temporary Effects
---------------------------------------------------
-
----@type string[]
-g.EFFECT_LIST = {}
----@type table<string, g.EffectInfo>
-local EFFECT_INFOS = {}
----@type table<string, string[]>
-local EFFECT_QUESTION_CACHE = {}
----@type table<string, string[]>
-local EFFECT_EVENT_CACHE = {}
-
----@param id string
----@param name string
----@param def g.EffectDefinition
-function g.defineEffect(id, name, def)
-    if EFFECT_INFOS[id] then
-        error("effect '"..id.."' is already defined")
-    end
-
-    for k, v in pairs(def) do
-        if type(v) == "function" then
-            g.assertIsQuestionOrEvent(k)
-
-            -- Add to cache
-            if g.getQuestionInfo(k) then
-                if EFFECT_QUESTION_CACHE[k] then
-                    table.insert(EFFECT_QUESTION_CACHE[k], id)
-                else
-                    EFFECT_QUESTION_CACHE[k] = {id}
-                end
-            elseif g.isEvent(k) then
-                if EFFECT_EVENT_CACHE[k] then
-                    table.insert(EFFECT_EVENT_CACHE[k], id)
-                else
-                    EFFECT_EVENT_CACHE[k] = {id}
-                end
-            end
-        end
-    end
-
-    local img = def.image or id
-    if not g.isImage(img) then
-        error("image '"..img.."' does not exist")
-    end
-
-    ---@cast def g.EffectInfo
-    def.name = loc(name, nil, {context = def.nameContext})
-    assert(not (def.rawDescription and def.description), "raw description and description is mutually exclusive")
-    if def.rawDescription then
-        def.description = def.rawDescription
-    else
-        def.description = loc(def.description, nil, {context = def.descriptionContext})
-    end
-    def.type = id
-    def.image = img
-    def.isDebuff = not not def.isDebuff
-    g.EFFECT_LIST[#g.EFFECT_LIST+1] = id
-    EFFECT_INFOS[id] = def
-end
-
----@param id string
----@param duration number
-function g.grantEffect(id, duration)
-    local effInfo = EFFECT_INFOS[id]
-    if not effInfo then
-        error("effect '"..id.."' is not defined")
-    end
-    return currentSession.mainWorld:_grantEffect(id, duration)
-end
-
-
-function g.clearEffects()
-    return currentSession.mainWorld:_clearEffects()
-end
-
-
----@param id string
----@return g.EffectInfo
-function g.getEffectInfo(id)
-    local effInfo = EFFECT_INFOS[id]
-    if not effInfo then
-        error("effect '"..id.."' is not defined")
-    end
-
-    return effInfo
-end
-
-
----@param ev string
----@param ... any
-function callEffects(ev, ...)
-    local effIds = EFFECT_EVENT_CACHE[ev]
-    if effIds then
-        for _, effId in ipairs(effIds) do
-            local dur = currentSession.mainWorld.effectDurations[effId] or 0
-            if dur > 0 then
-                EFFECT_INFOS[effId][ev](dur, ...)
-            end
-        end
-    end
-end
-
-
-function askEffects(q, ...)
-    local questionInfo = g.getQuestionInfo(q)
-    local reducer = questionInfo.reducer
-    local defaultValue = questionInfo.defaultValue
-    local effIds = EFFECT_QUESTION_CACHE[q]
-
-    local result = defaultValue
-
-    if effIds then
-        for _, effId in ipairs(effIds) do
-            local dur = currentSession.mainWorld.effectDurations[effId] or 0
-            if dur > 0 then
-                local answer = EFFECT_INFOS[effId][q](dur, ...) or defaultValue
-                result = reducer(answer, result)
-            end
-        end
-    end
-
-    return result
-end
-
-
-
-
---------------------------------------------------
 -- Upgrades.
 --- 
 -- g.getUpgradeInfo(upgradeId)
@@ -1263,26 +1093,6 @@ g.UPGRADE_LIST = {}
 local upgradeInfos = {--[[
     [upgradeId] -> Table (contains all info)
 ]]}
-
-
-
--- Load prestiges
-do
-    local i = 0
-    while true do
-        local p = "src/upgrades/prestige_"..i..".json"
-        if love.filesystem.getInfo(p, "file") then
-            log.trace("Loading upgrade prestige position:", p)
-            ---@type _g.UpgradePrestigeData
-            local r = json.decode((assert(love.filesystem.read(p))))
-
-        else
-            break
-        end
-
-        i = i + 1
-    end
-end
 
 
 
@@ -1706,22 +1516,6 @@ end
 
 
 
-local cosmetics = require("src.cosmetics.cosmetics")
-
-g.getCosmeticInfo = cosmetics.getInfo
----@param typeFilter? "BACKGROUND"|"HAT"|"AVATAR"
-function g.getUnlockedCosmetics(typeFilter)
-    local t = cosmetics.getUnlocked(typeFilter)
-    table.sort(t)
-    return t
-end
-
-g.drawAvatar = cosmetics.drawAvatar
-g.drawPlayerAvatar = cosmetics.drawPlayerAvatar
-
-
-
-
 
 
 local validExtensions = {
@@ -1811,77 +1605,6 @@ end
 function g.requestBGM(id)
     return bgm.request(id)
 end
-
-
-end
-
-
-
--------------
--- Scythes --
--------------
-do
-
----@class _ScytheDefinition
----@field public image string?
----@field public harvestArea number harvest area modifier
-
----@class g.Scythe: _ScytheDefinition
----@field public type string
----@field public image string
----@field public name string
-
-
-
----@type table<string, g.Scythe>
-local SCYTHES = {}
-
----@type string[]
-local SCYTHE_ORDER = {}
-
-
----Define new scythe
----@param id string
----@param name string
----@param def _ScytheDefinition
-function g.defineScythe(id, name, def)
-    def.image = def.image or id
-    helper.assert(g.isImage(def.image), "invalid image", def.image)
-
-    ---@cast def g.Scythe
-    def.type = id
-    def.name = loc(name, {}, {
-        context = "As in, a scythe used for harvesting. Like 'Ruby Scythe' or 'Emerald Scythe' or 'Basic Scythe'"
-    })
-    SCYTHES[id] = def
-    table.insert(SCYTHE_ORDER,id)
-end
-
----@param id string
-function g.getScytheInfo(id)
-    return (helper.assert(SCYTHES[id], "invalid scythe", id))
-end
-
----@return string
-function g.getCurrentScythe()
-    return currentSession.scythe or consts.DEFAULT_SCYTHE
-end
-
----@return string?
----@return g.Scythe?
-function g.getNextScythe()
-    local curr = g.getCurrentScythe()
-    for i,sc in ipairs(SCYTHE_ORDER)do
-        if sc == curr then
-            local id = SCYTHE_ORDER[i+1]
-            if id then
-                return id, g.getScytheInfo(id)
-            end
-        end
-    end
-    return nil
-end
-
 
 
 end
