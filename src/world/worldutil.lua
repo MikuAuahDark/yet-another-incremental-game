@@ -145,4 +145,72 @@ function worldutil.drawUnderLightIndicator(x, y, size)
 end
 
 
+
+
+
+---Makes a rhombus pattern
+---@param iteration integer
+---@return [integer,integer][]
+local function taxicabSpread(iteration)
+    if iteration == 0 then
+        return {{0, 0}}
+    end
+
+    local result = {}
+    for dy = -iteration, iteration do
+        for dx = -iteration, iteration do
+            if math.abs(dx) + math.abs(dy) <= iteration then
+                result[#result+1] = {dx, dy}
+            end
+        end
+    end
+    return result
+end
+
+---Makes a square pattern
+---@param iteration integer
+---@return [integer,integer][]
+local function chessboardSpread(iteration)
+    if iteration == 0 then
+        return {{0, 0}}
+    end
+
+    local result = {}
+    for dy = -iteration, iteration do
+        for dx = -iteration, iteration do
+            if math.max(math.abs(dx), math.abs(dy)) <= iteration then
+                result[#result+1] = {dx, dy}
+            end
+        end
+    end
+    return result
+end
+
+---@type table<g.RadiateAlgorithm, fun(iteration:integer):[integer,integer][]>
+local RADIANCE_ALGORITHM = {
+    taxicab = helper.memoize(taxicabSpread),
+    chessboard = helper.memoize(chessboardSpread),
+}
+
+---@type table<g.RadiateAlgorithm, fun(ox:integer, oy:integer):integer>
+local DISTANCER_ALGORITHM = {
+    taxicab = function(ox, oy) return math.abs(ox) + math.abs(oy) end,
+    chessboard = function(ox, oy) return math.max(math.abs(ox), math.abs(oy)) end,
+}
+
+---@param algo g.RadiateAlgorithm
+---@param spread integer
+function worldutil.getSpreadTiles(algo, spread)
+    return RADIANCE_ALGORITHM[algo](spread)
+end
+
+---@param algo g.RadiateAlgorithm
+---@param ox integer Relative
+---@param oy integer Relative
+function worldutil.getDistance(algo, ox, oy)
+    return DISTANCER_ALGORITHM[algo](ox, oy)
+end
+
+
+
 return worldutil

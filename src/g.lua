@@ -1466,7 +1466,131 @@ end
 end
 
 
+
+----------------------
+-- Placement And Stuff
+----------------------
+
+---@param tx integer
+---@param ty integer
+function g.canPutItem(tx, ty)
+    local world = g.getMainWorld()
+    if not world.items:contains(tx, ty) or world.items:get(tx, ty) then
+        return false
+    end
+
+    return true
+end
+
+---@param itemId string
+---@param tx integer
+---@param ty integer
+function g.putItem(itemId, tx, ty)
+    local world = g.getMainWorld()
+    if not g.canPutItem(tx, ty) then
+        error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
+    end
+
+    local _, category = g.getItemInfo(itemId)
+    local itemData
+    if category == "server" then
+        ---@type g.World.ServerData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+            currentJob = nil,
+            jobProgress = 0,
+            connectsTo = nil,
+            computePerSecond = 0,
+        }
+    elseif category == "data" then
+        ---@type g.World.DataProcessorData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+            connectsServers = {},
+            dataPerSecond = 0,
+            serversDataPerSecond = 0,
+        }
+    elseif category == "booster" then
+        ---@type g.World.ItemData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+        }
+    else
+        error("fixme category "..category)
+    end
+
+    world.items:set(tx, ty, itemData)
+    return itemData
+end
+
+---@param tx integer
+---@param ty integer
+---@return g.World.ItemData?
+function g.getItem(tx, ty)
+    local world = g.getMainWorld()
+    return world.items:get(tx, ty)
+end
+
+---@param server g.World.ServerData
+---@param dp g.World.DataProcessorData
+function g.disconnectDataWire(server, dp)
+    if server.connectsTo ~= dp then
+        error("not connected")
+    end
+
+    for i, s in ipairs(dp.connectsServers) do
+        if s == server then
+            table.remove(dp.connectsServers, i)
+            server.connectsTo = nil
+            return
+        end
+    end
+
+    error("g.disconnectDataWire unreachable codepath")
+end
+
+---This only checks the server position and DP wire length/count
+---@param server g.World.ServerData
+---@param dp g.World.DataProcessorData
+function g.canConnectDataWire(server, dp)
+    local dpInfo = g.getItemInfo(dp.type, "data")
+    if worldutil.getDistance("chessboard", server.tileX - dp.tileX, server.tileY - dp.tileY) > dpInfo.wireLength then
+        return false
+    end
+
+    if dpInfo.wireCount and #dp.connectsServers >= dpInfo.wireCount then
+        return false
+    end
+
+    return true
+end
+
+---@param server g.World.ServerData
+---@param dp g.World.DataProcessorData
+function g.connectDataWire(server, dp)
+    if server.connectsTo then
+        error("already connected (elsewhere)")
+    end
+
+    if not g.canConnectDataWire(server, dp) then
+        error("cannot connect data wire")
+    end
+
+    server.connectsTo = dp
+    dp.connectsServers[#dp.connectsServers+1] = server
+end
+
+
+
+-------------------
 -- ENTITY FUNCTIONS
+-------------------
 do
 
 ---@class g.Entity

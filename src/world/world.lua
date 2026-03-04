@@ -18,63 +18,13 @@ local function zeroTileHeat(grid)
 end
 
 
----Makes a rhombus pattern
----@param iteration integer
----@return [integer,integer][]
-local function taxicabSpread(iteration)
-    if iteration == 0 then
-        return {{0, 0}}
-    end
-
-    local result = {}
-    for dy = -iteration, iteration do
-        for dx = -iteration, iteration do
-            if math.abs(dx) + math.abs(dy) <= iteration then
-                result[#result+1] = {dx, dy}
-            end
-        end
-    end
-    return result
-end
-
----Makes a square pattern
----@param iteration integer
----@return [integer,integer][]
-local function chessboardSpread(iteration)
-    if iteration == 0 then
-        return {{0, 0}}
-    end
-
-    local result = {}
-    for dy = -iteration, iteration do
-        for dx = -iteration, iteration do
-            if math.max(math.abs(dx), math.abs(dy)) <= iteration then
-                result[#result+1] = {dx, dy}
-            end
-        end
-    end
-    return result
-end
-
----@type table<g.RadiateAlgorithm, fun(iteration:integer):[integer,integer][]>
-local RADIANCE_ALGORITHM = {
-    taxicab = helper.memoize(taxicabSpread),
-    chessboard = helper.memoize(chessboardSpread),
-}
-
----@type table<g.RadiateAlgorithm, fun(ox:integer, oy:integer):integer>
-local DISTANCER_ALGORITHM = {
-    taxicab = function(ox, oy) return math.abs(ox) + math.abs(oy) end,
-    chessboard = function(ox, oy) return math.max(math.abs(ox), math.abs(oy)) end,
-}
-
 ---@class g.World.ItemData
 ---@field type string Item ID
 ---@field tileX integer (updated every frame)
 ---@field tileY integer (updated every frame)
 
 ---@class g.World.ServerData: g.World.ItemData
----@field currentJob g.Job
+---@field currentJob g.Job?
 ---@field jobProgress number
 ---@field connectsTo g.World.DataProcessorData? (connect to this data processor, quick lookup only)
 ---@field computePerSecond number (updated every frame) Does not account data bottleneck
@@ -154,17 +104,6 @@ local function drawEntity(e)
 end
 
 
----@generic N: number|integer
----@param x1 N
----@param y1 N
----@param x2 N
----@param y2 N
----@return N
-local function chessboardDistance(x1, y1, x2, y2)
-    return math.max(math.abs(x1 - x2), math.abs(y1 - y2))
-end
-
-
 ---@param dt number
 function World:_update(dt)
     self.entities:flush()
@@ -212,7 +151,7 @@ function World:_update(dt)
             if category == "booster" then
                 self.boosters[index] = item
                 local boosterInfo = g.getItemInfo(item.type, "booster")
-                local affectedTiles = RADIANCE_ALGORITHM[boosterInfo.radiateAlgorithm](boosterInfo.radiate)
+                local affectedTiles = worldutil.getSpreadTiles(boosterInfo.radiateAlgorithm, boosterInfo.radiate)
                 for _, tile in ipairs(affectedTiles) do
                     local tx, ty = x + tile[1], y + tile[2]
                     -- Insert booster tiles
@@ -244,7 +183,7 @@ function World:_update(dt)
             local itemInfo, category = g.getItemInfo(itemData.type)
             if category == "booster" then
                 ---@cast itemInfo g.BoosterInfo
-                local affectedTiles = RADIANCE_ALGORITHM[itemInfo.radiateAlgorithm](itemInfo.radiate)
+                local affectedTiles = worldutil.getSpreadTiles(itemInfo.radiateAlgorithm, itemInfo.radiate)
                 for _, tile in ipairs(affectedTiles) do
                     local tx, ty = x + tile[1], y + tile[2]
 
@@ -257,9 +196,9 @@ function World:_update(dt)
                 ---@cast itemData g.World.ServerData
                 ---@cast itemInfo g.ServerInfo
                 if itemInfo.heatRadiate > 0 then
-                    local affectedTiles = RADIANCE_ALGORITHM[itemInfo.heatRadiateAlgorithm](itemInfo.heatRadiate)
+                    local affectedTiles = worldutil.getSpreadTiles(itemInfo.heatRadiateAlgorithm, itemInfo.heatRadiate)
                     for _, tile in ipairs(affectedTiles) do
-                        local divider = 2 ^ DISTANCER_ALGORITHM[itemInfo.heatRadiateAlgorithm](tile[1], tile[2])
+                        local divider = 2 ^ worldutil.getDistance(itemInfo.heatRadiateAlgorithm, tile[1], tile[2])
                         local tx, ty = x + tile[1], y + tile[2]
 
                         if self.items:contains(tx, ty) then
@@ -282,7 +221,9 @@ function World:_update(dt)
         for i = #dpData.connectsServers, 1, -1 do
             local serverData = dpData.connectsServers[i]
             local sx, sy = serverData.tileX, serverData.tileY
-            if chessboardDistance(sx, sy, dpData.tileX, dpData.tileY) > dpInfo.wireLength then
+            -- Enforce constraints (SSOT)
+            serverData.connectsTo = dpData
+            if worldutil.getDistance("chessboard", sx - dpData.tileX, sy - dpData.tileY) > dpInfo.wireLength then
                 serverData.connectsTo = nil
                 table.remove(dpData.connectsServers, i)
             end
@@ -348,13 +289,12 @@ function World:_update(dt)
     end
     -- Pass 2: Update data processor total data transmit
     for _, dpData in pairs(self.dataProcessors) do
-        local dpInfo = g.getItemInfo(dpData.type, "data")
         local totalDPS = 0
 
         -- Compute theoretical DPS for all servers
         for _, serverData in ipairs(dpData.connectsServers) do
-            if serverData.currentJob then
-                local job = serverData.currentJob
+            local job = serverData.currentJob
+            if job then
                 local dps = serverData.computePerSecond * job.outputData / job.computePower
                 totalDPS = totalDPS + dps
             end
@@ -364,8 +304,8 @@ function World:_update(dt)
     end
     -- Pass 3: Update job progress
     for _, serverData in pairs(self.servers) do
-        if serverData.currentJob then
-            local job = serverData.currentJob
+        local job = serverData.currentJob
+        if job then
             local finalCPS = serverData.computePerSecond
             local dpData = assert(serverData.connectsTo)
             if dpData.serversDataPerSecond > dpData.dataPerSecond then
