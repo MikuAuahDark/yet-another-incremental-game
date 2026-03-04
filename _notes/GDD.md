@@ -55,6 +55,8 @@ Each tile has "Heat" property. Servers and other peripherals alters the tile hea
 
 Tile can only occupied by one item.
 
+Tile size is 16x16.
+
 Mechanics
 -----
 
@@ -159,6 +161,19 @@ Upgrades ranging as follows:
 
 
 ### UI/UX
+
+#### Item Indicator
+
+All item does not fully occupy the complete tile size. It only occupies 75% of the total tile size. This allows a light
+indicator below the item itself. The indicator shows:
+* Red - Item doesn't working. For example: server is not hooked to data processors.
+* Yellow - Item performance is not optimal. For example: server heat is too high.
+* Green - Item is working optimally. Server process job at normal or boosted rate, booster affects something, and data
+  processor is at least connected to a server.
+* Blue - Item is idling. For example: server has no job to process, booster does not affect anything, data processors
+  is not connected to any servers.
+
+In addition to light indicator below it, there's also symbols on top of it to improve clarity.
 
 #### Placement
 

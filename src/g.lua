@@ -1291,6 +1291,10 @@ end
 
 end
 
+g.defineJobCategory("general", "General", {nameContext = "General computer processing job"})
+g.defineJobCategory("video", "Video", {nameContext = "Video processing job for computer (e.g. transcoding)"})
+g.defineJobCategory("ai", "AI", {nameContext = "AI processing job for computer (e.g. inferencing or training)"})
+
 
 
 ---------------------
