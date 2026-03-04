@@ -752,5 +752,36 @@ function helper.splitRegionByExactSizes(r, direction, size1, size2, ...)
 end
 
 
+---Do memoize. For simplicity, it only memoize by first argument.
+---@generic T, U
+---@param func fun(arg:T) U
+---@return fun(arg:T): U
+function helper.memoize(func)
+    local cache = {}
+    return function(arg)
+        if cache[arg] then
+            return cache[arg]
+        end
+        local result = func(arg)
+        cache[arg] = result
+        return result
+    end
+end
+
+
+
+---@generic T
+---@param t T[]
+---@param value T
+---@return integer?
+function helper.index(t, value)
+    for i, v in ipairs(t) do
+        if v == value then
+            return i
+        end
+    end
+    return nil
+end
+
 
 return helper

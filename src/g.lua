@@ -1239,6 +1239,57 @@ end
 
 end
 
+---------------------
+-- Compute Jobs
+---------------------
+
+do
+
+---Key is the ID, value is the name
+---@type table<string, string>
+g.VALID_JOB_CATEGORIES = {}
+
+---@class g.Job
+---@field public name string
+---@field public category string
+---@field public computePower number
+---@field public outputData number
+---@field public resource g.Bundle
+---@field public timeout number If not taken for this seconds, remove from queue.
+
+---@param id string
+---@param name string
+---@param def {nameContext: string?}?
+function g.defineJobCategory(id, name, def)
+    assert(not g.VALID_JOB_CATEGORIES[id], "Redefined job category!")
+    local ctx = def and def.nameContext
+    if not ctx then ctx = nil end
+    g.VALID_JOB_CATEGORIES[id] = loc(name, nil, {context = ctx})
+end
+
+---@param jobCategory string
+function g.getJobCategoryName(jobCategory)
+    local info = g.VALID_JOB_CATEGORIES[jobCategory]
+    if not info then
+        error("unknown job category '"..jobCategory.."'")
+    end
+    return info
+end
+
+---@param job g.Job
+function g.queueJob(job)
+    local maxJobs = g.ask("getMaxJobQueueModifier")
+    local world = g.getMainWorld()
+
+    if #world.jobQueue >= maxJobs then
+        return false
+    end
+
+    world.jobQueue[#world.jobQueue+1] = job
+    return true
+end
+
+end
 
 
 
@@ -1261,11 +1312,11 @@ do
 ---@field public description string?
 
 
----@alias g.ItemType "server"|"data"|"booster"
+---@alias g.ItemCategory "server"|"data"|"booster"
 
 ---@class g.ItemInfo: g.ItemDefinition
 ---@field public id string
----@field public type g.ItemType
+---@field public category g.ItemCategory
 ---@field public serverInfo g.ServerInfo?
 ---@field public dataInfo g.DataInfo?
 ---@field public boosterInfo g.BoosterInfo?
@@ -1281,36 +1332,45 @@ do
 ---@field public heatTolerance [number, number]
 ---@field public heat number
 
----@class g.ServerInfo: g.BusCommon, g.MixinHasNameInfo, g.ServerInfoCommon
+---@class g.ServerInfo: g.MixinHasNameInfo, g.ServerInfoCommon
 ---@field public heatRadiate integer
 ---@field public heatRadiateAlgorithm g.RadiateAlgorithm
 
----@class g.ServerDefinition: g.BusCommon, g.MixinHasNameDefinition, g.ServerInfoCommon
+---@class g.ServerDefinition: g.MixinHasNameDefinition, g.ServerInfoCommon
 ---@field public heatRadiate integer? 1 is default
 ---@field public heatRadiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
 
 
----@class g.DataInfoCommon: g.BusCommon
+---@class g.DataInfoCommon
 ---@field public dataPerSecond number
 ---@field public wireLength integer
 ---@field public wireCount integer|nil
 
 ---@class g.DataInfo: g.DataInfoCommon, g.MixinHasNameInfo
----@class g.DataDefinition: g.BusCommon, g.DataInfoCommon, g.MixinHasNameDefinition
+---@class g.DataDefinition: g.DataInfoCommon, g.MixinHasNameDefinition
 
 
----@class g.BoosterInfo: g.BusCommon, g.MixinHasNameInfo
+---@class g.BoosterInfo: g.MixinHasNameInfo
 ---@field public radiate integer
 ---@field public radiateAlgorithm g.RadiateAlgorithm
+---@field public getTileHeat fun(reltx:integer,relty:integer):number
+---@field public getPerformanceModifier fun(reltx:integer,relty:integer)
+---@field public getPerformanceMultiplier fun(reltx:integer,relty:integer)
 
----@class g.BoosterDefinition: g.BusCommon, g.MixinHasNameDefinition
+---@class g.BoosterDefinition: g.MixinHasNameDefinition
 ---@field public radiate integer? 1 is default
 ---@field public radiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
+---@field public getTileHeat (fun(reltx:integer,relty:integer):number)?
+---@field public getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
+---@field public getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
 
----@type g.ItemInfo[]
+---@type string[]
 g.ITEMS = {}
+---@type table<string, g.ItemInfo>
 local itemList = {}
 
+local function return0() return 0 end
+local function return1() return 1 end
 
 ---@class g.ItemDefinition
 ---@field public serverInfo g.ServerDefinition?
@@ -1333,9 +1393,16 @@ function g.defineItem(id, def)
     if def.serverInfo then
         obj = def.serverInfo
         ---@cast obj g.ServerInfo
+        obj.heatTolerance = {
+            math.min(obj.heatTolerance[1], obj.heatTolerance[2]),
+            math.max(obj.heatTolerance[1], obj.heatTolerance[2])
+        }
         obj.heatRadiate = obj.heatRadiate or 1
         obj.heatRadiateAlgorithm = obj.heatRadiateAlgorithm or "chessboard"
         assert(#obj.computePreference > 0)
+        for _, jobCategory in ipairs(obj.computePreference) do
+            g.getJobCategoryName(jobCategory) -- just for assertion purpose
+        end
     elseif def.dataInfo then
         obj = def.dataInfo
     elseif def.boosterInfo then
@@ -1343,6 +1410,9 @@ function g.defineItem(id, def)
         ---@cast obj g.BoosterInfo
         obj.radiate = obj.radiate or 1
         obj.radiateAlgorithm = obj.radiateAlgorithm or "chessboard"
+        obj.getTileHeat = obj.getTileHeat or return0
+        obj.getPerformanceModifier = obj.getPerformanceModifier or return0
+        obj.getPerformanceMultiplier = obj.getPerformanceMultiplier or return1
     end
 
     ---@cast obj g.MixinHasNameDefinition
@@ -1355,13 +1425,38 @@ function g.defineItem(id, def)
         obj.description = loc(obj.description, nil, {context = obj.descriptionContext})
     end
 
-    g.ITEMS[#g.ITEMS+1] = {
+    itemList[id] = {
         id = id,
-        type = (si and "server") or (di and "data") or "booster",
+        category = (si and "server") or (di and "data") or "booster",
         serverInfo = def.serverInfo,
         dataInfo = def.dataInfo,
         boosterInfo = def.boosterInfo,
     }
+    g.ITEMS[#g.ITEMS+1] = id
+end
+
+---@param itemid string
+---@param assertCategory string?
+---@overload fun(itemid: string, assertCategory: "server"):(g.ServerInfo, "server")
+---@overload fun(itemid: string, assertCategory: "data"):(g.DataInfo, "data")
+---@overload fun(itemid: string, assertCategory: "booster"):(g.BoosterInfo, "booster")
+function g.getItemInfo(itemid, assertCategory)
+    local itemInfo = itemList[itemid]
+    if not itemInfo then
+        error("unknown item id '"..itemid.."'")
+    end
+
+    if assertCategory and itemInfo.category ~= assertCategory then
+        error("item '"..itemid.."' is not '"..assertCategory.."'")
+    end
+
+    if itemInfo.category == "server" then
+        return itemInfo.serverInfo, "server"
+    elseif itemInfo.category == "data" then
+        return itemInfo.dataInfo, "data"
+    elseif itemInfo.category == "booster" then
+        return itemInfo.boosterInfo, "booster"
+    end
 end
 
 end

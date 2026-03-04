@@ -72,6 +72,9 @@ The speed of the actual processing depends on lowest demonimator on these 2 fact
 * Data Processor DPS capability. If the server CPS is huge but the data transfer is clogged, then the server is not
   fully utilized.
 
+Job in queue has a `timeout` property (seconds). If the `timeout` in job queue is 0, the job will be removed from the
+queue.
+
 ### Servers
 
 Servers are the main building used to process compute jobs.
