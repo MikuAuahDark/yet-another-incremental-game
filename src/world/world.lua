@@ -62,6 +62,12 @@ local RADIANCE_ALGORITHM = {
     chessboard = helper.memoize(chessboardSpread),
 }
 
+---@type table<g.RadiateAlgorithm, fun(ox:integer, oy:integer):integer>
+local DISTANCER_ALGORITHM = {
+    taxicab = function(ox, oy) return math.abs(ox) + math.abs(oy) end,
+    chessboard = function(ox, oy) return math.max(math.abs(ox), math.abs(oy)) end,
+}
+
 ---@class g.World.ItemData
 ---@field type string Item ID
 ---@field tileX integer (updated every frame)
@@ -233,20 +239,38 @@ function World:_update(dt)
 
     -- Update tile heat
     zeroTileHeat(self.heat)
-    for i, itemData in pairs(self.boosters) do
-        local x, y = self.items:indexToCoords(i)
-        local boosterInfo = g.getItemInfo(itemData.type, "booster")
+    self.items:foreach(function(itemData, x, y)
+        if itemData then
+            local itemInfo, category = g.getItemInfo(itemData.type)
+            if category == "booster" then
+                ---@cast itemInfo g.BoosterInfo
+                local affectedTiles = RADIANCE_ALGORITHM[itemInfo.radiateAlgorithm](itemInfo.radiate)
+                for _, tile in ipairs(affectedTiles) do
+                    local tx, ty = x + tile[1], y + tile[2]
 
-        local affectedTiles = RADIANCE_ALGORITHM[boosterInfo.radiateAlgorithm](boosterInfo.radiate)
-        for _, tile in ipairs(affectedTiles) do
-            local tx, ty = x + tile[1], y + tile[2]
+                    if self.items:contains(tx, ty) then
+                        local heat = itemInfo.getTileHeat(tile[1], tile[2]) * self.loadPercentage
+                        self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
+                    end
+                end
+            elseif category == "server" then
+                ---@cast itemData g.World.ServerData
+                ---@cast itemInfo g.ServerInfo
+                if itemInfo.heatRadiate > 0 then
+                    local affectedTiles = RADIANCE_ALGORITHM[itemInfo.heatRadiateAlgorithm](itemInfo.heatRadiate)
+                    for _, tile in ipairs(affectedTiles) do
+                        local divider = 2 ^ DISTANCER_ALGORITHM[itemInfo.heatRadiateAlgorithm](tile[1], tile[2])
+                        local tx, ty = x + tile[1], y + tile[2]
 
-            if self.items:contains(tx, ty) then
-                local heat = boosterInfo.getTileHeat(tile[1], tile[2]) * self.loadPercentage
-                self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
+                        if self.items:contains(tx, ty) then
+                            local heat = itemInfo.heat / divider
+                            self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
+                        end
+                    end
+                end
             end
         end
-    end
+    end)
 
     -- Run data processor update
     local dpsModifier = g.ask("getDataThroughputModifier") --[[@as number]]
