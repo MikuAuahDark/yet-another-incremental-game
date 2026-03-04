@@ -5,7 +5,7 @@ g.defineEvent("draw")
 g.defineEvent("update")
 g.defineEvent("perSecondUpdate")
 
-g.defineEvent("jobCompleted")
+g.defineEvent("jobCompleted") -- args: g.World.ServerData, g.Job
 
 g.defineQuestion("getWorldTileSizeModifier", reducers.ADD, 3)
 g.defineQuestion("getMaxLoadModifier", reducers.ADD, 10)

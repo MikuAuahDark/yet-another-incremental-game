@@ -62,24 +62,21 @@ local RADIANCE_ALGORITHM = {
     chessboard = helper.memoize(chessboardSpread),
 }
 
-
----@class g.World.ServerData
----@field currentJob g.Job
----@field jobProgress number
----@field connectsTo g.World.ItemData? (connect to this data processor, quick lookup only)
----@field computePerSecond number (updated every frame) Does not account data bottleneck
-
----@class g.World.DataProcessorData
----@field connectsServers g.World.ItemData[] (connects to this server, source of truth)
----@field dataPerSecond number (updated every frame)
----@field serversDataPerSecond number (updated every frame)
-
 ---@class g.World.ItemData
 ---@field type string Item ID
 ---@field tileX integer (updated every frame)
 ---@field tileY integer (updated every frame)
----@field serverData g.World.ServerData? (only for server category)
----@field dataProcessorData g.World.DataProcessorData? (only for data processor category)
+
+---@class g.World.ServerData: g.World.ItemData
+---@field currentJob g.Job
+---@field jobProgress number
+---@field connectsTo g.World.DataProcessorData? (connect to this data processor, quick lookup only)
+---@field computePerSecond number (updated every frame) Does not account data bottleneck
+
+---@class g.World.DataProcessorData: g.World.ItemData
+---@field connectsServers g.World.ServerData[] (connects to this server, source of truth)
+---@field dataPerSecond number (updated every frame)
+---@field serversDataPerSecond number (updated every frame)
 
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")
@@ -95,9 +92,9 @@ function World:init()
     self.boosters = {}
     ---@type table<integer, string[]>
     self.boostersInTiles = {}
-    ---@type table<integer, g.World.ItemData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
+    ---@type table<integer, g.World.DataProcessorData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.dataProcessors = {}
-    ---@type table<integer, g.World.ItemData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
+    ---@type table<integer, g.World.ServerData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.servers = {}
     self.particles = ParticleService()
     self.timer = 0 -- For per second update
@@ -220,8 +217,10 @@ function World:_update(dt)
                     end
                 end
             elseif category == "dataProcessor" then
+                ---@cast item g.World.DataProcessorData
                 self.dataProcessors[index] = item
             elseif category == "server" then
+                ---@cast item g.World.ServerData
                 self.servers[index] = item
             end
 
@@ -252,16 +251,14 @@ function World:_update(dt)
     -- Run data processor update
     local dpsModifier = g.ask("getDataThroughputModifier") --[[@as number]]
     local dpsMultiplier = g.ask("getDataThroughputMultiplier") --[[@as number]]
-    for _, itemData in pairs(self.dataProcessors) do
-        local dpInfo = g.getItemInfo(itemData.type, "data")
-        local dpData = assert(itemData.dataProcessorData)
+    for _, dpData in pairs(self.dataProcessors) do
+        local dpInfo = g.getItemInfo(dpData.type, "data")
 
         -- Disconnect servers which are out of range
         for i = #dpData.connectsServers, 1, -1 do
-            local itemInfo = dpData.connectsServers[i]
-            local serverData = assert(itemInfo.serverData)
-            local sx, sy = itemInfo.tileX, itemInfo.tileY
-            if chessboardDistance(sx, sy, itemData.tileX, itemData.tileY) > dpInfo.wireLength then
+            local serverData = dpData.connectsServers[i]
+            local sx, sy = serverData.tileX, serverData.tileY
+            if chessboardDistance(sx, sy, dpData.tileX, dpData.tileY) > dpInfo.wireLength then
                 serverData.connectsTo = nil
                 table.remove(dpData.connectsServers, i)
             end
@@ -270,7 +267,7 @@ function World:_update(dt)
         if dpInfo.wireCount then
             -- Truncate connected servers to max wire count
             for i = #dpData.connectsServers, dpInfo.wireCount, -1 do
-                local serverData = assert(dpData.connectsServers[i].serverData)
+                local serverData = dpData.connectsServers[i]
                 serverData.connectsTo = nil
                 table.remove(dpData.connectsServers, i)
             end
@@ -285,9 +282,8 @@ function World:_update(dt)
     local perfMod = g.ask("getPerformanceModifier") --[[@as number]]
     local perfMultiplier = g.ask("getPerformanceMultiplier") --[[@as number]]
     -- Pass 1: Compute CPS
-    for _, itemData in pairs(self.servers) do
-        local serverInfo = g.getItemInfo(itemData.type, "server")
-        local serverData = assert(itemData.serverData)
+    for _, serverData in pairs(self.servers) do
+        local serverInfo = g.getItemInfo(serverData.type, "server")
 
         if serverData.connectsTo then
             -- Pull job queue
@@ -311,7 +307,7 @@ function World:_update(dt)
             -- Compute CPS
             serverData.computePerSecond = 0
             if serverData.currentJob then
-                local heat = self.heat:get(itemData.tileX, itemData.tileY)
+                local heat = self.heat:get(serverData.tileX, serverData.tileY)
                 local heatPerfMul = 1
                 if heat > serverInfo.heatTolerance[2] then
                     -- Overheat. Reduce performance
@@ -327,14 +323,12 @@ function World:_update(dt)
         end
     end
     -- Pass 2: Update data processor total data transmit
-    for _, itemData in pairs(self.dataProcessors) do
-        local dpInfo = g.getItemInfo(itemData.type, "data")
-        local dpData = assert(itemData.dataProcessorData)
+    for _, dpData in pairs(self.dataProcessors) do
+        local dpInfo = g.getItemInfo(dpData.type, "data")
         local totalDPS = 0
 
         -- Compute theoretical DPS for all servers
-        for _, serverItemData in ipairs(dpData.connectsServers) do
-            local serverData = assert(serverItemData.serverData)
+        for _, serverData in ipairs(dpData.connectsServers) do
             if serverData.currentJob then
                 local job = serverData.currentJob
                 local dps = serverData.computePerSecond * job.outputData / job.computePower
@@ -345,13 +339,11 @@ function World:_update(dt)
         dpData.dataPerSecond = totalDPS
     end
     -- Pass 3: Update job progress
-    for _, itemData in pairs(self.servers) do
-        local serverData = assert(itemData.serverData)
-
+    for _, serverData in pairs(self.servers) do
         if serverData.currentJob then
             local job = serverData.currentJob
             local finalCPS = serverData.computePerSecond
-            local dpData = assert(assert(serverData.connectsTo).dataProcessorData)
+            local dpData = assert(serverData.connectsTo)
             if dpData.serversDataPerSecond > dpData.dataPerSecond then
                 local ratio = dpData.dataPerSecond / dpData.serversDataPerSecond
                 -- Data bottleneck, reduce final CPSes
@@ -360,7 +352,7 @@ function World:_update(dt)
 
             serverData.jobProgress = serverData.jobProgress + finalCPS * dt
             if serverData.jobProgress >= job.computePower then
-                g.call("jobCompleted", job)
+                g.call("jobCompleted", serverData, job)
                 serverData.currentJob = nil
             end
         end
