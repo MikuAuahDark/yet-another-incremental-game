@@ -22,6 +22,7 @@ end
 ---@field type string Item ID
 ---@field tileX integer (updated every frame)
 ---@field tileY integer (updated every frame)
+---@field removed boolean
 
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
@@ -164,7 +165,7 @@ function World:_update(dt)
                         table.insert(self.boostersInTiles[tindex], item.type)
                     end
                 end
-            elseif category == "dataProcessor" then
+            elseif category == "data" then
                 ---@cast item g.World.DataProcessorData
                 self.dataProcessors[index] = item
             elseif category == "server" then
@@ -179,7 +180,7 @@ function World:_update(dt)
     end)
     self.currentLoad = loads
     self.maxLoad = g.ask("getMaxLoadModifier")
-    self.loadPercentage = math.min(1, loads / self.maxLoad)
+    self.loadPercentage = math.min(1, self.maxLoad / loads)
 
     -- Update tile heat
     zeroTileHeat(self.heat)
@@ -255,6 +256,11 @@ function World:_update(dt)
     for _, serverData in pairs(self.servers) do
         local serverInfo = g.getItemInfo(serverData.type, "server")
 
+        if serverData.connectsTo and serverData.connectsTo.removed then
+            -- Data processor is gone
+            serverData.connectsTo = nil
+        end
+
         if serverData.connectsTo then
             -- Pull job queue
             if not serverData.currentJob then
@@ -289,6 +295,7 @@ function World:_update(dt)
                     heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
                 end
                 local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul
+                print("svr", serverInfo.computePerSecond, perfMod, perfMultiplier, self.loadPercentage, heatPerfMul)
                 serverData.computePerSecond = math.max(serverInfo.computePerSecond + perfMod, 0) * finalMul
             end
         end
@@ -306,7 +313,7 @@ function World:_update(dt)
             end
         end
 
-        dpData.dataPerSecond = totalDPS
+        dpData.serversDataPerSecond = totalDPS
     end
     -- Pass 3: Update job progress
     for _, serverData in pairs(self.servers) do
@@ -323,6 +330,7 @@ function World:_update(dt)
             serverData.jobProgress = serverData.jobProgress + finalCPS * dt
             if serverData.jobProgress >= job.computePower then
                 g.call("jobCompleted", serverData, job)
+                g.addResources(job.resource)
                 serverData.currentJob = nil
             end
         end

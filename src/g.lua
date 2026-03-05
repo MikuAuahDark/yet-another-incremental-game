@@ -1495,6 +1495,7 @@ function g.putItem(itemId, tx, ty)
             type = itemId,
             tileX = tx,
             tileY = ty,
+            removed = false,
             currentJob = nil,
             jobProgress = 0,
             connectsTo = nil,
@@ -1506,6 +1507,7 @@ function g.putItem(itemId, tx, ty)
             type = itemId,
             tileX = tx,
             tileY = ty,
+            removed = false,
             connectsServers = {},
             dataPerSecond = 0,
             serversDataPerSecond = 0,
@@ -1516,6 +1518,7 @@ function g.putItem(itemId, tx, ty)
             type = itemId,
             tileX = tx,
             tileY = ty,
+            removed = false,
         }
     else
         error("fixme category "..category)
@@ -1530,7 +1533,26 @@ end
 ---@return g.World.ItemData?
 function g.getItem(tx, ty)
     local world = g.getMainWorld()
-    return world.items:get(tx, ty)
+
+    if world.items:contains(tx, ty) then
+        return world.items:get(tx, ty)
+    end
+
+    return nil
+end
+
+---@param tx integer
+---@param ty integer
+function g.removeItem(tx, ty)
+    local world = g.getMainWorld()
+    local item = world.items:get(tx, ty)
+    local ok = false
+    if item then
+        item.removed = true
+        ok = true
+    end
+    world.items:set(tx, ty, nil)
+    return ok
 end
 
 ---@param server g.World.ServerData

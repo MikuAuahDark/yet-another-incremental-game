@@ -33,7 +33,7 @@ local function defDP(id, name, def)
             end
 
             -- Draw connector lines across connected servevrs
-            -- TODO: Make this fancy
+            -- TODO: This is just temporary. Move it to world later.
             local lw = gsman.setLineWidth(4)
             love.graphics.setColor(1, 0.2, 0.2)
             for _, server in ipairs(itemData.connectsServers) do
