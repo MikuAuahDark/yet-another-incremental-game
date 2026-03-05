@@ -52,7 +52,7 @@ local consts = {
 
     LAGGED_HEALTHBAR_DURATION = 0.3, -- the "healtbar lag" on tokens, (purely visual effect)
 
-    WORLD_TILE_SIZE = 16, -- World tile size on both width and height.
+    WORLD_TILE_SIZE = 32, -- World tile size on both width and height.
 
     AVATAR_SIZE = 24, -- Size of the avatar with background
     DEFAULT_CAT_AVATAR = "cat",
