@@ -57,6 +57,8 @@ function World:init()
     self.seconds = 0 -- how many seconds have elapsed (perSecondUpdate)
     self.analyticsSendTime = 0
     self.loadPercentage = 1
+    self.currentLoad = 0 -- Updated every frame
+    self.maxLoad = 10 -- Updated every frame
     zeroTileHeat(self.heat)
 end
 
@@ -150,8 +152,9 @@ function World:_update(dt)
             local index = self.items:coordsToIndex(x, y)
             if category == "booster" then
                 self.boosters[index] = item
-                local boosterInfo = g.getItemInfo(item.type, "booster")
-                local affectedTiles = worldutil.getSpreadTiles(boosterInfo.radiateAlgorithm, boosterInfo.radiate)
+                ---@cast itemInfo g.BoosterInfo
+
+                local affectedTiles = worldutil.getSpreadTiles(itemInfo.radiateAlgorithm, itemInfo.radiate)
                 for _, tile in ipairs(affectedTiles) do
                     local tx, ty = x + tile[1], y + tile[2]
                     -- Insert booster tiles
@@ -174,7 +177,9 @@ function World:_update(dt)
             item.tileY = y
         end
     end)
-    self.loadPercentage = math.min(1, loads / g.ask("getMaxLoadModifier"))
+    self.currentLoad = loads
+    self.maxLoad = g.ask("getMaxLoadModifier")
+    self.loadPercentage = math.min(1, loads / self.maxLoad)
 
     -- Update tile heat
     zeroTileHeat(self.heat)
@@ -270,6 +275,7 @@ function World:_update(dt)
             end
 
             -- Compute CPS
+            -- TODO: Take booster into account
             serverData.computePerSecond = 0
             if serverData.currentJob then
                 local heat = self.heat:get(serverData.tileX, serverData.tileY)

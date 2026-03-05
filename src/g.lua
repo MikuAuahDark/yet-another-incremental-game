@@ -1304,69 +1304,78 @@ g.defineJobCategory("ai", "AI", {nameContext = "AI processing job for computer (
 do
 
 
----@class g.MixinHasNameDefinition
+---@class g._MixinHasNameDefinition
 ---@field public name string
 ---@field public nameContext string?
 ---@field public rawDescription string?
 ---@field public description string?
 ---@field public descriptionContext string?
 
----@class g.MixinHasNameInfo
+---@class g._MixinHasNameInfo
 ---@field public name string
 ---@field public description string?
 
 
 ---@alias g.ItemCategory "server"|"data"|"booster"
 
----@class g.ItemInfo: g.ItemDefinition
+---@class g.ItemDefinition: g._MixinHasNameDefinition
+---@field public category g.ItemCategory
+---@field public price number
+---@field public load number
+---@field public draw (fun(itemData: g.World.ItemData))?
+
+---@class g.ItemInfo: g._MixinHasNameInfo
 ---@field public id string
 ---@field public category g.ItemCategory
----@field public serverInfo g.ServerInfo?
----@field public dataInfo g.DataInfo?
----@field public boosterInfo g.BoosterInfo?
+---@field public price number
+---@field public load number
+---@field public draw (fun(itemData: g.World.ItemData))?
 
 
 ---@alias g.RadiateAlgorithm "taxicab"|"chessboard"
 
----@class g.ServerInfoCommon
----@field public price number
+---@class g._ServerInfoCommon
+---@field public category "server"
 ---@field public computePerSecond number
 ---@field public computePreference string[]
----@field public load number
 ---@field public heatTolerance [number, number]
 ---@field public heat number
 
----@class g.ServerInfo: g.MixinHasNameInfo, g.ServerInfoCommon
+---@class g.ServerInfo: g.ItemInfo, g._ServerInfoCommon
 ---@field public heatRadiate integer
 ---@field public heatRadiateAlgorithm g.RadiateAlgorithm
 
----@class g.ServerDefinition: g.MixinHasNameDefinition, g.ServerInfoCommon
+---@class g.ServerDefinition: g.ItemDefinition, g._ServerInfoCommon
 ---@field public heatRadiate integer? 1 is default
 ---@field public heatRadiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
 
 
----@class g.DataInfoCommon
+---@class g._DataInfoCommon: g.ItemInfo
+---@field public category "data"
 ---@field public dataPerSecond number
 ---@field public wireLength integer
 ---@field public wireCount integer|nil
 
----@class g.DataInfo: g.DataInfoCommon, g.MixinHasNameInfo
----@class g.DataDefinition: g.DataInfoCommon, g.MixinHasNameDefinition
+---@class g.DataInfo: g.ItemInfo, g._DataInfoCommon
+---@class g.DataDefinition: g.ItemDefinition, g._DataInfoCommon
 
 
----@class g.BoosterInfo: g.MixinHasNameInfo
+---@class g.BoosterInfo: g.ItemInfo
+---@field public category "booster"
 ---@field public radiate integer
 ---@field public radiateAlgorithm g.RadiateAlgorithm
 ---@field public getTileHeat fun(reltx:integer,relty:integer):number
----@field public getPerformanceModifier fun(reltx:integer,relty:integer)
----@field public getPerformanceMultiplier fun(reltx:integer,relty:integer)
+---@field public getPerformanceModifier fun(reltx:integer,relty:integer):number
+---@field public getPerformanceMultiplier fun(reltx:integer,relty:integer):number
 
----@class g.BoosterDefinition: g.MixinHasNameDefinition
+---@class g.BoosterDefinition: g.ItemDefinition
+---@field public category "booster"
 ---@field public radiate integer? 1 is default
 ---@field public radiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
 ---@field public getTileHeat (fun(reltx:integer,relty:integer):number)?
 ---@field public getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
 ---@field public getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
+
 
 ---@type string[]
 g.ITEMS = {}
@@ -1375,11 +1384,9 @@ local itemList = {}
 
 local function return0() return 0 end
 local function return1() return 1 end
+local function dummy() end
 
----@class g.ItemDefinition
----@field public serverInfo g.ServerDefinition?
----@field public dataInfo g.DataDefinition?
----@field public boosterInfo g.BoosterInfo?
+---@alias g.ItemDefinition g.ServerDefinition | g.DataDefinition | g.BoosterDefinition
 
 ---@param id string
 ---@param def g.ItemDefinition
@@ -1388,54 +1395,49 @@ function g.defineItem(id, def)
         error("Redefined item: "..id)
     end
 
-    local si = def.serverInfo and 1 or 0
-    local di = def.dataInfo and 1 or 0
-    local bi = def.boosterInfo and 1 or 0
-    assert(si + di + bi == 1, "Definition must be exactly one of server, data, or booster")
+    -- Set the name and description
+    def.id = id
+    def.draw = def.draw or dummy
+    def.name = loc(def.name, nil, {context = def.nameContext})
+    assert(not (def.rawDescription and def.description), "raw description and description is mutually exclusive")
+    if def.rawDescription then
+        def.description = def.rawDescription
+    elseif def.description then
+        def.description = loc(def.description, nil, {context = def.descriptionContext})
+    end
 
-    local obj
-    if def.serverInfo then
-        obj = def.serverInfo
-        ---@cast obj g.ServerInfo
-        obj.heatTolerance = {
-            math.min(obj.heatTolerance[1], obj.heatTolerance[2]),
-            math.max(obj.heatTolerance[1], obj.heatTolerance[2])
+    ---@cast def g.ServerInfo | g.DataInfo | g.BoosterInfo
+    assert(def.price, "invalid price")
+    assert(def.load, "invalid load")
+
+    if def.category == "server" then
+        ---@cast def g.ServerInfo
+        assert(def.computePerSecond, "invalid computePerSecond")
+        assert(def.heatTolerance, "invalid heatTolerance")
+        def.heatTolerance = {
+            math.min(def.heatTolerance[1], def.heatTolerance[2]),
+            math.max(def.heatTolerance[1], def.heatTolerance[2])
         }
-        obj.heatRadiate = obj.heatRadiate or 1
-        obj.heatRadiateAlgorithm = obj.heatRadiateAlgorithm or "chessboard"
-        assert(#obj.computePreference > 0)
-        for _, jobCategory in ipairs(obj.computePreference) do
+        def.heatRadiate = def.heatRadiate or 1
+        def.heatRadiateAlgorithm = def.heatRadiateAlgorithm or "chessboard"
+        assert(#def.computePreference > 0)
+        for _, jobCategory in ipairs(def.computePreference) do
             g.getJobCategoryName(jobCategory) -- just for assertion purpose
         end
-    elseif def.dataInfo then
-        obj = def.dataInfo
-    elseif def.boosterInfo then
-        obj = def.boosterInfo
-        ---@cast obj g.BoosterInfo
-        obj.radiate = obj.radiate or 1
-        obj.radiateAlgorithm = obj.radiateAlgorithm or "chessboard"
-        obj.getTileHeat = obj.getTileHeat or return0
-        obj.getPerformanceModifier = obj.getPerformanceModifier or return0
-        obj.getPerformanceMultiplier = obj.getPerformanceMultiplier or return1
+    elseif def.category == "data" then
+        ---@cast def g.DataInfo
+        assert(def.dataPerSecond, "invalid dps")
+        assert(def.wireLength and def.wireLength > 0, "invalid wireLength")
+    elseif def.category == "booster" then
+        ---@cast def g.BoosterInfo
+        def.radiate = def.radiate or 1
+        def.radiateAlgorithm = def.radiateAlgorithm or "chessboard"
+        def.getTileHeat = def.getTileHeat or return0
+        def.getPerformanceModifier = def.getPerformanceModifier or return0
+        def.getPerformanceMultiplier = def.getPerformanceMultiplier or return1
     end
 
-    ---@cast obj g.MixinHasNameDefinition
-    -- Set the name and description
-    obj.name = loc(obj.name, nil, {context = obj.nameContext})
-    assert(not (obj.rawDescription and obj.description), "raw description and description is mutually exclusive")
-    if obj.rawDescription then
-        obj.description = obj.rawDescription
-    elseif obj.description then
-        obj.description = loc(obj.description, nil, {context = obj.descriptionContext})
-    end
-
-    itemList[id] = {
-        id = id,
-        category = (si and "server") or (di and "data") or "booster",
-        serverInfo = def.serverInfo,
-        dataInfo = def.dataInfo,
-        boosterInfo = def.boosterInfo,
-    }
+    itemList[id] = def
     g.ITEMS[#g.ITEMS+1] = id
 end
 
@@ -1454,13 +1456,7 @@ function g.getItemInfo(itemid, assertCategory)
         error("item '"..itemid.."' is not '"..assertCategory.."'")
     end
 
-    if itemInfo.category == "server" then
-        return itemInfo.serverInfo, "server"
-    elseif itemInfo.category == "data" then
-        return itemInfo.dataInfo, "data"
-    elseif itemInfo.category == "booster" then
-        return itemInfo.boosterInfo, "booster"
-    end
+    return itemInfo, itemInfo.category
 end
 
 end

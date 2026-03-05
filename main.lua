@@ -243,6 +243,7 @@ function love.load(arg)
         end
 
         analytics.init(nil)
+        g.newSession()
         sceneManager.gotoScene("main_scene")
     end
 

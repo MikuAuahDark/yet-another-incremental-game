@@ -67,15 +67,16 @@ function HUD:draw(show)
     drawPanelWithBorder(self.leftR, theme)
     drawPanelWithBorder(self.botR, theme)
 
-    do
+    if g.hasSession() then
         -- Draw resource and stats
         local _, moneyR, loadR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
             self.topR, "horizontal",
             8, 128, 128, 128, 0, self.topR.h, 8, self.topR.h, 8
         )
+        local world = g.getMainWorld()
         local lw2 = gsman.setLineWidth(1)
-        drawStats(moneyR, "$", "123/456")
-        drawStats(loadR, "Load", "95/100")
+        drawStats(moneyR, "$", g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money")))
+        drawStats(loadR, "L", world.currentLoad.."/"..world.maxLoad)
         drawStats(cpsR, "123456", "C/s")
         lw2:pop()
 
