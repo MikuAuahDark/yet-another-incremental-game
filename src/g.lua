@@ -1322,14 +1322,14 @@ do
 ---@field public category g.ItemCategory
 ---@field public price number
 ---@field public load number
----@field public draw (fun(itemData: g.World.ItemData))?
+---@field public draw (fun(itemData: g.World.ItemData))? (already translated to center of tile)
 
 ---@class g.ItemInfo: g._MixinHasNameInfo
 ---@field public id string
 ---@field public category g.ItemCategory
 ---@field public price number
 ---@field public load number
----@field public draw (fun(itemData: g.World.ItemData))?
+---@field public draw fun(itemData: g.World.ItemData) (already translated to center of tile)
 
 
 ---@alias g.RadiateAlgorithm "taxicab"|"chessboard"

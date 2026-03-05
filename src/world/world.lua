@@ -371,7 +371,18 @@ function World:_draw()
     ---@type g.Entity[]
     local objlist = {}
 
-    -- drawGround()
+    -- Draw items
+    local wtz = consts.WORLD_TILE_SIZE
+    ---@param itemData g.World.ItemData?
+    self.items:foreach(function(itemData, x, y)
+        if itemData then
+            local itemInfo = g.getItemInfo(itemData.type)
+            local trans = gsman.translate((x + 0.5) * wtz, (y + 0.5) * wtz)
+            love.graphics.setColor(1, 1, 1)
+            itemInfo.draw(itemData)
+            trans:pop()
+        end
+    end)
 
     prof_push("entity sort")
     -- Add entitiy to be drawn

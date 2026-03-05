@@ -9,7 +9,7 @@
 ---@field package computePreference string[]
 ---@field package heatTolerance [number, number]
 ---@field package heat number
----@field package draw (fun(itemData: g.World.ItemData))?
+---@field package draw (fun(itemData: g.World.ServerData))?
 
 ---@param id string
 ---@param name string
@@ -40,4 +40,22 @@ defServer("basic_server", "Basic Server", {
     load = 1,
     heatTolerance = {40, 60},
     heat = 40,
+    draw = function(itemData)
+        local size = consts.WORLD_TILE_SIZE * 0.75
+        love.graphics.rectangle("fill", -size/2, -size/2, size, size)
+        love.graphics.setColor(0,0,0)
+        love.graphics.rectangle("line", -size/2, -size/2, size, size)
+        if itemData.connectsTo then
+            if itemData.currentJob then
+                -- Working
+                love.graphics.print("OK", g.getMainFont(16), -8, -8)
+            else
+                -- Idle
+                love.graphics.print("IL", g.getMainFont(16), -8, -8)
+            end
+        else
+            -- Not connected
+            love.graphics.print("NC", g.getMainFont(16), -8, -8)
+        end
+    end
 })
