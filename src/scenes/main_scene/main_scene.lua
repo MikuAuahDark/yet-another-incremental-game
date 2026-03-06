@@ -47,7 +47,6 @@ function MainScene:draw()
     self:resetCamera()
     ui.startUI()
 
-    -- TODO: Move this to HUD
     local hud = g.getHUD()
     hud:draw()
     local safeArea = hud:getSafeArea()
@@ -75,10 +74,22 @@ function MainScene:draw()
             local text = "DP - "..item.serversDataPerSecond.." TDPS "..itemInfo.dataPerSecond
             love.graphics.print(text, g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 54)
         end
+
+        -- Draw tooltip
+        local uimx, uimy = ui.getMouse()
+        love.graphics.setColor(1, 1, 1)
+        if cat == "server" then
+            ---@cast item g.World.ServerData
+            self:_drawServerTooltip(item, uimx + 9, uimy + 3, safeArea)
+        else
+            self:_drawGenericTooltip(item, uimx + 9, uimy + 3, safeArea)
+        end
     end
 
     ui.endUI()
 end
+
+
 
 function MainScene:_getTilePos()
     local mx, my = self.camera:toWorld(love.mouse.getPosition())
@@ -86,6 +97,98 @@ function MainScene:_getTilePos()
     local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
     return tx, ty
 end
+
+local MAX_TOOLTIP_WIDTH = 150
+
+---@param serverData g.World.ServerData
+---@param mx number
+---@param my number
+---@param safeArea kirigami.Region
+function MainScene:_drawServerTooltip(serverData, mx, my, safeArea)
+    local serverInfo = g.getItemInfo(serverData.type, "server")
+    -- Rule of thumb: Divide/multiply by 1.6 for font sizes
+    local titleF = g.getMainFont(16)
+    local descF = g.getMainFont(10)
+    local width, height = 0, 0
+
+    -- Pass 1: Compute tooltip sizes
+
+    -- Title
+    local titleHeight
+    do
+        local w, l = richtext.getWrap(serverInfo.name, titleF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        titleHeight = l * titleF:getHeight()
+        height = height + titleHeight
+    end
+
+    -- Category
+    local categoryText, categoryHeight
+    do
+        local computeNames = {}
+        for _, jcname in ipairs(serverInfo.computePreference) do
+            computeNames[#computeNames+1] = g.getJobCategoryName(jcname)
+        end
+        categoryText = TEXT.CATEGORY_LIST({
+            categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
+        })
+        local w, l = richtext.getWrap(categoryText, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        categoryHeight = l * titleF:getHeight()
+        height = height + categoryHeight
+    end
+
+    -- TODO: More stuff
+    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
+    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+    -- Draw the tooltip
+    height = 0
+    do
+        richtext.printRich(serverInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleHeight
+    end
+    -- Draw category
+    do
+        richtext.printRich(categoryText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + categoryHeight
+    end
+end
+
+---TODO: Specialize this for boosters and data processor.
+---Gotta move fast, so this will do for now.
+---@param itemData g.World.ItemData
+---@param mx number
+---@param my number
+---@param safeArea kirigami.Region
+function MainScene:_drawGenericTooltip(itemData, mx, my, safeArea)
+    local itemInfo = g.getItemInfo(itemData.type)
+    local titleF = g.getMainFont(16)
+    local width, height = 0, 0
+
+    -- Pass 1: Compute tooltip sizes
+
+    -- Title
+    local titleHeight
+    do
+        local w, l = richtext.getWrap(itemInfo.name, titleF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        titleHeight = l * titleF:getHeight()
+        height = height + titleHeight
+    end
+
+    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
+    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+    -- Pass 2:Draw the tooltip
+    height = 0
+    do
+        richtext.printRich(itemInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleHeight
+    end
+end
+
+
 
 ---@param k love.KeyConstant
 function MainScene:keyreleased(k)

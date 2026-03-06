@@ -372,6 +372,66 @@ function ui.newTextBox()
 end
 
 
+
+
+-- Tooltip
+do
+
+local DIAGONAL_PADDING = 6
+
+---Return 2 regions: tooltip drawable region, and tooltip content region
+---@param x number X position
+---@param y number Y position
+---@param cw number Content width
+---@param ch number Content height
+---@param clampR kirigami.Region? Region to clamp to
+function ui.getTooltipRegion(x, y, cw, ch, clampR)
+	local r = Kirigami(x, y, cw + 2 * DIAGONAL_PADDING, ch + 2 * DIAGONAL_PADDING)
+	if clampR then
+		r = r:clampInside(clampR)
+	end
+
+	return r, r:padUnit(DIAGONAL_PADDING)
+end
+
+---Draw tooltip base layout
+---@param tooltipR kirigami.Region Tooltip region
+---@param bgColor objects.Color Background color
+---@param lineColor objects.Color Line color
+function ui.Tooltip(tooltipR, bgColor, lineColor)
+	local x, y, w, h = tooltipR:get()
+
+	local polygons = {
+		-- Top
+		x + DIAGONAL_PADDING, y,
+		x + w - DIAGONAL_PADDING, y,
+		-- Right
+		x + w, y + DIAGONAL_PADDING,
+		x + w, y + h - DIAGONAL_PADDING,
+		-- Bottom
+		x + w - DIAGONAL_PADDING, y + h,
+		x + DIAGONAL_PADDING, y + h,
+		-- Left
+		x, y + h - DIAGONAL_PADDING,
+		x, y + DIAGONAL_PADDING,
+	}
+
+	-- Draw background
+	local col = gsman.mulColor(bgColor)
+	love.graphics.polygon("fill", polygons)
+	col:pop()
+
+	-- Draw outline
+	local lw = gsman.setLineWidth(4)
+	col = gsman.mulColor(lineColor)
+	love.graphics.polygon("line", polygons)
+	col:pop()
+	lw:pop()
+end
+
+end
+
+
 -- For UI global scaling
 do
 

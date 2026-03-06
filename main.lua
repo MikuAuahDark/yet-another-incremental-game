@@ -131,6 +131,7 @@ _G.loc = _G.localization.localize
 _G.interp = _G.localization.newInterpolator
 local loadLoc = require("src.load_loc")
 _G.getLanguageList = loadLoc.getLanguages
+_G.TEXT = require("src.textlist")
 
 
 _G.Kirigami = require("lib.kirigami")
