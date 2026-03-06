@@ -683,18 +683,19 @@ end
 
 
 ---@param question string
+---@param lastValue any
 ---@param ... unknown
 ---@return any
-function Tree:askUpgrades(question, ...)
+function Tree:askUpgrades(question, lastValue, ...)
     local questionInfo = g.getQuestionInfo(question)
     local reducer = questionInfo.reducer
     local defaultValue = questionInfo.defaultValue
 
-    local result = defaultValue
+    local result = lastValue
 
     ---@type g.Tree.Upgrade[]
     local upgs = self._questionCache[question]
-    if not upgs then return defaultValue end
+    if not upgs or #upgs == 0 then return lastValue end
 
     for _, upg in ipairs(upgs) do
         local level = upg.level

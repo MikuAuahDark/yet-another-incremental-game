@@ -235,7 +235,7 @@ end
 
 ---@param q string
 ---@param arg1 any
----@param ... unknown
+---@param ... any
 function g.ask(q, arg1, ...)
     local t = questions[q]
     if not t then
@@ -254,7 +254,7 @@ function g.ask(q, arg1, ...)
 
     local tree = g.getUpgTree()
 
-    return reducer(val, tree:askUpgrades(q, arg1, ...))
+    return tree:askUpgrades(q, val, arg1, ...)
 end
 
 
@@ -1251,7 +1251,7 @@ g.VALID_JOB_CATEGORIES = {}
 
 ---@class g.Job
 ---@field public name string
----@field public category string
+---@field public category g.JobCategory
 ---@field public computePower number
 ---@field public outputData number
 ---@field public resource g.Bundle
@@ -1267,7 +1267,7 @@ function g.defineJobCategory(id, name, def)
     g.VALID_JOB_CATEGORIES[id] = loc(name, nil, {context = ctx})
 end
 
----@param jobCategory string
+---@param jobCategory g.JobCategory
 function g.getJobCategoryName(jobCategory)
     local info = g.VALID_JOB_CATEGORIES[jobCategory]
     if not info then
@@ -1294,7 +1294,13 @@ end
 g.defineJobCategory("general", "General", {nameContext = "General computer processing job"})
 g.defineJobCategory("video", "Video", {nameContext = "Video processing job for computer (e.g. transcoding)"})
 g.defineJobCategory("ai", "AI", {nameContext = "AI processing job for computer (e.g. inferencing or training)"})
-
+---@alias g.JobCategory
+---General job
+---| "general"
+---Video processing job
+---| "video"
+---AI-related job
+---| "ai"
 
 
 ---------------------
@@ -1916,10 +1922,12 @@ g.COLORS = {
         MAIN = {
             dark = {
                 PANEL = objects.Color("FF3E3E3E"),
+                CARD = objects.Color("FF101010"),
                 TEXT = objects.Color.WHITE,
             },
             light = {
                 PANEL = objects.Color("#f0f0f0"),
+                CARD = objects.Color.WHITE,
                 TEXT = objects.Color.BLACK
             }
         },
