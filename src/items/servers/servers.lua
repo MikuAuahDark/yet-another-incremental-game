@@ -42,8 +42,10 @@ defServer("basic_server", "Basic Server", {
     heat = 40,
     draw = function(itemData)
         local size = consts.WORLD_TILE_SIZE * 0.75
+        local col = gsman.mulColor(1, 1, 1)
         love.graphics.rectangle("fill", -size/2, -size/2, size, size)
-        love.graphics.setColor(0,0,0)
+        col:pop()
+        col = gsman.mulColor(0, 0, 0)
         love.graphics.rectangle("line", -size/2, -size/2, size, size)
         if itemData.connectsTo then
             if itemData.currentJob then
@@ -57,5 +59,6 @@ defServer("basic_server", "Basic Server", {
             -- Not connected
             love.graphics.print("NC", g.getMainFont(16), -8, -8)
         end
+        col:pop()
     end
 })

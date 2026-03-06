@@ -429,6 +429,8 @@ function ui.Tooltip(tooltipR, bgColor, lineColor)
 	lw:pop()
 end
 
+ui.ItemTooltip = require(".tooltip")
+
 end
 
 
