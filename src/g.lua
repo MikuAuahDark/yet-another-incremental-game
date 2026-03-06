@@ -1392,10 +1392,8 @@ local function return0() return 0 end
 local function return1() return 1 end
 local function dummy() end
 
----@alias g.ItemDefinition g.ServerDefinition | g.DataDefinition | g.BoosterDefinition
-
 ---@param id string
----@param def g.ItemDefinition
+---@param def g.ServerDefinition | g.DataDefinition | g.BoosterDefinition
 function g.defineItem(id, def)
     if itemList[id] then
         error("Redefined item: "..id)
@@ -1449,6 +1447,7 @@ end
 
 ---@param itemid string
 ---@param assertCategory string?
+---@return g.ItemInfo, g.ItemCategory
 ---@overload fun(itemid: string, assertCategory: "server"):(g.ServerInfo, "server")
 ---@overload fun(itemid: string, assertCategory: "data"):(g.DataInfo, "data")
 ---@overload fun(itemid: string, assertCategory: "booster"):(g.BoosterInfo, "booster")
@@ -1463,6 +1462,17 @@ function g.getItemInfo(itemid, assertCategory)
     end
 
     return itemInfo, itemInfo.category
+end
+
+local PREUNLOCKED = objects.Set({"basic_server", "basic_data"})
+
+---@param itemid string
+function g.isItemUnlocked(itemid)
+    if not itemList[itemid] then
+        error("unknown item id '"..itemid.."'")
+    end
+
+    return g.ask("isItemUnlocked", itemid) or PREUNLOCKED:contains(itemid)
 end
 
 end
@@ -1892,14 +1902,6 @@ g.COLORS = {
         MISC = objects.Color("FFFFFFFF"),
     },
 
-    ---@type table<g.Category, objects.Color>
-    DAMAGE_NUMBERS_BY_CATEGORY = {
-        grass = objects.Color("FF84CDFA"),
-        wood = objects.Color("FFF5D48E"),
-        mushroom = objects.Color("FFFAFCC0"),
-        rock = objects.Color("FFF7A8A6"),
-    },
-
     SHADOW = objects.Color(0,0,0,0.4),
 
     CRIT = objects.Color("FFA43929"),
@@ -1924,11 +1926,13 @@ g.COLORS = {
                 PANEL = objects.Color("FF3E3E3E"),
                 CARD = objects.Color("FF101010"),
                 TEXT = objects.Color.WHITE,
+                TAB_INACTIVE = objects.Color("FF404040")
             },
             light = {
-                PANEL = objects.Color("#f0f0f0"),
+                PANEL = objects.Color("#eeeeee"),
                 CARD = objects.Color.WHITE,
-                TEXT = objects.Color.BLACK
+                TEXT = objects.Color.BLACK,
+                TAB_INACTIVE = objects.Color("FFB0B0B0")
             }
         },
         BORDER = objects.Color("FF979797")

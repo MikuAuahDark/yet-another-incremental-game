@@ -295,7 +295,6 @@ function World:_update(dt)
                     heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
                 end
                 local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul
-                print("svr", serverInfo.computePerSecond, perfMod, perfMultiplier, self.loadPercentage, heatPerfMul)
                 serverData.computePerSecond = math.max(serverInfo.computePerSecond + perfMod, 0) * finalMul
             end
         end

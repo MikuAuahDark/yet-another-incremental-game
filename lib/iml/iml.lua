@@ -323,6 +323,12 @@ end
 
 --- Returns true ONCE if the region was just clicked.
 --- (ie ONLY the frame after `mousereleased`.)
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@param button integer?
+---@param key any?
 function iml.wasJustClicked(x,y,w,h, button, key)
     assertIsFrame()
     iml.panel(x,y,w,h, key)

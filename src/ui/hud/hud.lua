@@ -32,6 +32,10 @@ local function drawJobCard(job, r, theme)
     )
     love.graphics.setColor(g.COLORS.UI.MAIN[theme].CARD)
     love.graphics.rectangle("fill", r:get())
+    love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+    local lw = gsman.setLineWidth(1)
+    love.graphics.rectangle("line", r:get())
+    lw:pop()
 
     -- Draw text
     love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
@@ -61,10 +65,14 @@ end
 local HUD = objects.Class("g:HUD")
 
 function HUD:init()
-    self.sidebarR = Kirigami(0, 0, 1, 1)
+    -- Used for stats
     self.topR = Kirigami(0, 0, 1, 1)
+    -- Used for job queues
     self.leftR = Kirigami(0, 0, 1, 1)
+    -- Used for building list
     self.botR = Kirigami(0, 0, 1, 1)
+    ---@type g.ItemCategory
+    self.activeTab = "server"
 end
 
 if false then
@@ -79,7 +87,7 @@ function HUD:update(dt)
     self.topR = r:set(nil, nil, nil, 28)
     self.leftR = r:set(nil, nil, 150):padUnit(0, self.topR.h, 0, 0)
     self.botR = r:padUnit(self.leftR.w, 0, 0, 0)
-        :set(nil, nil, nil, 72)
+        :set(nil, nil, nil, 96)
         :attachToBottomOf(r)
         :moveRatio(0, -1)
 
@@ -118,9 +126,10 @@ function HUD:draw(show)
 
     local lineWidth = gsman.setLineWidth(2)
     local theme = g.getSystemTheme()
+    local tabF = g.getMainFont(16)
     drawPanelWithBorder(self.topR, theme)
     drawPanelWithBorder(self.leftR, theme)
-    drawPanelWithBorder(self.botR, theme)
+    drawPanelWithBorder(self.botR:padUnit(0, tabF:getHeight(), 0, 0), theme)
 
     if g.hasSession() then
         local world = g.getMainWorld()
@@ -172,11 +181,55 @@ function HUD:draw(show)
                 drawJobCard(jq, jobCardR, theme)
             end
         end
-    end
 
-    local font = g.getMainFont(12)
-    love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-    richtext.printRichContained("Buildings here", font, self.botR:get())
+        do
+            -- Draw item list
+            local TRAPEZOID_PADDING = 10
+            local tabR, listR = helper.splitRegionByExactSizes(self.botR:padUnit(1), "vertical", tabF:getHeight(), 0)
+            local serversTabR, dataTabR, boostersTabR = helper.splitRegionByExactSizes(
+                tabR, "horizontal",
+                tabF:getWidth(TEXT.CATEGORY_SERVER) + 2 * (TRAPEZOID_PADDING + 1),
+                tabF:getWidth(TEXT.CATEGORY_DATA) + 2 * (TRAPEZOID_PADDING + 1),
+                tabF:getWidth(TEXT.CATEGORY_BOOSTER) + 2 * (TRAPEZOID_PADDING + 1),
+                0
+            )
+            ---@type table<g.ItemCategory, [kirigami.Region, string]>
+            local tabs = {
+                server = {serversTabR, TEXT.CATEGORY_SERVER},
+                data = {dataTabR, TEXT.CATEGORY_DATA},
+                booster = {boostersTabR, TEXT.CATEGORY_BOOSTER}
+            }
+
+            -- Draw the tab rects
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].CARD)
+            love.graphics.rectangle("fill", listR:get())
+            for k, v in pairs(tabs) do
+                -- Input test
+                if iml.wasJustClicked(v[1]:get()) then
+                    self.activeTab = k
+                end
+                -- Distinct active tab with inactive tabs
+                if self.activeTab == k then
+                    love.graphics.setColor(g.COLORS.UI.MAIN[theme].CARD)
+                else
+                    love.graphics.setColor(g.COLORS.UI.MAIN[theme].TAB_INACTIVE)
+                end
+                -- Draw trapezoid using the padding
+                do
+                    local x, y, w, h = v[1]:get()
+                    love.graphics.polygon("fill", {
+                        x + TRAPEZOID_PADDING, y,
+                        x + w - TRAPEZOID_PADDING, y,
+                        x + w, y + h,
+                        x, y + h,
+                    })
+                end
+                -- Draw tab name
+                love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+                ui.printRichInRegion(v[2], tabF, v[1], true, "center")
+            end
+        end
+    end
 
     lineWidth:pop()
     prof_pop() -- prof_push("HUD:draw")

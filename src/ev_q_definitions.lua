@@ -16,3 +16,4 @@ g.defineQuestion("getDataThroughputModifier", reducers.ADD, 0)
 g.defineQuestion("getDataThroughputMultiplier", reducers.MULTIPLY, 1)
 g.defineQuestion("getJobFrequencyModifier", reducers.ADD, 0) -- arguments: g.JobCategory
 g.defineQuestion("getJobFrequencyMultiplier", reducers.MULTIPLY, 1) -- arguments: g.JobCategory
+g.defineQuestion("isItemUnlocked", reducers.OR, false) -- arguments: string (item ID)
