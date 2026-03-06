@@ -432,6 +432,29 @@ end
 end
 
 
+
+---@param txt string|richtext.ParsedText
+---@param font love.Font
+---@param reg kirigami.Region
+---@param wrap boolean?
+---@param align love.AlignMode? (ignored if wrap is false)
+function ui.printRichInRegion(txt, font, reg, wrap, align)
+	local x, y, w, h = reg:get()
+	align = align or "left"
+
+	if wrap then
+		local lines = select(2, richtext.getWrap(txt, font, w))
+		local fh = font:getHeight()
+		local oy = (fh * lines - h) / 2
+		richtext.printRich(txt, font, x, y + oy, w, align)
+	else
+		local oy = (font:getHeight() - h) / 2
+		richtext.printRich(txt, font, x, y + oy, 16777216, "left")
+	end
+end
+
+
+
 -- For UI global scaling
 do
 

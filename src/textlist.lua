@@ -6,4 +6,6 @@ return {
         context = "A separator symbol used to denote item list in single horizontal text"}),
     CATEGORY_LIST = interp("Category: %{categories}", {
         context = "Denoting list of category, the ${categories} will be replaced with the actual list of items later"}),
+    JOB_QUEUE_NUMBER = interp("Job Queue: %{njobs}/%{maxjobs}", {
+        context = "Used in place to list job queue, with specific maximum amount of queueable jobs"})
 }
