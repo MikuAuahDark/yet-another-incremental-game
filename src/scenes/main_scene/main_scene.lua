@@ -15,7 +15,9 @@ end
 
 ---@param dt number
 function MainScene:update(dt)
-
+    local z = self:zoomFromScale(ui.getUIScaling())
+    self:setZoom(z)
+    self.camera:setViewport(0, 0, love.graphics.getDimensions())
     g.getHUD():update(dt)
 end
 
