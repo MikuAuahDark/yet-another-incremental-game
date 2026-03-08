@@ -1,6 +1,7 @@
 local objects = require("src.modules.objects.objects")
 
 
+---Doesn't have to be perfect. Just for visualization purposes.
 ---@type table<g.Job, number?>
 local jobTimeoutLookup = setmetatable({}, {__mode = "k"})
 
@@ -59,6 +60,28 @@ local function getJobCardHeight()
     return 4 * 2 + titleF:getHeight() * 2 + catF:getHeight() + 4
 end
 
+---@param r kirigami.Region
+---@param count integer
+---@param itemListSize number
+---@param horzPadding number
+local function generateItemListRegion(r, count, itemListSize, horzPadding)
+    local totalWidth = count * itemListSize + math.max(count - 1, 0) * horzPadding
+    ---@type kirigami.Region[]
+    local result = {}
+    local ox = 0
+    for _ = 1, count do
+        result[#result+1] = Kirigami(r.x + ox, r.y, itemListSize, r.h)
+        ox = ox + itemListSize + horzPadding
+    end
+    return result, totalWidth
+end
+
+---@param b boolean?
+local function nilIsTrue(b)
+    if b == nil then return true end
+    return not not b
+end
+
 
 ---@class g.HUD: objects.Class
 ---@field freeArea kirigami.Region
@@ -87,7 +110,7 @@ function HUD:update(dt)
     self.topR = r:set(nil, nil, nil, 28)
     self.leftR = r:set(nil, nil, 150):padUnit(0, self.topR.h, 0, 0)
     self.botR = r:padUnit(self.leftR.w, 0, 0, 0)
-        :set(nil, nil, nil, 96)
+        :set(nil, nil, nil, 112)
         :attachToBottomOf(r)
         :moveRatio(0, -1)
 
@@ -120,9 +143,13 @@ local function drawStats(r, left, right)
     love.graphics.printf(right, font, padR.x - 8, oy, padR.w, "right")
 end
 
----@param show {resource:boolean?,profile:boolean?,xpbar:boolean?}?
+---@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?}?
 function HUD:draw(show)
     prof_push("HUD:draw")
+
+    local showStats = nilIsTrue(show and show.stats)
+    local showJobQueue = nilIsTrue(show and show.jobQueue)
+    local showItemList = nilIsTrue(show and show.itemList)
 
     local lineWidth = gsman.setLineWidth(2)
     local theme = g.getSystemTheme()
@@ -135,7 +162,7 @@ function HUD:draw(show)
         local world = g.getMainWorld()
 
         -- Draw resource and stats (top area)
-        do
+        if showStats then
             local _, moneyR, loadR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
                 self.topR, "horizontal",
                 8, 128, 128, 128, 0, self.topR.h, 8, self.topR.h, 8
@@ -153,7 +180,7 @@ function HUD:draw(show)
         end
 
         -- Draw job queue
-        do
+        if showJobQueue then
             local jobQueueF = g.getMainFont(10)
             -- TODO: Add scrollbars
             local jobTextR, jobQR = helper.splitRegionByExactSizes(
@@ -182,10 +209,10 @@ function HUD:draw(show)
             end
         end
 
-        do
+        if showItemList then
             -- Draw item list
             local TRAPEZOID_PADDING = 10
-            local tabR, listR = helper.splitRegionByExactSizes(self.botR:padUnit(1), "vertical", tabF:getHeight(), 0)
+            local tabR, listR, scrollR = helper.splitRegionByExactSizes(self.botR:padUnit(1), "vertical", tabF:getHeight(), 0, 10)
             local serversTabR, dataTabR, boostersTabR = helper.splitRegionByExactSizes(
                 tabR, "horizontal",
                 tabF:getWidth(TEXT.CATEGORY_SERVER) + 2 * (TRAPEZOID_PADDING + 1),
@@ -227,6 +254,52 @@ function HUD:draw(show)
                 -- Draw tab name
                 love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
                 ui.printRichInRegion(v[2], tabF, v[1], true, "center")
+            end
+
+            -- Get item list to be drawn
+            ---@type g.ItemInfo[] contains unlocked items
+            local items = {}
+            for _, v in ipairs(g.ITEMS) do
+                if g.isItemUnlocked(v) then
+                    local itemInfo, cat = g.getItemInfo(v)
+                    if cat == self.activeTab then
+                        items[#items+1] = itemInfo
+                    end
+                end
+            end
+
+            -- Draw item list
+            local itemListR = listR:padUnit(4)
+            local itemListRectSize = math.min(itemListR.w, itemListR.h)
+            local itemListGrid, totalWidth = generateItemListRegion(itemListR, #items, itemListRectSize, 4)
+            local scrollSize = math.max(itemListR.w - totalWidth, 0)
+            local itemNameF = g.getMainFont(10)
+            -- TODO: Draw scrollbar
+            for i, itemBaseR in ipairs(itemListGrid) do
+                local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
+                local itemInfo = items[i]
+                if iml.isHovered(itemBaseR:get()) then
+                    love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
+                    love.graphics.rectangle("fill", itemBaseR:get())
+                    -- TODO: Pin description
+                end
+                -- TODO: Pin description on click
+                -- TODO: Drag to move to world
+
+                -- Draw actual item
+                local col = gsman.setColor(1, 1, 1)
+                local itemR = itemPlacementR:padRatio(0.1):shrinkToAspectRatio(1, 1):center(itemPlacementR)
+                itemInfo.drawItem(itemR)
+                col:pop()
+
+                -- Draw item name
+                do
+                    local _, l = itemNameF:getWrap(itemInfo.name, itemNameR.w)
+                    local oy = (itemNameR.h - itemNameF:getHeight() * #l) / 2
+                    col = gsman.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+                    love.graphics.printf(itemInfo.name, itemNameF, itemNameR.x, itemNameR.y + oy, itemNameR.w, "center")
+                    col:pop()
+                end
             end
         end
     end

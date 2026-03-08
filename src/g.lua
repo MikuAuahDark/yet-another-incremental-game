@@ -1328,6 +1328,7 @@ do
 ---@field public category g.ItemCategory
 ---@field public price number
 ---@field public load number
+---@field public drawItem fun(r: kirigami.Region) (not translated)
 ---@field public draw (fun(itemData: g.World.ItemData))? (already translated to center of tile)
 
 ---@class g.ItemInfo: g._MixinHasNameInfo
@@ -1335,6 +1336,7 @@ do
 ---@field public category g.ItemCategory
 ---@field public price number
 ---@field public load number
+---@field public drawItem fun(r: kirigami.Region) (not translated)
 ---@field public draw fun(itemData: g.World.ItemData) (already translated to center of tile)
 
 

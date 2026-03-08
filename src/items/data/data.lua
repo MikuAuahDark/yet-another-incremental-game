@@ -9,6 +9,7 @@
 ---@field package wireLength integer
 ---@field package wireCount integer|nil
 ---@field package draw (fun(itemData: g.World.DataProcessorData))?
+---@field package drawItem fun(r:kirigami.Region)
 
 ---@param id string
 ---@param name string
@@ -42,7 +43,8 @@ local function defDP(id, name, def)
                 love.graphics.line(0, 0, reltx * consts.WORLD_TILE_SIZE, relty * consts.WORLD_TILE_SIZE)
             end
             lw:pop()
-        end
+        end,
+        drawItem = def.drawItem
     })
 end
 
@@ -54,9 +56,21 @@ defDP("basic_data", "Basic Data Processor", {
     wireLength = 2,
     wireCount = 4,
     draw = function(itemData)
-        love.graphics.setColor(0, 1, 1)
+        local col = gsman.mulColor(0, 1, 1)
         love.graphics.circle("fill", 0, 0, consts.WORLD_TILE_SIZE * 0.375)
-        love.graphics.setColor(0, 0, 0)
+        col:pop()
+        col = gsman.mulColor(0, 0, 0)
         love.graphics.circle("line", 0, 0, consts.WORLD_TILE_SIZE * 0.375)
+        col:pop()
+    end,
+    drawItem = function(r)
+        local radius = math.min(r.w, r.h) / 2
+        local x, y = r:getCenter()
+        local col = gsman.mulColor(0, 1, 1)
+        love.graphics.circle("fill", x, y, radius)
+        col:pop()
+        col = gsman.mulColor(0, 0, 0)
+        love.graphics.circle("line", x, y, radius)
+        col:pop()
     end
 })

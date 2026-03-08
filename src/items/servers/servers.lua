@@ -10,6 +10,7 @@
 ---@field package heatTolerance [number, number]
 ---@field package heat number
 ---@field package draw (fun(itemData: g.World.ServerData))?
+---@field package drawItem fun(r:kirigami.Region)
 
 ---@param id string
 ---@param name string
@@ -29,6 +30,7 @@ local function defServer(id, name, def)
         heatTolerance = def.heatTolerance,
         heat = def.heat,
         draw = def.draw,
+        drawItem = def.drawItem
     })
 end
 
@@ -59,6 +61,14 @@ defServer("basic_server", "Basic Server", {
             -- Not connected
             love.graphics.print("NC", g.getMainFont(16), -8, -8)
         end
+        col:pop()
+    end,
+    drawItem = function(r)
+        local col = gsman.mulColor(1, 1, 1)
+        love.graphics.rectangle("fill", r:get())
+        col:pop()
+        col = gsman.mulColor(0, 0, 0)
+        love.graphics.rectangle("line", r:get())
         col:pop()
     end
 })

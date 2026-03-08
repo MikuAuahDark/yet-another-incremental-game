@@ -2,6 +2,7 @@
 
 local love = require("love")
 
+---@class gsman
 local gsman = {}
 
 ---@class gsman.LineWidth: objects.Class
