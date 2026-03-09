@@ -380,8 +380,8 @@ do
 local DIAGONAL_PADDING = 6
 
 ---Return 2 regions: tooltip drawable region, and tooltip content region
----@param x number X position
----@param y number Y position
+---@param x number X position (top left)
+---@param y number Y position (top left)
 ---@param cw number Content width
 ---@param ch number Content height
 ---@param clampR kirigami.Region? Region to clamp to

@@ -274,6 +274,7 @@ function HUD:draw(show)
             local itemListGrid, totalWidth = generateItemListRegion(itemListR, #items, itemListRectSize, 4)
             local scrollSize = math.max(itemListR.w - totalWidth, 0)
             local itemNameF = g.getMainFont(10)
+            local showDescriptionOf = nil
             -- TODO: Draw scrollbar
             for i, itemBaseR in ipairs(itemListGrid) do
                 local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
@@ -281,7 +282,7 @@ function HUD:draw(show)
                 if iml.isHovered(itemBaseR:get()) then
                     love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
                     love.graphics.rectangle("fill", itemBaseR:get())
-                    -- TODO: Pin description
+                    showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
                 end
                 -- TODO: Pin description on click
                 -- TODO: Drag to move to world
@@ -299,6 +300,17 @@ function HUD:draw(show)
                     col = gsman.setColor(g.COLORS.UI.MAIN[theme].TEXT)
                     love.graphics.printf(itemInfo.name, itemNameF, itemNameR.x, itemNameR.y + oy, itemNameR.w, "center")
                     col:pop()
+                end
+            end
+
+            love.graphics.setColor(1, 1, 1)
+            if showDescriptionOf then
+                local itemInfo = showDescriptionOf[3]
+                if itemInfo.category == "server" then
+                    ---@cast itemInfo g.ServerInfo
+                    ui.ItemTooltip.ServerTooltipHUD(itemInfo, showDescriptionOf[1], showDescriptionOf[2])
+                else
+                    ui.ItemTooltip.GenericTooltipHUD(itemInfo, showDescriptionOf[1], showDescriptionOf[2])
                 end
             end
         end

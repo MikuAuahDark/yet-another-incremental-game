@@ -51,7 +51,6 @@ function MainScene:draw()
     ui.startUI()
 
     local hud = g.getHUD()
-    hud:draw()
     local safeArea = hud:getSafeArea()
 
     love.graphics.setColor(0, 0, 0, 1)
@@ -83,11 +82,13 @@ function MainScene:draw()
         love.graphics.setColor(1, 1, 1)
         if cat == "server" then
             ---@cast item g.World.ServerData
-            ui.ItemTooltip.ServerTooltip(item, uimx + 9, uimy + 3, safeArea)
+            ui.ItemTooltip.ServerTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
         else
-            ui.ItemTooltip.GenericTooltip(item, uimx + 9, uimy + 3, safeArea)
+            ui.ItemTooltip.GenericTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
         end
     end
+
+    hud:draw()
 
     ui.endUI()
 end
