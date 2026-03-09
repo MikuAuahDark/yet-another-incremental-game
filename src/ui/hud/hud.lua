@@ -96,6 +96,10 @@ function HUD:init()
     self.botR = Kirigami(0, 0, 1, 1)
     ---@type g.ItemCategory
     self.activeTab = "server"
+    ---@type [number,g.ItemInfo]? when dragging from item list to world
+    self.activeDragging = nil
+    ---@type [number,number,g.ItemInfo]? for tooltip pinning
+    self.selectedItem = nil
 end
 
 if false then
@@ -114,6 +118,9 @@ function HUD:update(dt)
         :attachToBottomOf(r)
         :moveRatio(0, -1)
 
+    if self.activeDragging then
+        self.activeDragging[1] = self.activeDragging[1] + dt
+    end
 end
 
 ---@param r kirigami.Region
@@ -279,12 +286,21 @@ function HUD:draw(show)
             for i, itemBaseR in ipairs(itemListGrid) do
                 local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
                 local itemInfo = items[i]
-                if iml.isHovered(itemBaseR:get()) then
+                local x, y, w, h = itemBaseR:get()
+                if iml.isHovered(x, y, w, h, itemInfo) then
                     love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
                     love.graphics.rectangle("fill", itemBaseR:get())
                     showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+                else
+                    local drag = iml.consumeDrag(itemInfo, x, y, w, h, 1)
+                    if drag then
+                        if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
+                            self.activeDragging = {0, itemInfo}
+                        end
+                    else
+                        self.activeDragging = nil
+                    end
                 end
-                -- TODO: Pin description on click
                 -- TODO: Drag to move to world
 
                 -- Draw actual item
@@ -304,6 +320,7 @@ function HUD:draw(show)
             end
 
             love.graphics.setColor(1, 1, 1)
+
             if showDescriptionOf then
                 local itemInfo = showDescriptionOf[3]
                 if itemInfo.category == "server" then
