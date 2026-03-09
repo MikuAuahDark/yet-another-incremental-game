@@ -2,6 +2,7 @@ local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local World = require("src.world.world")
 
 local DRAG_ITEM_DURATION = 0.5
+local DOUBLE_CLICK_TIMEOUT = 0.5
 
 ---@class MainScene: FreeCameraScene
 local MainScene = FreeCameraScene()
@@ -10,12 +11,15 @@ function MainScene:init()
     local center = math.floor(World.TILE_SIZE / 2)
     local wtz = consts.WORLD_TILE_SIZE
     self.camera:setPos((center + 0.5) * wtz, (center + 0.5) * wtz)
+
     ---@type [integer,integer]?
     self.candidateWirePos = nil
     ---@type g.World.ItemData?
     self.pinItemInfo = nil
     ---@type [number,g.World.ItemData]?
     self.targetDrag = nil
+    ---@type [number,g.World.DataProcessorData]?
+    self.dpDoubleClickData = nil
 end
 MainScene.mousemoved = MainScene.defaultMousemoved
 
@@ -35,6 +39,13 @@ function MainScene:update(dt)
             self.targetDrag = nil
         else
             self.targetDrag[1] = self.targetDrag[1] + dt
+        end
+    end
+
+    if self.dpDoubleClickData then
+        self.dpDoubleClickData[1] = math.max(self.dpDoubleClickData[1] - dt, 0)
+        if self.dpDoubleClickData[1] <= 0 then
+            self.dpDoubleClickData = nil
         end
     end
 end
@@ -82,6 +93,22 @@ function MainScene:draw()
                 end
             else
                 self.targetDrag = nil
+
+                if iml.wasJustClicked(x, y, wtz, wtz, 1, item) then
+                    -- Double-clicking data processor?
+                    local itemInfo = g.getItemInfo(item.type)
+                    if itemInfo.category == "data" then
+                        ---@cast item g.World.DataProcessorData
+                        if self.dpDoubleClickData and self.dpDoubleClickData[1] > 0 and self.dpDoubleClickData[2] == item then
+                            -- Initiate wire connection
+                            self.candidateWirePos = {item.tileX, item.tileY}
+                            self.dpDoubleClickData = nil
+                        else
+                            -- Begin double click check
+                            self.dpDoubleClickData = {DOUBLE_CLICK_TIMEOUT, item}
+                        end
+                    end
+                end
             end
         end
     end
@@ -107,7 +134,11 @@ function MainScene:draw()
         love.graphics.print("("..tx..", "..ty..")", g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 18)
     end
     if self.candidateWirePos then
-        love.graphics.print("Sel: ("..self.candidateWirePos[1]..", "..self.candidateWirePos[2]..")", g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 36)
+        love.graphics.print(
+            "Sel: ("..self.candidateWirePos[1]..", "..self.candidateWirePos[2]..")",
+            g.getMainFont(16),
+            safeArea.x + 4, safeArea.y + safeArea.h - 36
+        )
     end
 
     if self.pinItemInfo then
@@ -225,6 +256,44 @@ function MainScene:_regionFromUIToWorld(r)
     return Kirigami(x1, y1, x2 - x1, y2 - y1)
 end
 
+---@param tx integer second tile X
+---@param ty integer second tile Y
+function MainScene:_tryConnectWire(tx, ty)
+    local world = g.getMainWorld()
+    local server, dp = nil, nil
+    -- Get info on 1st tile pos
+    local firstItem = g.getItem(self.candidateWirePos[1], self.candidateWirePos[2])
+    if firstItem then
+        local _, category = g.getItemInfo(firstItem.type)
+        if category == "server" then
+            ---@cast firstItem g.World.ServerData
+            server = firstItem
+        elseif category == "data" then
+            ---@cast firstItem g.World.DataProcessorData
+            dp = firstItem
+        end
+    end
+    -- Get info on 2nd tile pos
+    local secondItem = g.getItem(tx, ty)
+    if secondItem then
+        local _, category = g.getItemInfo(secondItem.type)
+        if category == "server" then
+            ---@cast secondItem g.World.ServerData
+            server = secondItem
+        elseif category == "data" then
+            ---@cast secondItem g.World.DataProcessorData
+            dp = secondItem
+        end
+    end
+    if server and dp then
+        if server.connectsTo == dp then
+            g.disconnectDataWire(server, dp)
+        elseif g.canConnectDataWire(server, dp) then
+            g.connectDataWire(server, dp)
+        end
+    end
+end
+
 
 
 ---@param k love.KeyConstant
@@ -246,39 +315,7 @@ function MainScene:keyreleased(k)
             local tx, ty = self:_getTilePos()
 
             if self.candidateWirePos then
-                local world = g.getMainWorld()
-                local server, dp = nil, nil
-                -- Get info on 1st tile pos
-                local firstItem = g.getItem(self.candidateWirePos[1], self.candidateWirePos[2])
-                if firstItem then
-                    local _, category = g.getItemInfo(firstItem.type)
-                    if category == "server" then
-                        ---@cast firstItem g.World.ServerData
-                        server = firstItem
-                    elseif category == "data" then
-                        ---@cast firstItem g.World.DataProcessorData
-                        dp = firstItem
-                    end
-                end
-                -- Get info on 2nd tile pos
-                local secondItem = g.getItem(tx, ty)
-                if secondItem then
-                    local _, category = g.getItemInfo(secondItem.type)
-                    if category == "server" then
-                        ---@cast secondItem g.World.ServerData
-                        server = secondItem
-                    elseif category == "data" then
-                        ---@cast secondItem g.World.DataProcessorData
-                        dp = secondItem
-                    end
-                end
-                if server and dp then
-                    if server.connectsTo == dp then
-                        g.disconnectDataWire(server, dp)
-                    elseif g.canConnectDataWire(server, dp) then
-                        g.connectDataWire(server, dp)
-                    end
-                end
+                self:_tryConnectWire(tx, ty)
                 self.candidateWirePos = nil
             else
                 self.candidateWirePos = {tx, ty}
@@ -296,6 +333,26 @@ function MainScene:keyreleased(k)
                 timeout = 30
             }))
         end
+    end
+end
+
+
+---@param x number
+---@param y number
+---@param b integer
+function MainScene:mousereleased(x, y, b)
+    if self.candidateWirePos and b == 1 then
+        -- Make sure clicks are contained in safe area btw
+        local safeArea = g.getHUD():getSafeArea()
+        local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(x, y)
+        if helper.isInsideRect(uix, uiy, safeArea:get()) then
+            local mx, my = self.camera:toWorld(x, y)
+            local wtz = consts.WORLD_TILE_SIZE
+            local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
+            self:_tryConnectWire(tx, ty)
+        end
+
+        self.candidateWirePos = nil
     end
 end
 
