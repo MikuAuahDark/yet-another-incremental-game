@@ -20,20 +20,20 @@ end
 
 ---@class g.World.ItemData
 ---@field type string Item ID
----@field tileX integer (updated every frame)
----@field tileY integer (updated every frame)
+---@field tileX integer (readonly; updated every frame)
+---@field tileY integer (readonly; updated every frame)
 ---@field removed boolean
 
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
 ---@field jobProgress number
----@field connectsTo g.World.DataProcessorData? (connect to this data processor, quick lookup only)
----@field computePerSecond number (updated every frame) Does not account data bottleneck
+---@field connectsTo g.World.DataProcessorData? (readonly; connect to this data processor, quick lookup only)
+---@field computePerSecond number (readonly; updated every frame) Does not account data bottleneck
 
 ---@class g.World.DataProcessorData: g.World.ItemData
----@field connectsServers g.World.ServerData[] (connects to this server, source of truth)
----@field dataPerSecond number (updated every frame)
----@field serversDataPerSecond number (updated every frame)
+---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
+---@field dataPerSecond number (readonly; updated every frame)
+---@field serversDataPerSecond number (readonly; updated every frame)
 
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")

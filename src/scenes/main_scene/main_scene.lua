@@ -10,10 +10,14 @@ function MainScene:init()
     local center = math.floor(World.TILE_SIZE / 2)
     local wtz = consts.WORLD_TILE_SIZE
     self.camera:setPos((center + 0.5) * wtz, (center + 0.5) * wtz)
-    self.allowMousePan = false -- We'll do pan ourselves
     ---@type [integer,integer]?
     self.candidateWirePos = nil
+    ---@type g.World.ItemData?
+    self.pinItemInfo = nil
+    ---@type [number,g.World.ItemData]?
+    self.targetDrag = nil
 end
+MainScene.mousemoved = MainScene.defaultMousemoved
 
 ---@param dt number
 function MainScene:update(dt)
@@ -21,24 +25,67 @@ function MainScene:update(dt)
     self:setZoom(z)
     self.camera:setViewport(0, 0, love.graphics.getDimensions())
     g.getHUD():update(dt)
+
+    if self.pinItemInfo and self.pinItemInfo.removed then
+        self.pinItemInfo = nil
+    end
+
+    if self.targetDrag then
+        if self.targetDrag[2].removed then
+            self.targetDrag = nil
+        else
+            self.targetDrag[1] = self.targetDrag[1] + dt
+        end
+    end
 end
 
 function MainScene:draw()
     love.graphics.clear(objects.Color("#b0b0b0"))
+    local hud = g.getHUD()
+    local safeArea = hud:getSafeArea()
 
     self:setCamera()
 
     local world = g.getMainWorld()
     world:_draw()
 
+    -- Dismiss pinned item info if needed
+    if not self.targetDrag then
+        if iml.wasJustClicked(self:_regionFromUIToWorld(safeArea):get()) then
+            self.pinItemInfo = nil
+        end
+    end
+
     local mx, my = iml.getTransformedPointer()
     -- Draw tile selection
     local wtz = consts.WORLD_TILE_SIZE
     local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
+    local item = nil
+    local beforeActiveDragWorld, currentActiveDragWorld = self.targetDrag, nil
     if world.items:contains(tx, ty) then
         love.graphics.setColor(0, 0, 0, 1)
         love.graphics.rectangle("line", tx * wtz, ty * wtz, wtz, wtz)
+
+        item = self.targetDrag and self.targetDrag[2]
+        if not item then
+            item = g.getItem(tx, ty)
+        end
+
+        if item then
+            local x, y = item.tileX * wtz, item.tileY * wtz
+            local drag = iml.consumeDrag(item, x, y, wtz, wtz, 1)
+            if drag or iml.isClicked(x, y, wtz, wtz, 1, item) then
+                self.pinItemInfo = item
+
+                if self.targetDrag and self.targetDrag[2] ~= item or not self.targetDrag then
+                    self.targetDrag = {0, item}
+                end
+            else
+                self.targetDrag = nil
+            end
+        end
     end
+    currentActiveDragWorld = self.targetDrag
 
     if self.candidateWirePos then
         love.graphics.line(
@@ -51,9 +98,7 @@ function MainScene:draw()
 
     self:resetCamera()
     ui.startUI()
-
-    local hud = g.getHUD()
-    local safeArea = hud:getSafeArea()
+    local uimx, uimy = ui.getMouse()
 
     love.graphics.setColor(0, 0, 0, 1)
     if world.heat:contains(tx, ty) then
@@ -65,67 +110,69 @@ function MainScene:draw()
         love.graphics.print("Sel: ("..self.candidateWirePos[1]..", "..self.candidateWirePos[2]..")", g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 36)
     end
 
-    local item = g.getItem(tx, ty)
-    if item then
-        local itemInfo, cat = g.getItemInfo(item.type)
-        if cat == "server" then
-            ---@cast item g.World.ServerData
-            local text = "SV - "..item.computePerSecond.." CPS"
-            love.graphics.print(text, g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 54)
-        elseif cat == "data" then
-            ---@cast item g.World.DataProcessorData
-            ---@cast itemInfo g.DataInfo
-            local text = "DP - "..item.serversDataPerSecond.." TDPS "..itemInfo.dataPerSecond
-            love.graphics.print(text, g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 54)
-        end
+    if self.pinItemInfo then
+        -- Draw pinned tooltip
+        ---@type number,number
+        local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
+            self.camera:toScreen((self.pinItemInfo.tileX + 0.5) * wtz, (self.pinItemInfo.tileY + 0.5) * wtz)
+        )
+        self:_drawItemInfo(self.pinItemInfo, uix, uiy, safeArea)
+    end
+    if item and self.pinItemInfo ~= item then
+        -- Draw hovered tooltip
+        self:_drawItemInfo(item, uimx, uimy, safeArea)
+    end
 
-        -- Draw tooltip
-        local uimx, uimy = ui.getMouse()
-        love.graphics.setColor(1, 1, 1)
-        if cat == "server" then
-            ---@cast item g.World.ServerData
-            ui.ItemTooltip.ServerTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
+    -- Update item dragging (from world)
+    if currentActiveDragWorld then
+        if currentActiveDragWorld[1] < DRAG_ITEM_DURATION then
+            local t = helper.clamp(helper.remap(currentActiveDragWorld[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
+            ui.arcLoadingBar(uimx, uimy, t)
         else
-            ui.ItemTooltip.GenericTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
+            -- TODO: Visual feedback when moving
+            local col = gsman.setColor(1, 1, 1, 0.5)
+            local itemR = Kirigami(uimx + 6, uimy + 6, 48, 48)
+            local itemInfo = g.getItemInfo(currentActiveDragWorld[2].type)
+            itemInfo.drawItem(itemR)
+            col:pop()
+        end
+    elseif beforeActiveDragWorld and beforeActiveDragWorld[1] >= DRAG_ITEM_DURATION then
+        -- Move or remove?
+        if helper.isInsideRect(uimx, uimy, safeArea:get()) then
+            -- Move if possible
+            if g.canPutItem(tx, ty) then
+                g.moveItem(beforeActiveDragWorld[2], tx, ty)
+            end
+        else
+            -- Remove
+            g.removeItem(beforeActiveDragWorld[2])
         end
     end
 
-    local beforeActiveDrag = hud.activeDragging
+    -- Update item dragging (from HUD)
+    -- FIXME: Callback-based?
+    local beforeActiveDragHUD = hud.activeDragging
     hud:draw()
+    local currentActiveDragHUD = hud.activeDragging
 
-    if hud.activeDragging then
-        local uimx, uimy = ui.getMouse()
-
-        if hud.activeDragging[1] < DRAG_ITEM_DURATION then
-            local theme = g.getSystemTheme()
-            local t = helper.clamp(helper.remap(hud.activeDragging[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
-            local angle = helper.remap(helper.EASINGS.sineIn(t), 0, 1, 0, 2 * math.pi)
-
-            local lw = gsman.setLineWidth(8)
-            love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY_INVERT)
-            love.graphics.arc("line", "open", uimx, uimy, 12, -math.pi / 2, angle - math.pi / 2)
-            lw:pop()
-
-            lw = gsman.setLineWidth(6)
-            love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY)
-            love.graphics.arc("line", "open", uimx, uimy, 12, -math.pi / 2, angle - math.pi / 2)
-            lw:pop()
-
+    if currentActiveDragHUD then
+        if currentActiveDragHUD[1] < DRAG_ITEM_DURATION then
+            local t = helper.clamp(helper.remap(currentActiveDragHUD[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
+            ui.arcLoadingBar(uimx, uimy, t)
         else
+            -- TODO: Visual feedback when placing
             local col = gsman.setColor(1, 1, 1, 0.5)
             local itemR = Kirigami(uimx + 6, uimy + 6, 48, 48)
-            hud.activeDragging[2].drawItem(itemR)
+            currentActiveDragHUD[2].drawItem(itemR)
             col:pop()
         end
-    elseif beforeActiveDrag and beforeActiveDrag[1] >= DRAG_ITEM_DURATION then
+    elseif beforeActiveDragHUD and beforeActiveDragHUD[1] >= DRAG_ITEM_DURATION then
         -- Place or put out?
-        local uimx, uimy = ui.getMouse()
-
         if helper.isInsideRect(uimx, uimy, safeArea:get()) then
             -- Place
             -- TODO: Check money
             if g.canPutItem(tx, ty) then
-                g.putItem(beforeActiveDrag[2].id, tx, ty)
+                g.putItem(beforeActiveDragHUD[2].id, tx, ty)
             end
         end
     end
@@ -140,6 +187,42 @@ function MainScene:_getTilePos()
     local wtz = consts.WORLD_TILE_SIZE
     local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
     return tx, ty
+end
+
+
+---@param item g.World.ItemData
+---@param uimx number
+---@param uimy number
+---@param safeArea kirigami.Region
+function MainScene:_drawItemInfo(item, uimx, uimy, safeArea)
+    local itemInfo, cat = g.getItemInfo(item.type)
+    if cat == "server" then
+        ---@cast item g.World.ServerData
+        local text = "SV - "..item.computePerSecond.." CPS"
+        love.graphics.print(text, g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 54)
+    elseif cat == "data" then
+        ---@cast item g.World.DataProcessorData
+        ---@cast itemInfo g.DataInfo
+        local text = "DP - "..item.serversDataPerSecond.." TDPS "..itemInfo.dataPerSecond
+        love.graphics.print(text, g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 54)
+    end
+
+    -- Draw tooltip
+    love.graphics.setColor(1, 1, 1)
+    if cat == "server" then
+        ---@cast item g.World.ServerData
+        ui.ItemTooltip.ServerTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
+    else
+        ui.ItemTooltip.GenericTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
+    end
+end
+
+---@param r kirigami.Region
+function MainScene:_regionFromUIToWorld(r)
+    local uit = ui.getUIScalingTransform()
+    local x1, y1 = self.camera:toWorld(uit:transformPoint(r.x, r.y))
+    local x2, y2 = self.camera:toWorld(uit:transformPoint(r.x + r.w, r.y + r.h))
+    return Kirigami(x1, y1, x2 - x1, y2 - y1)
 end
 
 

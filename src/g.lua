@@ -1559,11 +1559,26 @@ function g.getItem(tx, ty)
     return nil
 end
 
+---@param item g.World.ItemData
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function g.removeItem(item) end
+
 ---@param tx integer
 ---@param ty integer
+---@diagnostic disable-next-line: duplicate-set-field
 function g.removeItem(tx, ty)
     local world = g.getMainWorld()
-    local item = world.items:get(tx, ty)
+    local item
+    if type(tx) == "table" then
+        ---@cast tx g.World.ItemData
+        item = tx
+        tx, ty = item.tileX, item.tileY
+        assert(world.items:get(tx, ty) == item, "position source of truth violation")
+    else
+        item = world.items:get(tx, ty)
+    end
+
     local ok = false
     if item then
         item.removed = true
@@ -1571,6 +1586,22 @@ function g.removeItem(tx, ty)
     end
     world.items:set(tx, ty, nil)
     return ok
+end
+
+---@param targetItem g.World.ItemData
+---@param tx integer
+---@param ty integer
+function g.moveItem(targetItem, tx, ty)
+    if not g.canPutItem(tx, ty) then
+        error("unable to put item at "..tx..","..ty)
+    end
+
+    local world = g.getMainWorld()
+    assert(world.items:get(targetItem.tileX, targetItem.tileY) == targetItem, "position source of truth violation")
+    world.items:set(targetItem.tileX, targetItem.tileY, nil)
+    world.items:set(tx, ty, targetItem)
+    targetItem.tileX = tx
+    targetItem.tileY = ty
 end
 
 ---@param server g.World.ServerData

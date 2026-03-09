@@ -457,6 +457,28 @@ end
 
 
 
+---@param x number
+---@param y number
+---@param t number (from 0 to 1)
+---@param theme? "light"|"dark"
+function ui.arcLoadingBar(x, y, t, theme)
+	theme = theme or g.getSystemTheme()
+	t = helper.clamp(t, 0, 1)
+	local angle = helper.remap(helper.EASINGS.sineIn(t), 0, 1, 0, 2 * math.pi)
+
+	local lw = gsman.setLineWidth(8)
+	love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY_INVERT)
+	love.graphics.arc("line", "open", x, y, 12, -math.pi / 2, angle - math.pi / 2)
+	lw:pop()
+
+	lw = gsman.setLineWidth(6)
+	love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY)
+	love.graphics.arc("line", "open", x, y, 12, -math.pi / 2, angle - math.pi / 2)
+	lw:pop()
+end
+
+
+
 -- For UI global scaling
 do
 
