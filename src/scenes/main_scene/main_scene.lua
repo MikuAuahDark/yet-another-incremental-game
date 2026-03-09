@@ -212,6 +212,16 @@ function MainScene:draw()
 end
 
 
+---@param server g.World.ServerData
+---@param job g.Job
+function MainScene:jobCompleted(server, job)
+    local x = (server.tileX + 0.5) * consts.WORLD_TILE_SIZE
+    local y = (server.tileY + 0.5) * consts.WORLD_TILE_SIZE
+    local money = assert(job.resource and job.resource.money)
+    worldutil.spawnText("{o}+$"..g.formatNumber(money).."{/o}", x, y, 1, 15)
+end
+
+
 
 function MainScene:_getTilePos()
     local mx, my = self.camera:toWorld(love.mouse.getPosition())
@@ -335,7 +345,6 @@ function MainScene:keyreleased(k)
         end
     end
 end
-
 
 ---@param x number
 ---@param y number
