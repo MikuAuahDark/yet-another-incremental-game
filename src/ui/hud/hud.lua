@@ -96,7 +96,7 @@ function HUD:init()
     self.botR = Kirigami(0, 0, 1, 1)
     ---@type g.ItemCategory
     self.activeTab = "server"
-    ---@type [number,g.ItemInfo]? when dragging from item list to world
+    ---@type [number,g.ItemInfo]? when dragging from item list to world. [1] = duration, [2] = item info
     self.activeDragging = nil
     ---@type [number,number,g.ItemInfo]? for tooltip pinning
     self.selectedItem = nil

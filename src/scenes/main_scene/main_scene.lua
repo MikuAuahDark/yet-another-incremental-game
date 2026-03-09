@@ -1,6 +1,8 @@
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local World = require("src.world.world")
 
+local DRAG_ITEM_DURATION = 0.5
+
 ---@class MainScene: FreeCameraScene
 local MainScene = FreeCameraScene()
 
@@ -89,6 +91,28 @@ function MainScene:draw()
     end
 
     hud:draw()
+
+    if hud.activeDragging then
+        if hud.activeDragging[1] < DRAG_ITEM_DURATION then
+            local mx, my = ui.getMouse()
+            local theme = g.getSystemTheme()
+            local t = helper.clamp(helper.remap(hud.activeDragging[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
+            local angle = helper.remap(helper.EASINGS.sineIn(t), 0, 1, 0, 2 * math.pi)
+
+            local lw = gsman.setLineWidth(8)
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY_INVERT)
+            love.graphics.arc("line", "open", mx, my, 12, -math.pi / 2, angle - math.pi / 2)
+            lw:pop()
+
+            lw = gsman.setLineWidth(6)
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY)
+            love.graphics.arc("line", "open", mx, my, 12, -math.pi / 2, angle - math.pi / 2)
+            lw:pop()
+
+            print("aaaa")
+        end
+        print("dragging", hud.activeDragging[1], hud.activeDragging[2].id)
+    end
 
     ui.endUI()
 end

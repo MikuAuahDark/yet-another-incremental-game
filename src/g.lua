@@ -1925,12 +1925,16 @@ g.COLORS = {
         -- Key matches g.getSystemTheme output.
         MAIN = {
             dark = {
+                PRIMARY = objects.Color.BLACK,
+                PRIMARY_INVERT = objects.Color.WHITE,
                 PANEL = objects.Color("FF3E3E3E"),
                 CARD = objects.Color("FF101010"),
                 TEXT = objects.Color.WHITE,
                 TAB_INACTIVE = objects.Color("FF404040")
             },
             light = {
+                PRIMARY = objects.Color.WHITE,
+                PRIMARY_INVERT = objects.Color.BLACK,
                 PANEL = objects.Color("#eeeeee"),
                 CARD = objects.Color.WHITE,
                 TEXT = objects.Color.BLACK,

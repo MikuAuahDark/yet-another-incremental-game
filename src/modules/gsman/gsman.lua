@@ -75,6 +75,7 @@ end
 ---@param a number?
 ---@return gsman.Color
 ---@overload fun(color:objects.Color):gsman.Color
+---@nodiscard
 function gsman.setColor(r, g, b, a)
     if type(r) == "table" then
         return Color(r[1], r[2], r[3], r[4])
@@ -89,6 +90,7 @@ end
 ---@param a number?
 ---@return gsman.Color
 ---@overload fun(color:objects.Color):gsman.Color
+---@nodiscard
 function gsman.mulColor(r, g, b, a)
     if type(r) == "table" then
         return Color(r[1], r[2], r[3], r[4], true)
