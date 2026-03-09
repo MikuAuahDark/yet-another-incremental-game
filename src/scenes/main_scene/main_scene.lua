@@ -90,28 +90,44 @@ function MainScene:draw()
         end
     end
 
+    local beforeActiveDrag = hud.activeDragging
     hud:draw()
 
     if hud.activeDragging then
+        local uimx, uimy = ui.getMouse()
+
         if hud.activeDragging[1] < DRAG_ITEM_DURATION then
-            local mx, my = ui.getMouse()
             local theme = g.getSystemTheme()
             local t = helper.clamp(helper.remap(hud.activeDragging[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
             local angle = helper.remap(helper.EASINGS.sineIn(t), 0, 1, 0, 2 * math.pi)
 
             local lw = gsman.setLineWidth(8)
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY_INVERT)
-            love.graphics.arc("line", "open", mx, my, 12, -math.pi / 2, angle - math.pi / 2)
+            love.graphics.arc("line", "open", uimx, uimy, 12, -math.pi / 2, angle - math.pi / 2)
             lw:pop()
 
             lw = gsman.setLineWidth(6)
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY)
-            love.graphics.arc("line", "open", mx, my, 12, -math.pi / 2, angle - math.pi / 2)
+            love.graphics.arc("line", "open", uimx, uimy, 12, -math.pi / 2, angle - math.pi / 2)
             lw:pop()
 
-            print("aaaa")
+        else
+            local col = gsman.setColor(1, 1, 1, 0.5)
+            local itemR = Kirigami(uimx + 6, uimy + 6, 48, 48)
+            hud.activeDragging[2].drawItem(itemR)
+            col:pop()
         end
-        print("dragging", hud.activeDragging[1], hud.activeDragging[2].id)
+    elseif beforeActiveDrag and beforeActiveDrag[1] >= DRAG_ITEM_DURATION then
+        -- Place or put out?
+        local uimx, uimy = ui.getMouse()
+
+        if helper.isInsideRect(uimx, uimy, safeArea:get()) then
+            -- Place
+            -- TODO: Check money
+            if g.canPutItem(tx, ty) then
+                g.putItem(beforeActiveDrag[2].id, tx, ty)
+            end
+        end
     end
 
     ui.endUI()

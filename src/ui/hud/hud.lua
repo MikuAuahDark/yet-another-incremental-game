@@ -287,21 +287,24 @@ function HUD:draw(show)
                 local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
                 local itemInfo = items[i]
                 local x, y, w, h = itemBaseR:get()
-                if iml.isHovered(x, y, w, h, itemInfo) then
-                    love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
-                    love.graphics.rectangle("fill", itemBaseR:get())
+
+                -- Oli: Check drag first for proper behavior!
+                local drag = iml.consumeDrag(itemInfo, x, y, w, h, 1)
+                if drag or iml.isClicked(x, y, w, h, 1, itemInfo) then
                     showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+
+                    if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
+                        self.activeDragging = {0, itemInfo}
+                    end
                 else
-                    local drag = iml.consumeDrag(itemInfo, x, y, w, h, 1)
-                    if drag then
-                        if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
-                            self.activeDragging = {0, itemInfo}
-                        end
-                    else
-                        self.activeDragging = nil
+                    self.activeDragging = nil
+
+                    if iml.isHovered(x, y, w, h, itemInfo) then
+                        love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
+                        love.graphics.rectangle("fill", itemBaseR:get())
+                        showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
                     end
                 end
-                -- TODO: Drag to move to world
 
                 -- Draw actual item
                 local col = gsman.setColor(1, 1, 1)
