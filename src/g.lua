@@ -1517,6 +1517,7 @@ function g.putItem(itemId, tx, ty)
             jobProgress = 0,
             connectsTo = nil,
             computePerSecond = 0,
+            finalCPS = 0,
         }
     elseif category == "data" then
         ---@type g.World.DataProcessorData
@@ -1630,7 +1631,7 @@ function g.canConnectDataWire(server, dp)
         return false
     end
 
-    if dpInfo.wireCount and #dp.connectsServers >= dpInfo.wireCount then
+    if dpInfo.wireCount and #dp.connectsServers > dpInfo.wireCount then
         return false
     end
 
