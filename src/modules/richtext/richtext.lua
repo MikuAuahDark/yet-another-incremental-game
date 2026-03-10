@@ -353,7 +353,7 @@ function ParsedText:layout(font, maxWidth, align)
 			end
 		elseif token.type == "image" then
 			local imageName = assert(token.name)
-			local scale = token.scale or 1
+			local tokenScale = token.scale or 1
 			local imgData = imagesRegistry[imageName]
 			local img = imgData.texture
 			local quad = imgData.quad
@@ -363,6 +363,7 @@ function ParsedText:layout(font, maxWidth, align)
 			else
 				w, h = img:getDimensions()
 			end
+			local scale = font:getAscent() / h * tokenScale
 			w, h = w * scale, h * scale
 
 			local effects = {}
