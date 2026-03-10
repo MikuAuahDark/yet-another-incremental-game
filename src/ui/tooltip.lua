@@ -11,12 +11,12 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local world = g.getMainWorld()
     local serverInfo = g.getItemInfo(serverData.type, "server")
     local titleF = g.getMainFont(16)
-    local attrF = g.getMainFont(12)
-    local descF = g.getMainFont(8)
+    local attrF = g.getMainFont(13)
+    local descF = g.getMainFont(9)
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 0, 0
+    local width, height = 120, 0
 
     -- Pass 1: Compute tooltip sizes
 
@@ -47,11 +47,13 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
 
     -- Description
     local descriptionHeight = 0
+    local descriptionText = nil
     if serverInfo.description then
-        local w, l = richtext.getWrap(serverInfo.description, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
         -- Description is padded with 2 empty lines
-        descriptionHeight = (l + 2) * descFH
+        descriptionText = "\n"..serverInfo.description.."\n"
+        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        descriptionHeight = l * descFH
         height = height + descriptionHeight
     end
 
@@ -84,6 +86,8 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
             heatText = helper.wrapRichtextColor(g.COLORS.UI.OVERCLOCKED, heatText.." {snowflake}")
         end
         at[#at+1] = heatText
+        at[#at+1] = "" -- padding
+
         attributesText = table.concat(at, "\n")
         local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
         width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
@@ -116,7 +120,6 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         end
 
         if #l > 0 then
-            table.insert(l, 1, "") -- Prepend empty line
             logText = table.concat(l, "\n")
             local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)
             width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
@@ -126,7 +129,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     end
 
     -- Job info
-    local jobData = nil
+    local jobData, jobHeight = nil, 0
     local PROGRESS_BAR_HEIGHT = 6
     if serverData.currentJob then
         local job = assert(serverData.currentJob)
@@ -156,18 +159,16 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
 
         -- Added heights:
         -- padding (descF height)
-        -- "Job" text (titleF height)
         -- Job name (attrF height * line)
         -- Job data info (attrF height)
         -- Final CPS (descF height)
         -- Percentage value (descF height)
         -- progress bar height (PROGRESS_BAR_HEIGHT)
-        height = height
-            + descFH * 3
-            + titleFH
+        jobHeight = descFH * 2
             + jobData.nameHeight
             + attrFH
             + PROGRESS_BAR_HEIGHT
+        height = height + jobHeight + descFH
     end
 
     -- Generate region now
@@ -186,9 +187,8 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         height = height + categoryHeight
     end
     -- Draw description
-    if descriptionHeight > 0 then
-        local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, descriptionHeight)
-        ui.printRichInRegion(serverInfo.description, descF, r, true, "left")
+    if descriptionText then
+        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
         height = height + descriptionHeight
     end
     -- Draw attributes
@@ -204,18 +204,28 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     end
     -- Draw job info
     if jobData then
-        height = height + descFH
-        -- "Job" text
-        love.graphics.printf(TEXT.JOB_INFO, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleFH
+        --[[
+        TODO: Modify how tooltip is rendered.
+        For sake of moving fast, let's just do rectangle for now.
+
+        Oli suggestion:
+        * Make it fixed-width
+        * Make the job info "glued"
+
+        My suggestion: Text size probably needs adjustment.
+        ]]
+        local OUTER_PAD = 2
+        height = height + descFH -- padding
+        love.graphics.rectangle("line", tcntR.x - OUTER_PAD, tcntR.y + height - OUTER_PAD, tcntR.w + OUTER_PAD * 2, jobHeight + OUTER_PAD * 2)
+
         -- Job name
         richtext.printRich(jobData.name, attrF, tcntR.x, tcntR.y + height, tcntR.w, "center")
         height = height + jobData.nameHeight
         -- Job info
         local computeR, dataR, moneyR = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, attrFH):splitHorizontal(1, 1, 1)
-        ui.printRichInRegion(jobData.computeText, attrF, computeR, true, "left")
+        ui.printRichInRegion(jobData.computeText, attrF, computeR, true, "center")
         ui.printRichInRegion(jobData.outdataText, attrF, dataR, true, "center")
-        ui.printRichInRegion(jobData.earnText, attrF, moneyR, true, "right")
+        ui.printRichInRegion(jobData.earnText, attrF, moneyR, true, "center")
         height = height + attrFH
         -- Final CPS
         local cps = g.formatNumber(serverData.finalCPS).." {dns}/s"

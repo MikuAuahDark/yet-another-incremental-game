@@ -321,7 +321,7 @@ function World:_update(dt)
     for _, serverData in pairs(self.servers) do
         serverData.finalCPS = 0
         local job = serverData.currentJob
-        if job then
+        if job and serverData.connectsTo then
             local finalCPS = serverData.computePerSecond
             local dpData = assert(serverData.connectsTo)
             if dpData.serversDataPerSecond > dpData.dataPerSecond then
