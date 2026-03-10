@@ -31,5 +31,13 @@ local text = {
         context = "Denotes when a machine is overheating. will be replaced by symbol in-game."}),
     JOB_INFO = loc("Job", nil, {
         context = "Tooltip text to show currently processed job"}),
+    DPS_NUMBER = interp("%{dps} {database}/second", {
+        context = "DPS (Data Per Second) is a measurement how fast data processor can process data. {database} reflects \"Data\" icon in-game."}),
+    WIRE_RANGE = interp("Wire Range: %{range} Tiles", {
+        context = "Denotes the maximum range of data processor wire connection"}),
+    WIRE_COUNT = interp("Connections: %{s}", {
+        context = "Denotes the number of servers connected to this data processor. The %{s} will be replaced with `current_connections` or `current_connections/max_connections` later in-game."}),
+    EFFECTIVITY = interp("Effectivity: %{effectivity}", {
+        context = "Denotes the effectivity of a booster. The %{effectivity} is percentage of the booster efficiency."}),
 }
 return text

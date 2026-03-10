@@ -147,11 +147,11 @@ function MainScene:draw()
         local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
             self.camera:toScreen((self.pinItemInfo.tileX + 0.5) * wtz, (self.pinItemInfo.tileY + 0.5) * wtz)
         )
-        self:_drawItemInfo(self.pinItemInfo, uix, uiy, safeArea)
+        ui.ItemTooltip.DrawWorldTooltip(self.pinItemInfo, uix, uiy, safeArea)
     end
     if item and self.pinItemInfo ~= item then
         -- Draw hovered tooltip
-        self:_drawItemInfo(item, uimx, uimy, safeArea)
+        ui.ItemTooltip.DrawWorldTooltip(item, uimx, uimy, safeArea)
     end
 
     -- Update item dragging (from world)
@@ -228,34 +228,6 @@ function MainScene:_getTilePos()
     local wtz = consts.WORLD_TILE_SIZE
     local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
     return tx, ty
-end
-
-
----@param item g.World.ItemData
----@param uimx number
----@param uimy number
----@param safeArea kirigami.Region
-function MainScene:_drawItemInfo(item, uimx, uimy, safeArea)
-    local itemInfo, cat = g.getItemInfo(item.type)
-    if cat == "server" then
-        ---@cast item g.World.ServerData
-        local text = "SV - "..item.computePerSecond.." CPS"
-        love.graphics.print(text, g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 54)
-    elseif cat == "data" then
-        ---@cast item g.World.DataProcessorData
-        ---@cast itemInfo g.DataInfo
-        local text = "DP - "..item.serversDataPerSecond.." TDPS "..itemInfo.dataPerSecond
-        love.graphics.print(text, g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 54)
-    end
-
-    -- Draw tooltip
-    love.graphics.setColor(1, 1, 1)
-    if cat == "server" then
-        ---@cast item g.World.ServerData
-        ui.ItemTooltip.ServerTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
-    else
-        ui.ItemTooltip.GenericTooltipWorld(item, uimx + 9, uimy + 3, safeArea)
-    end
 end
 
 ---@param r kirigami.Region

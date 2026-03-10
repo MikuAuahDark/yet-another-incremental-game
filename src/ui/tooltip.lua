@@ -175,7 +175,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
     ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
 
-    -- Draw the tooltip
+    -- Pass 2: Draw the tooltip
     height = 0
     do
         richtext.printRich(serverInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
@@ -245,6 +245,189 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     end
 end
 
+---@param dpData g.World.DataProcessorData
+---@param mx number
+---@param my number
+---@param safeArea kirigami.Region
+function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
+    local dpInfo = g.getItemInfo(dpData.type, "data")
+    local titleF = g.getMainFont(16)
+    local attrF = g.getMainFont(13)
+    local descF = g.getMainFont(9)
+    local titleFH = titleF:getHeight()
+    local attrFH = attrF:getHeight()
+    local descFH = descF:getHeight()
+    local width, height = 120, 0
+
+    -- Pass 1: Compute tooltip sizes
+
+    -- Title
+    local titleHeight
+    do
+        local w, l = richtext.getWrap(dpInfo.name, titleF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        titleHeight = l * titleFH
+        height = height + titleHeight
+    end
+
+    -- Description
+    local descriptionText, descriptionHeight
+    if dpInfo.description then
+        descriptionText = "\n"..dpInfo.description.."\n"
+        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        descriptionHeight = l * descFH
+        height = height + descriptionHeight
+    end
+
+    -- Attributes
+    local attributesText, attributesHeight
+    do
+        local attributes = {}
+        attributes[#attributes+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)})
+        attributes[#attributes+1] = TEXT.WIRE_RANGE({range = dpInfo.wireCount})
+        local wcattr = TEXT.WIRE_COUNT({s = #dpData.connectsServers})
+        if dpInfo.wireCount then
+            wcattr = TEXT.WIRE_COUNT({s = #dpData.connectsServers.."/"..dpInfo.wireCount})
+            if #dpData.connectsServers >= dpInfo.wireCount then
+                wcattr = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, wcattr)
+            end
+        else
+            wcattr = TEXT.WIRE_COUNT({s = #dpData.connectsServers})
+        end
+        attributes[#attributes+1] = wcattr
+
+        attributesText = table.concat(attributes, "\n")
+        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        attributesHeight = l * attrFH
+        height = height + attributesHeight
+    end
+
+    -- Generate region now
+    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
+    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+    -- Pass 2: Draw the tooltip
+    height = 0
+    -- Draw name
+    do
+        richtext.printRich(dpInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleHeight
+    end
+    -- Draw description
+    if descriptionText then
+        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + descriptionHeight
+    end
+    -- Draw attributes
+    do
+        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
+        height = height + attributesHeight
+    end
+end
+
+---@param itemData g.World.ItemData
+---@param mx number
+---@param my number
+---@param safeArea kirigami.Region
+function ItemTooltip.BoosterTooltipWorld(itemData, mx, my, safeArea)
+    local world = g.getMainWorld()
+    local boosterInfo = g.getItemInfo(itemData.type, "booster")
+    local titleF = g.getMainFont(16)
+    local attrF = g.getMainFont(13)
+    local descF = g.getMainFont(9)
+    local titleFH = titleF:getHeight()
+    local attrFH = attrF:getHeight()
+    local descFH = descF:getHeight()
+    local width, height = 120, 0
+
+    -- Pass 1: Compute tooltip sizes
+
+    -- Title
+    local titleHeight
+    do
+        local w, l = richtext.getWrap(boosterInfo.name, titleF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        titleHeight = l * titleFH
+        height = height + titleHeight
+    end
+
+    -- Description
+    local descriptionText, descriptionHeight
+    if boosterInfo.description then
+        descriptionText = "\n"..boosterInfo.description.."\n"
+        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        descriptionHeight = l * descFH
+        height = height + descriptionHeight
+    end
+
+    -- Effectivity
+    local effectivityText, effectivityHeight
+    do
+        effectivityText = TEXT.EFFECTIVITY({effectivity = helper.round(world.loadPercentage * 100, 2)})
+        if world.loadPercentage < 1 then
+            effectivityText = effectivityText.." {bolt}"
+            if world.loadPercentage < 0.75 then
+                effectivityText = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, effectivityText)
+            elseif world.loadPercentage < 1 then
+                effectivityText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, effectivityText)
+            end
+        end
+
+        local w, l = richtext.getWrap(effectivityText, attrF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        effectivityHeight = l * attrFH
+        height = height + effectivityHeight
+    end
+
+    -- Generate region now
+    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
+    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+    -- Pass 2: Draw the tooltip
+    height = 0
+    -- Draw name
+    do
+        richtext.printRich(boosterInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleHeight
+    end
+    -- Draw description
+    if descriptionText then
+        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + descriptionHeight
+    end
+    -- Draw attributes
+    do
+        richtext.printRich(effectivityText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
+        height = height + effectivityHeight
+    end
+end
+
+---@param itemData g.World.ItemData
+---@param x number relative to bottom center
+---@param y number relative to bottom center
+---@param safeArea kirigami.Region
+function ItemTooltip.DrawWorldTooltip(itemData, x, y, safeArea)
+    local _, cat = g.getItemInfo(itemData.type)
+    local col = gsman.setColor(1, 1, 1)
+    if cat == "server" then
+        ---@cast itemData g.World.ServerData
+        ItemTooltip.ServerTooltipWorld(itemData, x, y, safeArea)
+    elseif cat == "data" then
+        ---@cast itemData g.World.DataProcessorData
+        ItemTooltip.DPTooltipWorld(itemData, x, y, safeArea)
+    elseif cat == "booster" then
+        ItemTooltip.BoosterTooltipWorld(itemData, x, y, safeArea)
+    else
+        error("unreachable category")
+    end
+    col:pop()
+end
+
+
+
 ---@param serverInfo g.ServerInfo
 ---@param x number relative to bottom center
 ---@param y number relative to bottom center
@@ -296,42 +479,6 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
         height = height + categoryHeight
     end
 end
-
-
-
----TODO: Specialize this for boosters and data processor.
----Gotta move fast, so this will do for now.
----@param itemData g.World.ItemData
----@param mx number
----@param my number
----@param safeArea kirigami.Region
-function ItemTooltip.GenericTooltipWorld(itemData, mx, my, safeArea)
-    local itemInfo = g.getItemInfo(itemData.type)
-    local titleF = g.getMainFont(16)
-    local width, height = 0, 0
-
-    -- Pass 1: Compute tooltip sizes
-
-    -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(itemInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleF:getHeight()
-        height = height + titleHeight
-    end
-
-    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2:Draw the tooltip
-    height = 0
-    do
-        richtext.printRich(itemInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-end
-
 
 ---TODO: Specialize this for boosters and data processor.
 ---Gotta move fast, so this will do for now.
