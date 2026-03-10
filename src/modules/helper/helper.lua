@@ -24,7 +24,17 @@ function helper.remap(v, r1, r2, nr1, nr2)
     return nr1 + (v - r1) * (nr2 - nr1) / (r2 - r1)
 end
 
-
+---@param num number
+---@param decimals integer?
+function helper.round(num, decimals)
+    local zeros = 10 ^ (decimals or 0)
+    if num > 0 then
+        num = math.floor(num * zeros + 0.5) / zeros
+    else
+        num = math.ceil(num * zeros - 0.5) / zeros
+    end
+    return num
+end
 
 ---@generic n:number
 ---@param val n

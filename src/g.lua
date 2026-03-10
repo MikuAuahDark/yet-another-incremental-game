@@ -1981,8 +1981,10 @@ g.COLORS = {
             }
         },
         BORDER = objects.Color("FF979797"),
-        OVERHEATED = objects.Color("FFE85A5A"),
+        DEBUFF = objects.Color("FFE85A5A"),
+        BUFF = objects.Color("FF57DB6F"),
         OVERCLOCKED = objects.Color("FF3FB5EC"),
+        WARNING = objects.Color("FFE6C562"),
     }
 }
 

@@ -135,19 +135,22 @@ end
 ---@param r kirigami.Region
 ---@param left string
 ---@param right string
-local function drawStats(r, left, right)
+---@param col objects.Color?
+local function drawStats(r, left, right, col)
     local font = g.getMainFont(18)
     local padR = r:padUnit(4)
 
-    love.graphics.setColor(0, 0, 0)
+    local col1 = gsman.setColor(0, 0, 0)
     local radius = math.min(padR.w, padR.h) / 2
     helper.quickRoundedRectangle("fill", radius, padR)
     helper.quickRoundedRectangle("line", radius, padR)
+    col1:pop()
 
     local oy = padR.y + (padR.h - font:getHeight()) / 2
-    love.graphics.setColor(1, 1, 1)
+    local col2 = gsman.setColor(col or objects.Color.WHITE)
     richtext.printRich(left, font, padR.x + 8, oy, padR.w, "left")
     richtext.printRich(right, font, padR.x - 8, oy, padR.w, "right")
+    col2:pop()
 end
 
 ---@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?}?
@@ -177,7 +180,8 @@ function HUD:draw(show)
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
             drawStats(moneyR, "{money}", money)
-            drawStats(loadR, "{bolt}", world.currentLoad.."/"..world.maxLoad)
+            local loadColor = world.currentLoad > world.maxLoad and g.COLORS.UI.WARNING or objects.Color.WHITE
+            drawStats(loadR, "{bolt}", world.currentLoad.."/"..world.maxLoad, loadColor)
             drawStats(cpsR, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
             lw2:pop()
 
