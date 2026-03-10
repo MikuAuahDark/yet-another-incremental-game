@@ -11,6 +11,7 @@ RichText.__index = RichText
 ---@field public textOrDrawable string|love.Texture
 ---@field public index number 1-based index in the whole parsed text
 ---@field public quad love.Quad?
+---@field public scale number
 
 ---@alias richtext.NextFunc fun(textOrDrawable: string|love.Texture, x: number, y: number, quad: love.Quad?)
 ---@alias richtext.EffectFunc fun(args: richtext.EffectArgs, x: number, y: number, context: richtext.Context, next: richtext.NextFunc)
@@ -485,6 +486,7 @@ local function runEffectChain(context, effIdx, tx, ty, ttextOrDrawable, index, t
 		context.textOrDrawable = ttextOrDrawable
 		context.index = index
 		context.quad = tquad
+		context.scale = scale
 
 		eff.func(eff.args, tx, ty, context, function(nt, nx, ny, nq)
 			runEffectChain(context, effIdx + 1, nx, ny, nt, index, nq or tquad, font, effects, numEffects, scale)

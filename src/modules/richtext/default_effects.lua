@@ -39,9 +39,9 @@ return function(text)
                 love.graphics.print(obj, context.font, x + ox * thickness, y + oy * thickness)
             else
                 if context.quad then
-                    love.graphics.draw(obj, context.quad, x + ox * thickness, y + oy * thickness)
+                    love.graphics.draw(obj, context.quad, x + ox * thickness, y + oy * thickness, 0, context.scale)
                 else
-                    love.graphics.draw(obj, x + ox * thickness, y + oy * thickness)
+                    love.graphics.draw(obj, x + ox * thickness, y + oy * thickness, 0, context.scale)
                 end
             end
         end
