@@ -29,5 +29,7 @@ local text = {
         context = "Denotes when a machine is overheating. `{emergency_heat}` will be replaced by symbol in-game."}),
     OVERHEAT_DESCRIPTION = loc("The server exceeded the heat tolerance it can handle!", nil, {
         context = "Denotes when a machine is overheating. will be replaced by symbol in-game."}),
+    JOB_INFO = loc("Job", nil, {
+        context = "Tooltip text to show currently processed job"}),
 }
 return text

@@ -13,6 +13,9 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local titleF = g.getMainFont(16)
     local attrF = g.getMainFont(12)
     local descF = g.getMainFont(8)
+    local titleFH = titleF:getHeight()
+    local attrFH = attrF:getHeight()
+    local descFH = descF:getHeight()
     local width, height = 0, 0
 
     -- Pass 1: Compute tooltip sizes
@@ -22,7 +25,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     do
         local w, l = richtext.getWrap(serverInfo.name, titleF, MAX_TOOLTIP_WIDTH)
         width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleF:getHeight()
+        titleHeight = l * titleFH
         height = height + titleHeight
     end
 
@@ -38,7 +41,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         })
         local w, l = richtext.getWrap(categoryText, descF, MAX_TOOLTIP_WIDTH)
         width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        categoryHeight = l * titleF:getHeight()
+        categoryHeight = l * titleFH
         height = height + categoryHeight
     end
 
@@ -48,7 +51,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         local w, l = richtext.getWrap(serverInfo.description, descF, MAX_TOOLTIP_WIDTH)
         width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
         -- Description is padded with 2 empty lines
-        descriptionHeight = (l + 2) * descF:getHeight()
+        descriptionHeight = (l + 2) * descFH
         height = height + descriptionHeight
     end
 
@@ -84,7 +87,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         attributesText = table.concat(at, "\n")
         local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
         width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrF:getHeight()
+        attributesHeight = l * attrFH
         height = height + attributesHeight
     end
 
@@ -113,14 +116,61 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         end
 
         if #l > 0 then
+            table.insert(l, 1, "") -- Prepend empty line
             logText = table.concat(l, "\n")
-            local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-            logHeight = lines * attrF:getHeight()
+            local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)
+            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+            logHeight = lines * attrFH
             height = height + logHeight
         end
     end
 
-    -- TODO: More stuff
+    -- Job info
+    local jobData = nil
+    local PROGRESS_BAR_HEIGHT = 6
+    if serverData.currentJob then
+        local job = assert(serverData.currentJob)
+        jobData = {
+            name = serverData.currentJob.name,
+            nameHeight = 0,
+            computeText = g.formatNumber(job.computePower).." {dns}",
+            outdataText = g.formatNumber(job.outputData).." {database}",
+            earnText = "{money}"..g.formatNumber(assert(job.resource.money)),
+        }
+
+        -- Job name
+        do
+            local w, l = richtext.getWrap(jobData.name, attrF, MAX_TOOLTIP_WIDTH)
+            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+            jobData.nameHeight = l * attrFH
+        end
+        -- Adjust width to fit data info
+        do
+            local w = math.max(
+                richtext.getWidth(jobData.computeText, attrF),
+                richtext.getWidth(jobData.outdataText, attrF),
+                richtext.getWidth(jobData.earnText, attrF)
+            ) + 4 -- +4 for padding
+            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        end
+
+        -- Added heights:
+        -- padding (descF height)
+        -- "Job" text (titleF height)
+        -- Job name (attrF height * line)
+        -- Job data info (attrF height)
+        -- Final CPS (descF height)
+        -- Percentage value (descF height)
+        -- progress bar height (PROGRESS_BAR_HEIGHT)
+        height = height
+            + descFH * 3
+            + titleFH
+            + jobData.nameHeight
+            + attrFH
+            + PROGRESS_BAR_HEIGHT
+    end
+
+    -- Generate region now
     local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
     ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
 
@@ -151,6 +201,37 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, logHeight)
         ui.printRichInRegion(logText, attrF, r, true, "center")
         height = height + logHeight
+    end
+    -- Draw job info
+    if jobData then
+        height = height + descFH
+        -- "Job" text
+        love.graphics.printf(TEXT.JOB_INFO, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleFH
+        -- Job name
+        richtext.printRich(jobData.name, attrF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + jobData.nameHeight
+        -- Job info
+        local computeR, dataR, moneyR = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, attrFH):splitHorizontal(1, 1, 1)
+        ui.printRichInRegion(jobData.computeText, attrF, computeR, true, "left")
+        ui.printRichInRegion(jobData.outdataText, attrF, dataR, true, "center")
+        ui.printRichInRegion(jobData.earnText, attrF, moneyR, true, "right")
+        height = height + attrFH
+        -- Final CPS
+        local cps = g.formatNumber(serverData.finalCPS).." {dns}/s"
+        if serverData.finalCPS < serverData.computePerSecond then
+            cps = helper.wrapRichtextColor(g.COLORS.UI.WARNING, cps)
+        end
+        richtext.printRich(cps, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + descFH
+        -- Progress percentage
+        local job = assert(serverData.currentJob)
+        local p = serverData.jobProgress / job.computePower
+        love.graphics.printf(helper.round(p * 100, 1).."%", descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + descFH
+        -- Progress bar
+        love.graphics.rectangle("fill", tcntR.x, tcntR.y + height, tcntR.w * p, PROGRESS_BAR_HEIGHT)
+        height = height + descFH
     end
 end
 
