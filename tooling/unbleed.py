@@ -112,12 +112,7 @@ def transform_images(pathglob: str, recursive: bool = True):
         # Process
         try:
             with PIL.Image.open(file) as image_pil:
-                if image_pil.mode != "RGBA":
-                    tqdm.tqdm.write("ℹ️ Skipped")
-                    skip += 1
-                    continue
-
-                image_numpy = numpy.array(image_pil, numpy.uint8)
+                image_numpy = numpy.array(image_pil.convert("RGBA"), numpy.uint8)
 
             if numpy.all(image_numpy[:, :, 3] > 0):
                 tqdm.tqdm.write("ℹ️ Skipped")
