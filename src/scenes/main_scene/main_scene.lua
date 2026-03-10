@@ -299,6 +299,10 @@ function MainScene:_tryConnectWire(tx, ty)
         if server.connectsTo == dp then
             g.disconnectDataWire(server, dp)
         elseif g.canConnectDataWire(server, dp) then
+            if server.connectsTo then
+                g.disconnectDataWire(server, server.connectsTo)
+            end
+
             g.connectDataWire(server, dp)
         end
     end
