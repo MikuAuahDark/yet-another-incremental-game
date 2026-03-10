@@ -284,23 +284,23 @@ function World:_update(dt)
                     serverData.jobProgress = 0
                 end
             end
-
-            -- Compute CPS
-            -- TODO: Take booster into account
-            serverData.computePerSecond = 0
-            local heat = self.heat:get(serverData.tileX, serverData.tileY)
-            local heatPerfMul = 1
-            if heat > serverInfo.heatTolerance[2] then
-                -- Overheat. Reduce performance
-                heatPerfMul = serverInfo.heatTolerance[2] / heat
-            elseif heat < serverInfo.heatTolerance[1] then
-                -- Chilling. Increase performance
-                local diff = serverInfo.heatTolerance[1] - heat
-                heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
-            end
-            local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul
-            serverData.computePerSecond = math.max(serverInfo.computePerSecond + perfMod, 0) * finalMul
         end
+
+        -- Compute CPS
+        -- TODO: Take booster into account
+        serverData.computePerSecond = 0
+        local heat = self.heat:get(serverData.tileX, serverData.tileY)
+        local heatPerfMul = 1
+        if heat > serverInfo.heatTolerance[2] then
+            -- Overheat. Reduce performance
+            heatPerfMul = serverInfo.heatTolerance[2] / heat
+        elseif heat < serverInfo.heatTolerance[1] then
+            -- Chilling. Increase performance
+            local diff = serverInfo.heatTolerance[1] - heat
+            heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
+        end
+        local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul
+        serverData.computePerSecond = math.max(serverInfo.computePerSecond + perfMod, 0) * finalMul
     end
     -- Pass 2: Update data processor total data transmit
     for _, dpData in pairs(self.dataProcessors) do
