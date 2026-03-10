@@ -4,50 +4,48 @@ local DataCollector = objects.Class("g:DataCollector")
 
 local table_new = require("table.new")
 
----@param count integer
-function DataCollector:init(count, startValue)
-    assert(count > 1)
-    self.pointer = 0
-    ---@type number[]
-    self.buffer = table_new(count, 0)
-    for i = 1, count do
-        self.buffer[i] = startValue
-    end
+---@param duration integer
+function DataCollector:init(duration)
+    assert(duration > 0)
+    self.total = 0 -- Note: This is MSOT with `sum(self.buffer[...][1])` for performance reasons.
+    self.duration = duration
+    ---@type [number,number][]
+    self.buffer = {}
 end
 
 if false then
-    ---@param count integer
-    ---@param startValue number
+    ---@param duration integer
     ---@return g.DataCollector
     ---@diagnostic disable-next-line: cast-local-type, missing-return
-    function DataCollector(count, startValue) end
+    function DataCollector(duration) end
 end
 
+---@param dt number
 ---@param value number
-function DataCollector:setAndIncrementPointer(value)
-    self.buffer[self.pointer + 1] = value
-    self.pointer = (self.pointer + 1) % #self.buffer
-end
-
-function DataCollector:getPrevious()
-    return self.buffer[(self.pointer - 1) % #self.buffer + 1]
+function DataCollector:insert(dt, value)
+    self.total = self.total + dt
+    -- Remove old (to reduce strain on shifting with table.remove)
+    while self.total > self.duration do
+        local buf = table.remove(self.buffer, 1) --[=[@as [number,number]]=]
+        self.total = self.total - buf[1]
+    end
+    self.buffer[#self.buffer+1] = {dt, value}
 end
 
 ---@return number
-function DataCollector:sumdiff()
+function DataCollector:getAverage()
     local result = 0
+    local durT = 0
 
-    for i = 1, #self.buffer - 1 do
-        local prev = self.buffer[(self.pointer - i) % #self.buffer + 1]
-        local prev2 = self.buffer[(self.pointer - i - 1) % #self.buffer + 1]
-        result = result + math.max(prev - prev2, 0)
+    for _, v in ipairs(self.buffer) do
+        durT = durT + v[1]
+        result = result + v[2]
     end
 
-    return result
-end
-
-function DataCollector:avgdiff()
-    return self:sumdiff() / (#self.buffer - 1)
+    if durT == 0 then
+        return 0
+    end
+    return result / durT
 end
 
 return DataCollector

@@ -43,11 +43,11 @@ local function drawJobCard(job, r, theme)
     ui.printRichInRegion(job.name, titleF, titleR, true, "left")
     ui.printRichInRegion(g.getJobCategoryName(job.category), catF, catR, true, "left")
     local computeR, dataR, moneyR = outR:splitHorizontal(1, 1, 1)
-    ui.printRichInRegion(job.computePower.." Cm", titleF, computeR, true, "left")
-    ui.printRichInRegion(job.outputData.." Dt", titleF, dataR, true, "center")
+    ui.printRichInRegion(job.computePower.." {dns}", titleF, computeR, true, "left")
+    ui.printRichInRegion(job.outputData.." {database}", titleF, dataR, true, "center")
     -- We only have "money"
     -- FIXME: Change it if we have more than 1 resources
-    ui.printRichInRegion("$"..assert(job.resource.money), titleF, moneyR, true, "right")
+    ui.printRichInRegion("{money}"..assert(job.resource.money), titleF, moneyR, true, "right")
 
     -- Draw timeout bar
     local timeoutWidth = helper.clamp(job.timeout * r.w / math.max(getJobTimeout(job), 1), 0, r.w)
@@ -146,8 +146,8 @@ local function drawStats(r, left, right)
 
     local oy = padR.y + (padR.h - font:getHeight()) / 2
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(left, font, padR.x + 8, oy, padR.w, "left")
-    love.graphics.printf(right, font, padR.x - 8, oy, padR.w, "right")
+    richtext.printRich(left, font, padR.x + 8, oy, padR.w, "left")
+    richtext.printRich(right, font, padR.x - 8, oy, padR.w, "right")
 end
 
 ---@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?}?
@@ -176,9 +176,9 @@ function HUD:draw(show)
             )
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
-            drawStats(moneyR, "$", money)
-            drawStats(loadR, "L", world.currentLoad.."/"..world.maxLoad)
-            drawStats(cpsR, "123456", "C/s")
+            drawStats(moneyR, "{money}", money)
+            drawStats(loadR, "{bolt}", world.currentLoad.."/"..world.maxLoad)
+            drawStats(cpsR, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
             lw2:pop()
 
             love.graphics.setColor(0, 0, 0)

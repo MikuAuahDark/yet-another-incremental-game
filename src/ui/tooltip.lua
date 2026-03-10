@@ -3,10 +3,6 @@ local ItemTooltip = {}
 
 local MAX_TOOLTIP_WIDTH = 200
 
-----------------
--- Rule of thumb: Divide/multiply by 1.6 for font sizes
-----------------
-
 ---@param serverData g.World.ServerData
 ---@param mx number
 ---@param my number
@@ -14,7 +10,8 @@ local MAX_TOOLTIP_WIDTH = 200
 function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local serverInfo = g.getItemInfo(serverData.type, "server")
     local titleF = g.getMainFont(16)
-    local descF = g.getMainFont(10)
+    local attrF = g.getMainFont(12)
+    local descF = g.getMainFont(8)
     local width, height = 0, 0
 
     -- Pass 1: Compute tooltip sizes
@@ -43,6 +40,44 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         categoryHeight = l * titleF:getHeight()
         height = height + categoryHeight
     end
+    
+    -- Description
+    local descriptionHeight = 0
+    if serverInfo.description then
+        local w, l = richtext.getWrap(serverInfo.description, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        -- Description is padded with 2 empty lines
+        descriptionHeight = (l + 2) * descF:getHeight()
+        height = height + descriptionHeight
+    end
+
+    -- Attributes
+    local attributesHeight = 0
+    local attributesText
+    do
+        local at = {}
+        -- CPS
+        at[#at+1] = TEXT.CPS_NUMBER({
+            cps = serverInfo.computePerSecond
+        })
+        -- Heat
+        local heat = g.getTileHeat(serverData.tileX, serverData.tileY)
+        local heatText = TEXT.SERVER_HEAT_NUMBER({
+            heat = heat,
+            max_heat = serverInfo.heatTolerance[2]
+        })
+        if heat > serverInfo.heatTolerance[2] then
+            heatText = helper.wrapRichtextColor(g.COLORS.UI.OVERHEATED, heatText.." {emergency_heat}")
+        elseif heat < serverInfo.heatTolerance[1] then
+            heatText = helper.wrapRichtextColor(g.COLORS.UI.OVERCLOCKED, heatText.." {snowflake}")
+        end
+        at[#at+1] = heatText
+        attributesText = table.concat(at, "\n")
+        local w, l = richtext.getWrap(attributesText, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        attributesHeight = l * attrF:getHeight()
+        height = height + attributesHeight
+    end
 
     -- TODO: More stuff
     local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
@@ -58,6 +93,17 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     do
         richtext.printRich(categoryText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
         height = height + categoryHeight
+    end
+    -- Draw description
+    if descriptionHeight > 0 then
+        local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, descriptionHeight)
+        ui.printRichInRegion(serverInfo.description, descF, r, true, "left")
+        height = height + descriptionHeight
+    end
+    -- Draw attributes
+    do
+        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
+        height = height + attributesHeight
     end
 end
 

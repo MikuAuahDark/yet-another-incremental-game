@@ -6,6 +6,7 @@ World
 
 
 local ParticleService = require(".particle.ParticleService")
+local DataCollector = require(".data_collector")
 
 
 ---@param grid objects.Grid
@@ -28,7 +29,8 @@ end
 ---@field currentJob g.Job?
 ---@field jobProgress number
 ---@field connectsTo g.World.DataProcessorData? (readonly; connect to this data processor, quick lookup only)
----@field computePerSecond number (readonly; updated every frame) Does not account data bottleneck
+---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
+---@field finalCPS number (readonly; updated every frame) Actual CPS, taking data bottleneck into account
 
 ---@class g.World.DataProcessorData: g.World.ItemData
 ---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
@@ -61,6 +63,8 @@ function World:init()
     self.currentLoad = 0 -- Updated every frame
     self.maxLoad = 10 -- Updated every frame
     zeroTileHeat(self.heat)
+
+    self.cpsCollector = DataCollector(60)
 end
 
 
@@ -252,6 +256,7 @@ function World:_update(dt)
     -- progress. The data processor bottleneck calculation needs all server CPSes first.
     local perfMod = g.ask("getPerformanceModifier") --[[@as number]]
     local perfMultiplier = g.ask("getPerformanceMultiplier") --[[@as number]]
+    local cps = 0
     -- Pass 1: Compute CPS
     for _, serverData in pairs(self.servers) do
         local serverInfo = g.getItemInfo(serverData.type, "server")
@@ -283,20 +288,18 @@ function World:_update(dt)
             -- Compute CPS
             -- TODO: Take booster into account
             serverData.computePerSecond = 0
-            if serverData.currentJob then
-                local heat = self.heat:get(serverData.tileX, serverData.tileY)
-                local heatPerfMul = 1
-                if heat > serverInfo.heatTolerance[2] then
-                    -- Overheat. Reduce performance
-                    heatPerfMul = serverInfo.heatTolerance[2] / heat
-                elseif heat < serverInfo.heatTolerance[1] then
-                    -- Chilling. Increase performance
-                    local diff = serverInfo.heatTolerance[1] - heat
-                    heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
-                end
-                local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul
-                serverData.computePerSecond = math.max(serverInfo.computePerSecond + perfMod, 0) * finalMul
+            local heat = self.heat:get(serverData.tileX, serverData.tileY)
+            local heatPerfMul = 1
+            if heat > serverInfo.heatTolerance[2] then
+                -- Overheat. Reduce performance
+                heatPerfMul = serverInfo.heatTolerance[2] / heat
+            elseif heat < serverInfo.heatTolerance[1] then
+                -- Chilling. Increase performance
+                local diff = serverInfo.heatTolerance[1] - heat
+                heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
             end
+            local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul
+            serverData.computePerSecond = math.max(serverInfo.computePerSecond + perfMod, 0) * finalMul
         end
     end
     -- Pass 2: Update data processor total data transmit
@@ -316,6 +319,7 @@ function World:_update(dt)
     end
     -- Pass 3: Update job progress
     for _, serverData in pairs(self.servers) do
+        serverData.finalCPS = 0
         local job = serverData.currentJob
         if job then
             local finalCPS = serverData.computePerSecond
@@ -326,7 +330,9 @@ function World:_update(dt)
                 finalCPS = finalCPS * ratio
             end
 
+            serverData.finalCPS = finalCPS
             serverData.jobProgress = serverData.jobProgress + finalCPS * dt
+            cps = cps + finalCPS * dt
             if serverData.jobProgress >= job.computePower then
                 g.call("jobCompleted", serverData, job)
                 g.addResources(job.resource)
@@ -334,6 +340,7 @@ function World:_update(dt)
             end
         end
     end
+    self.cpsCollector:insert(dt, cps)
 
     -- Run per second update event bus on upgrades
     self.timer = self.timer + dt

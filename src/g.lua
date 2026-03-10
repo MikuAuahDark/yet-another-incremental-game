@@ -781,13 +781,12 @@ function g.defineResource(resId, tabl)
     RESOURCES[resId] = tabl
     g.defineStat(tabl.limitStat, tabl.startingLimit or 100, tabl.limitStatName)
     table.insert(g.RESOURCE_LIST, resId)
-    -- TODO: Fix this
-    --pcall(richtext.defineImage, tabl.image, g.getAtlas(), g.getImageQuad(tabl.image))
+    richtext.defineImage(resId, g.getAtlas(), g.getImageQuad(tabl.image))
 end
 
 
 g.defineResource("money", {
-    image="coin",
+    image="attach_money",
     limitStat="MoneyLimit",
     limitStatName="Money Limit",
     startingLimit=1000,
@@ -1653,6 +1652,15 @@ function g.connectDataWire(server, dp)
     dp.connectsServers[#dp.connectsServers+1] = server
 end
 
+---@param tx integer
+---@param ty integer
+---@return number
+function g.getTileHeat(tx, ty)
+    local world = g.getMainWorld()
+    assert(world.heat:contains(tx, ty), "out of range")
+    return world.heat:get(tx, ty) or 0
+end
+
 
 
 -------------------
@@ -1972,7 +1980,9 @@ g.COLORS = {
                 TAB_INACTIVE = objects.Color("FFB0B0B0")
             }
         },
-        BORDER = objects.Color("FF979797")
+        BORDER = objects.Color("FF979797"),
+        OVERHEATED = objects.Color("FFE85A5A"),
+        OVERCLOCKED = objects.Color("FF3FB5EC"),
     }
 }
 

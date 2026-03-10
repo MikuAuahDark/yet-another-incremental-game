@@ -12,7 +12,7 @@ local function newAtlas(w, h, maxSprites)
     maxSprites = maxSprites or 15000
     w = w or 2048
     h = h or 2048
-    local image = lg.newTexture(w, h, {canvas = true, dpiscale = 1})--lg.newImage(love.image.newImageData(w,h))
+    local image = lg.newTexture(w, h, {canvas = true, dpiscale = 1, mipmaps = "auto"})
 
     return setmetatable({
         width = w, height = h,
@@ -104,6 +104,7 @@ local function addToAtlas(self, imageData)
     -- Add to atlas
     lg.draw(image, q, x, y)
     lg.pop()
+    self.image:generateMipmaps()
 
     -- Release the temp image object.
     image:release()

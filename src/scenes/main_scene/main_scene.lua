@@ -218,7 +218,7 @@ function MainScene:jobCompleted(server, job)
     local x = (server.tileX + 0.5) * consts.WORLD_TILE_SIZE
     local y = (server.tileY + 0.5) * consts.WORLD_TILE_SIZE
     local money = assert(job.resource and job.resource.money)
-    worldutil.spawnText("{o}+$"..g.formatNumber(money).."{/o}", x, y, 1, 15)
+    worldutil.spawnText("{o}"..job.name.." +{money}"..g.formatNumber(money).."{/o}", x, y, 1, 15)
 end
 
 
