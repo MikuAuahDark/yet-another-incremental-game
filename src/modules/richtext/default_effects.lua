@@ -52,6 +52,51 @@ return function(text)
     text.defineEffect("outline", outline)
     text.defineEffect("o", outline)
 
+    local boldmap = consts.IS_MOBILE and {
+        {-1, -1},
+        {1, -1},
+        {-1, 1},
+        {1, 1},
+    } or {
+        {-1, -1},
+        {0, -1},
+        {1, -1},
+        {-1, 0},
+        {1, 0},
+        {-1, 1},
+        {0, 1},
+        {1, 1},
+        {-1, 1},
+        {0, 1},
+        {1, 1},
+    }
+    ---@param args richtext.EffectArgs
+    ---@param x number
+    ---@param y number
+    ---@param context richtext.Context
+    ---@param next richtext.NextFunc
+    local function bold(args, x, y, context, next)
+        local thickness = (args.thickness or 1) / 4
+        local obj = context.textOrDrawable
+
+        for _, oxoy in ipairs(boldmap) do
+            local ox, oy = oxoy[1], oxoy[2]
+            if type(obj) == "string" then
+                love.graphics.print(obj, context.font, x + ox * thickness, y + oy * thickness)
+            else
+                if context.quad then
+                    love.graphics.draw(obj, context.quad, x + ox * thickness, y + oy * thickness, 0, context.scale)
+                else
+                    love.graphics.draw(obj, x + ox * thickness, y + oy * thickness, 0, context.scale)
+                end
+            end
+        end
+
+        return next(context.textOrDrawable, x, y)
+    end
+    text.defineEffect("bold", bold)
+    text.defineEffect("b", bold)
+
     ---@param args richtext.EffectArgs
     ---@param x number
     ---@param y number

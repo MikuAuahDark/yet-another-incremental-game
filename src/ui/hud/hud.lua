@@ -76,6 +76,55 @@ local function generateItemListRegion(r, count, itemListSize, horzPadding)
     return result, totalWidth
 end
 
+
+local MAX_TOOLTIP_WIDTH = 180
+
+---@param x number
+---@param y number
+---@param title string
+---@param description string
+local function drawTooltipWithDescription(x, y, title, description)
+    local titleF = g.getMainFont(16)
+    local descF = g.getMainFont(12)
+    local titleFH = titleF:getHeight()
+    local descFH = descF:getHeight()
+
+    -- Compute sizes
+    local width, height = 0, 0
+    -- Title
+    local titleHeight
+    do
+        local w, l = richtext.getWrap(title, titleF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        titleHeight = l * titleFH
+        height = height + titleHeight
+    end
+    -- Description
+    local descriptionHeight = 0
+    do
+        local w, l = richtext.getWrap(description, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        descriptionHeight = l * descFH
+        height = height + descriptionHeight
+    end
+
+    -- Generate region now
+    local tdrawableR, tcntR = ui.getTooltipRegion(x - width / 2, y, width, height, ui.getFullScreenRegion())
+    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+    -- Pass 2: Draw the tooltip
+    height = 0
+    do
+        richtext.printRich(title, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleHeight
+    end
+    -- Draw description
+    do
+        richtext.printRich(description, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + descriptionHeight
+    end
+end
+
 ---@param b boolean?
 local function nilIsTrue(b)
     if b == nil then return true end
@@ -133,10 +182,12 @@ local function drawPanelWithBorder(r, theme)
 end
 
 ---@param r kirigami.Region
+---@param title string
+---@param desc string
 ---@param left string
 ---@param right string
 ---@param col objects.Color?
-local function drawStats(r, left, right, col)
+local function drawStats(r, title, desc, left, right, col)
     local font = g.getMainFont(18)
     local padR = r:padUnit(4)
 
@@ -151,6 +202,12 @@ local function drawStats(r, left, right, col)
     richtext.printRich(left, font, padR.x + 8, oy, padR.w, "left")
     richtext.printRich(right, font, padR.x - 8, oy, padR.w, "right")
     col2:pop()
+
+    if iml.isHovered(padR:get()) then
+        local col3 = gsman.setColor(1, 1, 1)
+        drawTooltipWithDescription(padR.x + padR.w / 2, padR.y + padR.h + 8, title, desc)
+        col3:pop()
+    end
 end
 
 ---@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?}?
@@ -179,10 +236,10 @@ function HUD:draw(show)
             )
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
-            drawStats(moneyR, "{money}", money)
+            drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", money)
             local loadColor = world.currentLoad > world.maxLoad and g.COLORS.UI.WARNING or objects.Color.WHITE
-            drawStats(loadR, "{bolt}", world.currentLoad.."/"..world.maxLoad, loadColor)
-            drawStats(cpsR, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
+            drawStats(loadR, TEXT.LOAD, TEXT.LOAD_DESCRIPTION, "{bolt}", world.currentLoad.."/"..world.maxLoad, loadColor)
+            drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
             lw2:pop()
 
             love.graphics.setColor(0, 0, 0)

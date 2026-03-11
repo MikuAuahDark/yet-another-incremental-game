@@ -8,6 +8,18 @@ local text = {
 
     JOB_QUEUE_NUMBER = interp("Job Queue: %{njobs}/%{maxjobs}", {
         context = "Used in place to list job queue, with specific maximum amount of queueable jobs"}),
+    MONEY = loc("Money", nil, {
+        context = "A resource"}),
+    MONEY_DESCRIPTION = loc("Use the money to buy servers, data processors, boosters, and unlock upgrades.", nil, {
+        context = "A description on what \"Money\" (a resource in-game) is usable for."}),
+    CPS = loc("Compute Per Second", nil, {
+        context = "CPS (Compute Per Second) is a measurement how fast server can process computation."}),
+    CPS_DESCRIPTION = loc("This is how fast all your servers perform computation for its job. The win condition is to reach {b}1 billion{/b} CPS.", nil, {
+        context = "A description on what \"CPS\" (Compute Per Second) is for."}),
+    LOAD = loc("Load", nil, {
+        context = "Think of \"load\" as the \"electricity load\""}),
+    LOAD_DESCRIPTION = loc("\"Load\" measures how many servers, data processors, and boosters can be in the datacenter. {c r=0.9 g=0.77 b=0.38}Exceeding the maximum load will impact the whole datacenter!{/c}", nil, {
+        context = "A description on what does \"Load\" do."}),
 
     CATEGORY_LIST = interp("Category: %{categories}", {
         context = "Denoting list of category, the ${categories} will be replaced with the actual list of items later"}),
@@ -34,7 +46,7 @@ local text = {
         context = "Denotes the effectivity of a booster. The %{effectivity} is percentage of the booster efficiency."}),
     HEAT_TOLERANCE = interp("Heat Tolerance: %{min_heat}-%{max_heat}", {
         context = "Denotes the heat tolerance range of a machine."}),
-    LOAD = interp("Load: %{load}{bolt}", {
+    LOAD_TOOLTIP = interp("Load: %{load}{bolt}", {
         context = "How many load this item uses?"}),
 }
 return text

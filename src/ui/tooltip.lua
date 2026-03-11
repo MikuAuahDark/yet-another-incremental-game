@@ -16,7 +16,7 @@ local function getItemLoadText(itemInfo, itemData)
         actualLoad = g.getMainWorld():computeLoadModifier(itemInfo)
     end
 
-    local loadText = TEXT.LOAD({load = g.formatNumber(actualLoad)})
+    local loadText = TEXT.LOAD_TOOLTIP({load = g.formatNumber(actualLoad)})
     if actualLoad > baseLoad then
         local p = (actualLoad - baseLoad) / baseLoad
         loadText = loadText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "(+"..helper.round(p * 100, 2).."%)")
@@ -563,7 +563,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
         local world = g.getMainWorld()
         -- Load
         local load = world:computeLoadModifier(serverInfo)
-        local loadText = TEXT.LOAD({load = load})
+        local loadText = TEXT.LOAD_TOOLTIP({load = load})
         if (world.currentLoad + load) > world.maxLoad then
             loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
         end
@@ -650,7 +650,7 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
         local world = g.getMainWorld()
         -- Load
         local load = world:computeLoadModifier(dpInfo)
-        local loadText = TEXT.LOAD({load = load})
+        local loadText = TEXT.LOAD_TOOLTIP({load = load})
         if (world.currentLoad + load) > world.maxLoad then
             loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
         end
@@ -734,7 +734,7 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
         local world = g.getMainWorld()
         -- Load
         local load = world:computeLoadModifier(boosterInfo)
-        local loadText = TEXT.LOAD({load = load})
+        local loadText = TEXT.LOAD_TOOLTIP({load = load})
         if (world.currentLoad + load) > world.maxLoad then
             loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
         end
