@@ -1741,7 +1741,7 @@ function g.getItemProblems(itemData)
             result[#result+1] = "overheat"
         end
 
-        if itemData.finalCPS < itemData.computePerSecond then
+        if itemData.connectsTo and itemData.finalCPS < itemData.computePerSecond then
             result[#result+1] = "data_bottleneck"
         end
     elseif category == "data" then

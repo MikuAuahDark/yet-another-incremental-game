@@ -23,7 +23,7 @@ end
 ---@field type string Item ID
 ---@field tileX integer (readonly; updated every frame)
 ---@field tileY integer (readonly; updated every frame)
----@field load integer
+---@field load integer (readonly; updated every frame)
 ---@field removed boolean
 
 ---@class g.World.ServerData: g.World.ItemData
@@ -449,7 +449,7 @@ function World:computeLoadModifier(itemInfo, mod, mul)
         v.dirty = false
     end
 
-    return math.max(math.max(load + v.modifier + (mod or 0), 0) * v.multiplier * (mul or 1), 0)
+    return math.max(math.max(itemInfo.load + v.modifier + (mod or 0), 0) * v.multiplier * (mul or 1), 0)
 end
 
 

@@ -329,13 +329,7 @@ function HUD:draw(show)
             love.graphics.setColor(1, 1, 1)
 
             if showDescriptionOf then
-                local itemInfo = showDescriptionOf[3]
-                if itemInfo.category == "server" then
-                    ---@cast itemInfo g.ServerInfo
-                    ui.ItemTooltip.ServerTooltipHUD(itemInfo, showDescriptionOf[1], showDescriptionOf[2])
-                else
-                    ui.ItemTooltip.GenericTooltipHUD(itemInfo, showDescriptionOf[1], showDescriptionOf[2])
-                end
+                ui.ItemTooltip.DrawHUDTooltip(showDescriptionOf[3], showDescriptionOf[1], showDescriptionOf[2])
             end
         end
     end
