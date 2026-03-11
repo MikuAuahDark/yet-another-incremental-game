@@ -173,8 +173,10 @@ end
 
 local definedEvents = objects.Set()
 
+---@param ev string
 function g.defineEvent(ev)
     assert(isLoadTime())
+    log.trace(string.format("g.defineEvent(%q)", ev))
     definedEvents:add(ev)
 end
 
@@ -226,6 +228,7 @@ end
 ---@param defaultValue T
 function g.defineQuestion(question, reducer, defaultValue)
     assert(isLoadTime())
+    log.trace(string.format("g.defineQuestion(%q)", question))
     questions[question] = {
         reducer = reducer,
         defaultValue = defaultValue
@@ -574,7 +577,7 @@ end
 
 local defineStatTc = typecheck.assert("string", "number", "string")
 
----@type table<string, {addQuestion: string, multQuestion:string, startingValue: number, name: string}>
+---@type table<string, {addQuestion: string, multQuestion:string, startingValue: number, name: string, rawName: string}>
 g.VALID_STATS = {}
 
 ---@param id string
@@ -593,6 +596,7 @@ function g.defineStat(id, startingValue, name)
         addQuestion = addQ, multQuestion = multQ,
         startingValue = startingValue,
         name = name and loc(name, nil, {context = "This is a statistic, e.g. 'Damage' or 'Health'. Represents a value that can be improved/upgraded."}) or id,
+        rawName = name or id
     }
     return 0
 end
@@ -615,27 +619,13 @@ g.stats = {}
 
 -- SSTATS 
 -- (if you ever want to quickly search the name of stats, search "sstats")
-g.stats.HitSpeed = g.defineStat("HitSpeed", 9, "Hit Speed")
-g.stats.HitDamage = g.defineStat("HitDamage", 25, "Hit Damage")
-g.stats.HarvestArea = g.defineStat("HarvestArea", 10, "Harvest Area")
-g.stats.ResourceMultiplier = g.defineStat("ResourceMultiplier", 1, "Resource Gain Multiplier")
-g.stats.OrbitSpeed = g.defineStat("OrbitSpeed", 2, "Entity Orbit Speed") -- rad/s
-g.stats.XpMultiplier = g.defineStat("XpMultiplier", 1, "XP Gain Multiplier")
-g.stats.AutoCatMoveSpeed = g.defineStat("AutoCatMoveSpeed", 20, "Cats Move Speed")
-g.stats.AutoCatRadiusMultiplier = g.defineStat("AutoCatRadiusMultiplier", 1, "Farmer Cats Harvest Area")
-g.stats.TokenRespawnTime = g.defineStat("TokenRespawnTime", 3, "Crop Respawn Time")
-g.stats.CritChance = g.defineStat("CritChance", 0, "Critical Hit Chance") -- should start at 0
-g.stats.CritDamageMultiplier = g.defineStat("CritDamageMultiplier", 10, "Crirical Damage Multiplier")
-g.stats.KnifeDamage = g.defineStat("KnifeDamage", 10, "Knife Damage")
-g.stats.LightningDamage = g.defineStat("LightningDamage", 20, "Lightning Damage")
-g.stats.ExplosionDamage = g.defineStat("ExplosionDamage", 15, "Explosion Damage")
-
+-- g.defineQuestion("getJobFrequencyModifier", reducers.ADD, 0) -- arguments: g.JobCategory
+g.stats.MaxLoad = g.defineStat("MaxLoad", 10, "Max Load")
+g.stats.MaxJobQueue = g.defineStat("MaxJobQueue", 1, "Max Job Queue")
+g.stats.JobFrequency = g.defineStat("JobFrequency", 0, "Job Spawn Frequency")
 -- World stat
-g.stats.WorldTileSize = g.defineStat("WorldTileSize", 20, "World Size")
+g.stats.WorldTileSize = g.defineStat("WorldTileSize", 3, "World Size")
 
--- OLD CODE:
--- g.stats.WorldTileWidth = g.defineStat("WorldTileWidth", 20)
--- g.stats.WorldTileHeight = g.defineStat("WorldTileHeight", 13)
 
 ---@return integer
 ---@return integer
@@ -675,22 +665,17 @@ end
 
 ---@alias g.PrestigeRange {lower: integer, upper: integer}
 
-
-
-
-local UPGRADE_KINDS = {TOKEN=true,HARVESTING=true,TOKEN_MODIFIER=true,MISC=true}
-
 ---@alias g.UpgradeKind
----token upgrade, always +1 <token> per level. 1-1 mapping with a token.
----| "TOKEN"
----upgrade relating to harvesting-speed, or dealing extra damage
----| "HARVESTING"
---- Token modifers. Eg. "all grass-tokens earn +$5". 
---- "When a log-token is destroyed, spawn a bomb"
----| "TOKEN_MODIFIER"
---- Misc upgrades; 
---- (eg. double the money-limit. Harvest stuff automatically.)
+---| "UNLOCKS"
+---| "JOB"
+---| "EFFICIENCY"
 ---| "MISC"
+local UPGRADE_KINDS = {
+    UNLOCKS=true,
+    JOB=true,
+    EFFICIENCY=true,
+    MISC=true
+}
 
 
 
@@ -1245,7 +1230,7 @@ end
 do
 
 ---Key is the ID, value is the name
----@type table<string, string>
+---@type table<string, [string,string]>
 g.VALID_JOB_CATEGORIES = {}
 
 ---@class g.Job
@@ -1258,21 +1243,24 @@ g.VALID_JOB_CATEGORIES = {}
 
 ---@param id string
 ---@param name string
----@param def {nameContext: string?}?
+---@param def {nameContext:string?,startingStatValue:number}
 function g.defineJobCategory(id, name, def)
     assert(not g.VALID_JOB_CATEGORIES[id], "Redefined job category!")
-    local ctx = def and def.nameContext
+    local ctx = def.nameContext
     if not ctx then ctx = nil end
-    g.VALID_JOB_CATEGORIES[id] = loc(name, nil, {context = ctx})
+    g.VALID_JOB_CATEGORIES[id] = {name, loc(name, nil, {context = ctx})}
+    return g.defineStat(name.."JobFrequency", def.startingStatValue, name.." Job Spawn Frequency")
 end
 
 ---@param jobCategory g.JobCategory
-function g.getJobCategoryName(jobCategory)
+---@param raw boolean?
+---@return string
+function g.getJobCategoryName(jobCategory, raw)
     local info = g.VALID_JOB_CATEGORIES[jobCategory]
     if not info then
         error("unknown job category '"..jobCategory.."'")
     end
-    return info
+    return info[raw and 2 or 1]
 end
 
 ---@param job g.Job
@@ -1290,9 +1278,6 @@ end
 
 end
 
-g.defineJobCategory("general", "General", {nameContext = "General computer processing job"})
-g.defineJobCategory("video", "Video", {nameContext = "Video processing job for computer (e.g. transcoding)"})
-g.defineJobCategory("ai", "AI", {nameContext = "AI processing job for computer (e.g. inferencing or training)"})
 ---@alias g.JobCategory
 ---General job
 ---| "general"
@@ -1300,6 +1285,16 @@ g.defineJobCategory("ai", "AI", {nameContext = "AI processing job for computer (
 ---| "video"
 ---AI-related job
 ---| "ai"
+g.defineJobCategory("general", "General", {
+    startingStatValue = 0.1,
+    nameContext = "General computer processing job"})
+g.defineJobCategory("video", "Video", {
+    startingStatValue = 0,
+    nameContext = "Video processing job for computer (e.g. transcoding)"})
+g.defineJobCategory("ai", "AI", {
+    startingStatValue = 0,
+    nameContext = "AI processing job for computer (e.g. inferencing or training)"})
+
 
 
 ---------------------
@@ -1432,7 +1427,10 @@ function g.defineItem(id, def)
     elseif def.category == "data" then
         ---@cast def g.DataInfo
         assert(def.dataPerSecond, "invalid dps")
-        assert(def.wireLength and def.wireLength > 0, "invalid wireLength")
+        assert(def.wireLength and def.wireLength > 0, "invalid wire length")
+        if def.wireCount then
+            assert(def.wireCount > 0, "invalid wire count")
+        end
     elseif def.category == "booster" then
         ---@cast def g.BoosterInfo
         def.radiate = def.radiate or 1

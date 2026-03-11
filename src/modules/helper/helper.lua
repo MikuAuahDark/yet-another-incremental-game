@@ -317,12 +317,13 @@ end
 
 ---@param increase number
 ---@param startingVal number?
----@return function
 function helper.valueGetter(increase, startingVal)
     helper.assert(type(increase)=="number","Increase needs to be a number")
     if startingVal then
         helper.assert(type(startingVal)=="number","startingVal needs to be a number")
     end
+    ---@param self g.UpgradeInfo
+    ---@param level integer
     local function getValues(self, level)
         if startingVal then
             return startingVal + ((level-1) * increase)
