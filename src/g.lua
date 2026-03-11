@@ -1504,7 +1504,7 @@ function g.putItem(itemId, tx, ty)
         error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
     end
 
-    local _, category = g.getItemInfo(itemId)
+    local itemInfo, category = g.getItemInfo(itemId)
     local itemData
     if category == "server" then
         ---@type g.World.ServerData
@@ -1513,6 +1513,7 @@ function g.putItem(itemId, tx, ty)
             tileX = tx,
             tileY = ty,
             removed = false,
+            load = itemInfo.load,
             currentJob = nil,
             jobProgress = 0,
             connectsTo = nil,
@@ -1526,6 +1527,7 @@ function g.putItem(itemId, tx, ty)
             tileX = tx,
             tileY = ty,
             removed = false,
+            load = itemInfo.load,
             connectsServers = {},
             dataPerSecond = 0,
             serversDataPerSecond = 0,
@@ -1537,6 +1539,7 @@ function g.putItem(itemId, tx, ty)
             tileX = tx,
             tileY = ty,
             removed = false,
+            load = itemInfo.load,
         }
     else
         error("fixme category "..category)
@@ -1660,6 +1663,107 @@ function g.getTileHeat(tx, ty)
     local world = g.getMainWorld()
     assert(world.heat:contains(tx, ty), "out of range")
     return world.heat:get(tx, ty) or 0
+end
+
+
+----------------
+-- Item Problems
+----------------
+
+do
+
+---@alias g.ItemProblems
+---Server is not connected to datacenter.
+---| "not_connected"
+---Datacenter load is too high.
+---| "overloaded"
+---Server is too hot
+---| "overheat"
+---Data processor is not connected to any server.
+---| "no_connection"
+---Booster does not provide any benefit
+---| "booster_noop"
+---Data processor is overloaded
+---| "data_bottleneck"
+local ITEM_PROBLEMS = {
+    not_connected = {
+        error = true,
+        icon = "power_off",
+        text = loc("Server is not connected to data processor!", nil, {
+            context = "Think of it as connection between machines."}),
+    },
+    overloaded = {
+        error = false,
+        icon = "bolt",
+        text = loc("Datacenter load is too high!", nil, {
+            context = "Think of \"load\" as the \"electricity load\""}),
+    },
+    overheat = {
+        error = false,
+        icon = "emergency_heat",
+        text = loc("The server exceeded the heat tolerance it can handle!", nil, {
+            context = "Denotes when a machine is overheating."}),
+    },
+    no_connection = {
+        error = false,
+        icon = "power_off",
+        text = loc("Data processor is not connected to any server!", nil, {
+            context = "Think of it as connection between machines."})
+    },
+    booster_noop = {
+        error = false,
+        icon = "warning",
+        text = loc("Booster does not affecting any servers!", nil, {
+            context = "Booster is an item that boosts stats of other machines."})
+    },
+    data_bottleneck = {
+        error = false,
+        icon = "database",
+        text = loc("Server is sending too much data to the data processor!", nil, {
+            context = "The server performance is bottlenecked by the data lines"}),
+    }
+}
+
+---@param itemData g.World.ItemData
+function g.getItemProblems(itemData)
+    ---@type g.ItemProblems[]
+    local result = {}
+    local itemInfo, category = g.getItemInfo(itemData.type)
+
+    if category == "server" then
+        ---@cast itemData g.World.ServerData
+        ---@cast itemInfo g.ServerInfo
+        if not itemData.connectsTo then
+            result[#result+1] = "not_connected"
+        end
+
+        if g.getTileHeat(itemData.tileX, itemData.tileY) > itemInfo.heatTolerance[2] then
+            result[#result+1] = "overheat"
+        end
+
+        if itemData.finalCPS < itemData.computePerSecond then
+            result[#result+1] = "data_bottleneck"
+        end
+    elseif category == "data" then
+        ---@cast itemData g.World.DataProcessorData
+        ---@cast itemInfo g.DataInfo
+        if #itemData.connectsServers == 0 then
+            result[#result+1] = "no_connection"
+        end
+    end
+
+    if g.getMainWorld().loadPercentage < 1 then
+        result[#result+1] = "overloaded"
+    end
+
+    return result
+end
+
+---@param problem g.ItemProblems
+function g.getItemProblemInfo(problem)
+    return (assert(ITEM_PROBLEMS[problem]))
+end
+
 end
 
 

@@ -23,6 +23,7 @@ end
 ---@field type string Item ID
 ---@field tileX integer (readonly; updated every frame)
 ---@field tileY integer (readonly; updated every frame)
+---@field load integer
 ---@field removed boolean
 
 ---@class g.World.ServerData: g.World.ItemData
@@ -65,6 +66,8 @@ function World:init()
     zeroTileHeat(self.heat)
 
     self.cpsCollector = DataCollector(60)
+    ---@type table<string, {dirty:boolean,modifier:number,multiplier:number}>
+    self.loadModifiers = {}
 end
 
 
@@ -134,6 +137,12 @@ function World:_update(dt)
         end
     end
 
+    -- Mark cached modifier as dirty
+    -- It's less garbage to mark it dirty than table.clearing it.
+    for _, v in pairs(self.loadModifiers) do
+        v.dirty = true
+    end
+
     -- Update job queues
     for i = #self.jobQueue, 1, -1 do
         local job = self.jobQueue[i]
@@ -153,7 +162,8 @@ function World:_update(dt)
     self.items:foreach(function(item, x, y)
         if item then
             local itemInfo, category = g.getItemInfo(item.type)
-            loads = loads + itemInfo.load
+            item.load = self:computeLoadModifier(itemInfo)
+            loads = loads + item.load
             local index = self.items:coordsToIndex(x, y)
             if category == "booster" then
                 self.boosters[index] = item
@@ -419,6 +429,27 @@ function World:_draw()
     self.particles:draw()
 
     prof_pop() -- prof_push("world:_draw")
+end
+
+
+
+---@param itemInfo g.ItemInfo
+---@param mod number?
+---@param mul number?
+function World:computeLoadModifier(itemInfo, mod, mul)
+    local v = self.loadModifiers[itemInfo.id]
+    if not v then
+        v = {dirty = true, modifier = 0, multiplier = 1}
+        self.loadModifiers[itemInfo.id] = v
+    end
+
+    if v.dirty then
+        v.modifier = g.ask("getLoadModifier", itemInfo)
+        v.multiplier = g.ask("getLoadMultiplier", itemInfo)
+        v.dirty = false
+    end
+
+    return math.max(math.max(load + v.modifier + (mod or 0), 0) * v.multiplier * (mul or 1), 0)
 end
 
 
