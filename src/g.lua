@@ -1109,6 +1109,7 @@ local SPECIAL_FUNCTIONS = {
 ---@param id string
 ---@param name string
 ---@param def g.UpgradeDefinition
+---@return g.UpgradeInfo
 function g.defineUpgrade(id, name, def)
     if not (def.kind and UPGRADE_KINDS[def.kind]) then
         error("Invalid upgrade-kind: " .. tostring(def.kind),2)
@@ -1161,6 +1162,7 @@ function g.defineUpgrade(id, name, def)
     end
 
     log.trace(string.format("g.defineUpgrade(%q)", id))
+    return def
 end
 
 
@@ -1251,6 +1253,7 @@ function g.defineJobCategory(id, name, def)
     local ctx = def.nameContext
     if not ctx then ctx = nil end
     g.VALID_JOB_CATEGORIES[id] = {name, loc(name, nil, {context = ctx})}
+    g.defineEvent("populate"..name.."JobCandidates") -- args: g.Job[]
     return g.defineStat(name.."JobFrequency", def.startingStatValue, name.." Job Spawn Frequency")
 end
 
@@ -1287,13 +1290,13 @@ end
 ---| "video"
 ---AI-related job
 ---| "ai"
-g.defineJobCategory("general", "General", {
+g.stats.GeneralJobFrequency = g.defineJobCategory("general", "General", {
     startingStatValue = 0.1,
     nameContext = "General computer processing job"})
-g.defineJobCategory("video", "Video", {
+g.stats.VideoJobFrequency = g.defineJobCategory("video", "Video", {
     startingStatValue = 0,
     nameContext = "Video processing job for computer (e.g. transcoding)"})
-g.defineJobCategory("ai", "AI", {
+g.stats.AIJobFrequency = g.defineJobCategory("ai", "AI", {
     startingStatValue = 0,
     nameContext = "AI processing job for computer (e.g. inferencing or training)"})
 
@@ -1872,7 +1875,7 @@ function g.getItemProblems(itemData)
             result[#result+1] = "overheat"
         end
 
-        if itemData.connectsTo and itemData.finalCPS < itemData.computePerSecond then
+        if itemData.currentJob and itemData.finalCPS < itemData.computePerSecond then
             result[#result+1] = "data_bottleneck"
         end
     elseif category == "data" then

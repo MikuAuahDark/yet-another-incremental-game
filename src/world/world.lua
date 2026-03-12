@@ -7,7 +7,6 @@ World
 
 local ParticleService = require(".particle.ParticleService")
 local DataCollector = require(".data_collector")
-local jobgen = require(".jobgen")
 
 
 ---@param grid objects.Grid

@@ -25,7 +25,8 @@ function helper.remap(v, r1, r2, nr1, nr2)
 end
 
 ---@param num number
----@param decimals integer?
+---@param decimals integer
+---@overload fun(num:number):integer
 function helper.round(num, decimals)
     local zeros = 10 ^ (decimals or 0)
     if num > 0 then
