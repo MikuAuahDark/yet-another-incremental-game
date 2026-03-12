@@ -67,6 +67,11 @@ function World:init()
     self.cpsCollector = DataCollector(60)
     ---@type table<string, {dirty:boolean,modifier:number,multiplier:number}>
     self.loadModifiers = {}
+    ---@type table<g.JobCategory, number>
+    self.jobPoller = {}
+    for k in pairs(g.VALID_JOB_CATEGORIES) do
+        self.jobPoller[k] = 0
+    end
 end
 
 
@@ -349,6 +354,35 @@ function World:_update(dt)
         end
     end
     self.cpsCollector:insert(dt, cps)
+
+    -- Run job poll
+    local maxJobs = helper.round(g.stats.MaxJobQueue)
+    for k in pairs(g.VALID_JOB_CATEGORIES) do
+        local name = g.getJobCategoryName(k, true)
+        -- Yea these stat name and evbus name is MSOT.
+        -- Is there a better way?
+        local stat = g.stats[name.."JobFrequency"]
+        if stat > 0 then
+            local time = 1 / stat -- the stat is frequency
+            self.jobPoller[k] = self.jobPoller[k] + dt
+
+            while self.jobPoller[k] >= time do
+                if #self.jobQueue < maxJobs then
+                    ---@type g.Job[]
+                    local jobCandidates = {}
+                    g.call("populate"..name.."JobCandidates", jobCandidates)
+
+                    if #jobCandidates > 0 then
+                        g.queueJob(helper.randomChoice(jobCandidates))
+                    end
+                end
+
+                self.jobPoller[k] = self.jobPoller[k] - time
+            end
+        else
+            self.jobPoller[k] = 0
+        end
+    end
 
     -- Run per second update event bus on upgrades
     self.timer = self.timer + dt

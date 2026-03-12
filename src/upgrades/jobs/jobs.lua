@@ -30,6 +30,7 @@ local function defJob(id, name, category, def)
         descriptionContext = "A compute job for computer or server to process",
         kind = "JOB",
         maxLevel = 1,
+        image = def.image,
         getValues = function(uinfo, level)
             return level
         end,
@@ -99,8 +100,9 @@ defJob("livestream", "Livestream", "video", {
 ---@param id string
 ---@param name string
 ---@param category g.JobCategory
+---@param image string
 ---@param def _JobDef2[]
-local function defAIJob(id, name, category, iamge, def)
+local function defAIJob(id, name, category, image, def)
     ---@type {rc:(fun():integer),rd:(fun():integer),rm:(fun():integer),name:string}[]
     local internalJobDef = {}
     local catname = g.getJobCategoryName(category, true)
@@ -119,6 +121,7 @@ local function defAIJob(id, name, category, iamge, def)
         descriptionContext = "A compute job for computer or server to process",
         kind = "JOB",
         maxLevel = 1,
+        image = image,
         getValues = function(uinfo, level)
             return level
         end,

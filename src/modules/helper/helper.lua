@@ -106,6 +106,7 @@ end
 ---@param rng (fun(max:integer):integer)? Function that returns random integer from 1 to `max` both inclusive.
 ---@return T
 function helper.randomChoice(tab, rng)
+    assert(#tab > 0, "table is empty")
     rng = rng or love.math.random
     return tab[rng(#tab)]
 end

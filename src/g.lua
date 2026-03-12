@@ -1270,10 +1270,9 @@ end
 
 ---@param job g.Job
 function g.queueJob(job)
-    local maxJobs = g.ask("getMaxJobQueueModifier")
     local world = g.getMainWorld()
 
-    if #world.jobQueue >= maxJobs then
+    if #world.jobQueue >= helper.round(g.stats.MaxJobQueue) then
         return false
     end
 
