@@ -17,7 +17,7 @@ local consts = {
     GAME_VERSION = 0,
     ANALYTICS_IDENTITY = "make_a_datacenter",
 
-    FILE_LOG_LEVEL = "warn",
+    FILE_LOG_LEVEL = "trace",
     CONSOLE_LOG_LEVEL = "trace",
 
     FILE_SEP = "/",
@@ -44,34 +44,15 @@ local consts = {
 
     DEFAULT_UPGRADE_MAX_LEVEL = 10,
 
-    MAX_HIT_DURATION = 0.125,
-
-    BOSSFIGHT_DURATION = 30,
-
     TEST = true,
-
-    LAGGED_HEALTHBAR_DURATION = 0.3, -- the "healtbar lag" on tokens, (purely visual effect)
 
     WORLD_TILE_SIZE = 32, -- World tile size on both width and height.
 
-    AVATAR_SIZE = 24, -- Size of the avatar with background
-    DEFAULT_CAT_AVATAR = "cat",
-    DEFAULT_BACKGROUND_AVATAR = "white",
-    DEFAULT_SCYTHE = "starting_scythe",
-
-    -- Make sure to sync these 2 with `tooling/make_cosmetics.py`
-    STEAM_CHEST_ITEMDEFID = 1,
-    STEAM_CHEST_GENERATOR_ITEMDEFID = 2, -- CHEST_GENERATOR_ITEMDEF_ID = CHEST_ITEMDEF_ID + 1
-
-    ORBIT_RING_DISTANCE = 20, -- Radius of each orbit ring.
-
-    -- Resource multipler on combo increase
-    COMBO_MULTIPLIER = 0.01,
-
-    -- how much % the combo timer increases when you harvest a crop.
-    -- (e.g. 0.2 means you gotta harvest 5 crops to fill the timer)
-    COMBO_HARVEST_INCREMENT_RATIO = 0.07,
 }
+
+if not consts.DEV_MODE then
+    consts.CONSOLE_LOG_LEVEL = "error"
+end
 
 local os = love.system.getOS()
 consts.EMULATE_TOUCH = consts.DEV_MODE and consts.EMULATE_TOUCH
