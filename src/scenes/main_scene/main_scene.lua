@@ -51,7 +51,6 @@ function MainScene:update(dt)
 end
 
 function MainScene:draw()
-    love.graphics.clear(objects.Color("#b0b0b0"))
     local hud = g.getHUD()
     local safeArea = hud:getSafeArea()
 

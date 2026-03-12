@@ -42,6 +42,47 @@ end
 local World = objects.Class("g:World")
 World.TILE_SIZE = 101
 
+
+---@param seed integer
+local function generateWorldTexture(seed)
+    -- Create tile "texture"
+    local rng = love.math.newRandomGenerator(seed)
+    ---@type [number,number,number,number,number?,number?,number?,number?][]
+    local vertices = {}
+    local wtz = consts.WORLD_TILE_SIZE * World.TILE_SIZE
+    for _ = 1, 20000 do
+        local radius = helper.lerp(4, 24, rng:random())
+        local a1 = rng:random() * math.pi * 2
+        local a2 = rng:random() * math.pi * 2
+        local a3 = rng:random() * math.pi * 2
+        -- Sort a1 through a3 to be largest first
+        if a1 < a2 then
+            a1, a2 = a2, a1
+        end
+        if a2 < a3 then
+            a2, a3 = a3, a2
+        end
+        if a1 < a2 then
+            a1, a2 = a2, a1
+        end
+
+        local ox = helper.lerp(radius, wtz - radius, rng:random())
+        local oy = helper.lerp(radius, wtz - radius, rng:random())
+        local x = ox + math.cos(a1) * radius
+        local y = oy + math.sin(a1) * radius
+        vertices[#vertices+1] = {x, y, x / wtz, y / wtz, 0.5, 0.5, 0.5, helper.lerp(0.3, 0.7, rng:random())}
+        x = ox + math.cos(a2) * radius
+        y = oy + math.sin(a2) * radius
+        vertices[#vertices+1] = {x, y, x / wtz, y / wtz, 0.5, 0.5, 0.5, helper.lerp(0.3, 0.7, rng:random())}
+        x = ox + math.cos(a3) * radius
+        y = oy + math.sin(a3) * radius
+        vertices[#vertices+1] = {x, y, x / wtz, y / wtz, 0.5, 0.5, 0.5, helper.lerp(0.3, 0.7, rng:random())}
+    end
+
+    return love.graphics.newMesh(vertices, "triangles", "static")
+end
+
+
 function World:init()
     self.entities = objects.BufferedSet()
     self.items = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
@@ -72,6 +113,8 @@ function World:init()
     for k in pairs(g.VALID_JOB_CATEGORIES) do
         self.jobPoller[k] = 0
     end
+
+    self.worldTexture = generateWorldTexture(12345)
 end
 
 
@@ -424,6 +467,15 @@ end
 function World:_draw()
     prof_push("world:_draw")
 
+    -- Draw the actual world
+    do
+        local size = consts.WORLD_TILE_SIZE * World.TILE_SIZE
+        love.graphics.setColor(objects.Color("#b0b0b0"))
+        love.graphics.rectangle("fill", 0, 0, size, size)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.draw(self.worldTexture)
+    end
+
     ---@type g.Entity[]
     local objlist = {}
 
@@ -464,6 +516,36 @@ function World:_draw()
     end)
     lw:pop()
     prof_pop() -- prof_push("dpcon_draw")
+
+    -- Draw item problems status icons
+    prof_push("item_problems_draw")
+    love.graphics.setColor(1, 1, 1)
+    local statusIconF = g.getMainFont(18)
+    self.items:foreach(function(itemData, tx, ty)
+        if itemData then
+            local problems = g.getItemProblems(itemData)
+            if #problems > 0 then
+                -- Get error texts
+                local txt = {}
+                for _, prob in ipairs(problems) do
+                    local problemInfo = g.getItemProblemInfo(prob)
+                    local col = problemInfo.error and g.COLORS.UI.DEBUFF or g.COLORS.UI.WARNING
+                    txt[#txt+1] = helper.wrapRichtextColor(col, "{"..problemInfo.icon.."}")
+                end
+                -- Draw error text above it
+                local finalText = "{w}{o thickness=0.5}"..table.concat(txt).."{/o}{/w}"
+                local x = (tx + 0.5) * wtz
+                local y = (ty + 0.5) * wtz
+                local w = richtext.getWidth(finalText, statusIconF)
+                richtext.printRich(
+                    finalText, statusIconF,
+                    x - w / 2, y - wtz / 2, w, "center",
+                    0, 1, 1, 0, statusIconF:getHeight() * 0.5
+                )
+            end
+        end
+    end)
+    prof_pop() -- prof_push("item_problems_draw")
 
     prof_push("entity sort")
     -- Add entitiy to be drawn
