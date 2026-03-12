@@ -39,7 +39,6 @@ function upgscene:init()
     self.dev_editModeSelection = nil
     self.dev_showDistances = false
     self.dev_showUnusedUpgradesInSelect = true
-    self.dev_showTokensInSelect = true
     self.dev_showPrices = false
     self.dev_maxLevelInput = ui.newTextBox()
     self.dev_priceInputs = {}
@@ -79,12 +78,11 @@ local function getUpgradeGridCoords(x, y)
 end
 
 ---@param upg g.Tree.Upgrade
----@param frame string
-local function getUpgradeClickableArea(upg, frame)
+local function getUpgradeClickableArea(upg)
     local x, y = getUpgradeGridCoords(upg.x, upg.y)
-    local w, h = select(3, g.getImageQuad(frame):getViewport()) --[[@as number]]
+    local sz = consts.UPGRADE_IMAGE_SIZE
     -- subtract by half the dimensions
-    return x - w / 2, y - h / 2, w, h
+    return x - sz / 2, y - sz / 2, sz, sz
 end
 
 
@@ -149,6 +147,59 @@ end
 
 
 local RAY_COLOR = objects.Color("#".."FFF2E46C")
+
+---Note: Set the line width first before calling this function.
+---This won't draw the godrays. Draw the godrays before this if necessary.
+---@param upgrade g.Tree.Upgrade
+---@param noframe boolean?
+local function drawUpgradeBox(upgrade, noframe, overrideR)
+    local x, y, w, h = getUpgradeClickableArea(upgrade)
+    local uinfo = g.getUpgradeInfo(upgrade.id)
+
+    -- Draw frame
+    if not noframe then
+        if uinfo.kind == "UNLOCKS" then
+            local col = gsman.mulColor(g.COLORS.UPGRADE_KINDS.UNLOCKS)
+            love.graphics.rectangle("line", x, y, w, h, 12, 12)
+            col:pop()
+        elseif uinfo.kind == "EFFICIENCY" then
+            local r = (w + h) / 4
+            local col = gsman.mulColor(uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK)
+            love.graphics.circle("line", x, y, r)
+            col:pop()
+        elseif uinfo.kind == "JOB" then
+            local trans = gsman.transform(x + w / 2, y + h / 2, math.pi / 2)
+            local col = gsman.mulColor(g.COLORS.UPGRADE_KINDS.JOB)
+            love.graphics.rectangle("line", -w / 2, -h / 2, w, h)
+            col:pop()
+            trans:pop()
+        elseif uinfo.kind == "MISC" then
+            local cx, cy = x + w / 2, y + h / 2
+            local rx = w / 2
+            local ry = h / 2
+            local polygons = {}
+            for i = 0, 5 do
+                local a = (i * math.pi) / 3
+                polygons[#polygons+1] = cx + rx * math.cos(a)
+                polygons[#polygons+1] = cy + ry * math.sin(a)
+            end
+            local col = gsman.mulColor(g.COLORS.UPGRADE_KINDS.JOB)
+            love.graphics.polygon("fill", polygons)
+            col:pop()
+        end
+    end
+
+    -- Draw the upgrade
+    if uinfo.image then
+        local ucol = gsman.mulColor(uinfo.color)
+        g.drawImageContained(uinfo.image, x, y, w, h)
+        ucol:pop()
+    end
+
+    if uinfo.drawUI then
+        uinfo:drawUI(upgrade.level, x, y, w, h)
+    end
+end
 
 ---@param self UpgradesScene
 local function drawUpgradeBoxes(self)
@@ -228,45 +279,18 @@ local function drawUpgradeBoxes(self)
     end
     prof_pop() -- prof_push("drawConnectors")
 
-    ---@type table<g.Tree.Upgrade, string?>
-    local backgrounds = {}
-    ---@type table<g.Tree.Upgrade, string>
-    local frames = {}
     ---@type table<g.Tree.Upgrade, boolean>
     local canAffords = {}
     -- Determine bg, frame, blacked out, and input
     prof_push("processUpgrades")
     for _, upg in ipairs(upgrades) do
-        local uinfo = g.getUpgradeInfo(upg.id)
         local maxLevel = tree:getUpgradeMaxLevel(upg)
-        local isMaxLevel = upg.level >= maxLevel
         local canAfford = upg.level < maxLevel and tree:canAffordUpgrade(upg, upg.level+1)
         canAffords[upg] = canAfford
 
-        if uinfo.kind == "TOKEN" then
-            if canAfford then
-                frames[upg] = "upgradeborder_token_golden"
-            elseif isMaxLevel then
-                frames[upg] = "upgradeborder_token"
-            else
-                frames[upg] = "upgradeborder_token_gray"
-            end
-        else
-            if canAfford then
-                backgrounds[upg] = "upgradebackground_golden"
-                frames[upg] = "upgradeborder_golden"
-            elseif isMaxLevel then
-                backgrounds[upg] = "upgradebackground_upgrade"
-                frames[upg] = "upgradeborder_upgrade"
-            else
-                backgrounds[upg] = "upgradebackground_gray"
-                frames[upg] = "upgradeborder_cantafford"
-            end
-        end
-
         -- If not blacked out, process inputs
         if isVisible(upg) then
-            local x, y, w, h = getUpgradeClickableArea(upg, frames[upg])
+            local x, y, w, h = getUpgradeClickableArea(upg)
 
             if iml.isHovered(x, y, w, h) then
                 hoveredUpgrade = upg
@@ -315,54 +339,22 @@ local function drawUpgradeBoxes(self)
     end
     prof_pop() -- prof_push("drawGodrays")
 
-
-    -- Draw upgrade background and frame
-    prof_push("drawUpgradeFrameBackground")
-    for _, upg in ipairs(upgrades) do
-        if isNextToVisible(upg) then
-            local x, y = getUpgradeGridCoords(upg.x, upg.y)
-
-            lg.setColor(1, 1, 1)
-            if not isVisible(upg) then
-                lg.setColor(0, 0, 0, 0.8)
-            end
-
-            if backgrounds[upg] then
-                g.drawImage(backgrounds[upg], x, y)
-            end
-
-            g.drawImage(frames[upg], x, y)
-        end
-    end
-    prof_pop() -- prof_push("drawUpgradeFrameBackground")
-
-
     -- Draw image/icon/custom shit
     prof_push("drawImageIconCustomShit")
+    local lw = gsman.setLineWidth(4)
     for _, upg in ipairs(upgrades) do
         if isVisible(upg) then
-            local uinfo = g.getUpgradeInfo(upg.id)
-            local cx, cy = getUpgradeGridCoords(upg.x, upg.y)
-            lg.setColor((upg.level > 0 or self.dev_editMode) and objects.Color.WHITE or objects.Color.BLACK)
-
-            if uinfo.kind == "TOKEN" then
-                local tinfo = g.getTokenInfo(uinfo.tokenType)
-                g.drawTokenImage(tinfo, cx, cy)
-            elseif uinfo.image then
-                g.drawImage(uinfo.image, cx, cy)
-            end
-
-            -- custom rendering:
-            if uinfo.drawUI then
-                uinfo:drawUI(upg.level, getUpgradeClickableArea(upg, frames[upg]))
-            end
+            local col = gsman.setColor((upg.level > 0 or self.dev_editMode) and objects.Color.WHITE or objects.Color.BLACK)
+            drawUpgradeBox(upg)
+            col:pop()
         end
     end
+    lw:pop()
     prof_pop() -- prof_push("drawImageIconCustomShit")
 
 
     -- Draw level
-    local levelFont = g.getBigFont(16)
+    local levelFont = g.getMainFont(16)
     prof_push("drawUpgradeLevel")
     for _, upg in ipairs(upgrades) do
         if isVisible(upg) and upg.level > 0 then
@@ -372,7 +364,7 @@ local function drawUpgradeBoxes(self)
                 love.graphics.setColor(0.1, 0.7, 0)
             end
 
-            local x, y, w, h = getUpgradeClickableArea(upg, frames[upg])
+            local x, y, w, h = getUpgradeClickableArea(upg)
             local txtDy = 0
             if upg.level < maxLevel then
                 txtDy = math.sin(love.timer.getTime()*4) - 1
@@ -398,18 +390,18 @@ local function drawUpgradeBoxes(self)
     prof_pop() -- prof_push("drawUpgradeBoxes")
 
     if self.dev_editMode then
-        local lw = lg.getLineWidth()
         local sel = self.dev_editModeSelection
         for gridX=-50, 50 do
             for gridY=-50, 50 do
                 local x,y = getUpgradeGridCoords(gridX,gridY)
                 local size2 = math.floor(consts.UPGRADE_IMAGE_SIZE/2) + consts.UPGRADE_GRID_SPACING/2
+                local lw2
                 if sel and sel.x==gridX and sel.y==gridY then
                     lg.setColor(1,1,0, math.sin(love.timer.getTime()*9)/2 + 1)
-                    lg.setLineWidth(5)
+                    lw2 = gsman.setLineWidth(5)
                 else
                     lg.setColor(1,1,1,0.4)
-                    lg.setLineWidth(1)
+                    lw2 = gsman.setLineWidth(1)
                 end
                 local xx,yy,ww,hh = x-size2,y-size2, size2*2,size2*2
                 lg.rectangle("line",xx,yy,ww,hh)
@@ -442,9 +434,9 @@ local function drawUpgradeBoxes(self)
                         hoveredUpgrade = upg
                     end
                 end
+                lw2:pop()
             end
         end
-        lg.setLineWidth(lw)
     end
 
     return hoveredUpgrade
@@ -578,12 +570,6 @@ local function drawDevEditModeUI(self, treeUpgrades)
     end
 
     local function shouldShow(upgId)
-        if not self.dev_showTokensInSelect then
-            local uinfo = g.getUpgradeInfo(upgId)
-            if uinfo.tokenType then
-                return false
-            end
-        end
         if self.dev_showUnusedUpgradesInSelect then
             return true
         end
@@ -613,12 +599,6 @@ local function drawDevEditModeUI(self, treeUpgrades)
                 -- draw upgr icon:
                 local uinfo = g.getUpgradeInfo(utype)
                 g.drawImageContained(uinfo.image, x,y,w,h)
-                if uinfo.tokenType then
-                    local tinfo = g.getTokenInfo(uinfo.tokenType)
-                    if tinfo.growths then
-                        g.drawImageContained(tinfo.growths.growth, Kirigami(x,y,w,h):padRatio(0.7):get())
-                    end
-                end
                 if uinfo.drawUI then
                     uinfo:drawUI(1, x,y,w,h)
                 end
@@ -638,7 +618,7 @@ local function drawDevEditModeUI(self, treeUpgrades)
 
         if hovered then
             local mx, my = iml.getTransformedPointer()
-            local f = g.getSmallFont(16)
+            local f = g.getMainFont(16)
             local labelR = Kirigami(mx + 6, my + 6, richtext.getWidth(hovered.name, f), f:getHeight())
                 :clampInside(ui.getScreenRegion())
             helper.printTextOutline(hovered.name, f, 1, labelR.x, labelR.y, labelR.w, "left")
@@ -647,16 +627,13 @@ local function drawDevEditModeUI(self, treeUpgrades)
         local bot1, bot2 = bot:splitVertical(1,1)
         local makeRootButton, connectButton, deleteButton = bot2:splitHorizontal(1,1,1)
         local toggleUnused, toggleTokens, cancelButton = bot1:splitHorizontal(1,1,3)
-    
+
         if ui.DefaultButton("Cancel", cancelButton) then
             self.dev_editModeSelection = nil
         end
 
         if ui.DefaultButton("Show unused?", toggleUnused) then
             self.dev_showUnusedUpgradesInSelect = not self.dev_showUnusedUpgradesInSelect
-        end
-        if ui.DefaultButton("Show tokens?", toggleTokens) then
-            self.dev_showTokensInSelect = not self.dev_showTokensInSelect
         end
 
         if ui.Button("DELETE", {0.9,0,0}, {0.6,0,0}, deleteButton) then
@@ -680,7 +657,7 @@ local function drawDevEditModeUI(self, treeUpgrades)
 
         -- LEFT SIDEBAR:
         if upg then
-            local font=g.getSmallFont(16)
+            local font=g.getMainFont(16)
             local topleft,leftbar1 = leftbar:splitVertical(2,5)
             local leftregs = leftbar1:grid(1,14)
             lg.setColor(0,0,0,0.4)
@@ -729,7 +706,7 @@ local function drawDevUI(self)
         self.dev_editMode = not self.dev_editMode
     end
     local tree = g.getUpgTree()
-    local font=g.getSmallFont(16)
+    local font=g.getMainFont(16)
     if tree and tree._filename then
         richtext.printRichContained("{o}EDITING: {c r=1 g=1 b=0}" .. tree._filename, font, editname:padRatio(-0.2):get())
     elseif not tree._filename then
@@ -795,7 +772,7 @@ function upgscene:draw()
         local safeArea = g.getHUD():getSafeArea()
         local tutTextR = safeArea:padRatio(0.1)
         local txt = consts.IS_MOBILE and TUTORIAL_UPGRADES_MOBILE or TUTORIAL_UPGRADES
-        richtext.printRich(txt, g.getBigFont(32), tutTextR.x, tutTextR.y, tutTextR.w, "center")
+        richtext.printRich(txt, g.getMainFont(32), tutTextR.x, tutTextR.y, tutTextR.w, "center")
     end
 
     if hoveredUpgrade then
@@ -817,7 +794,7 @@ function upgscene:draw()
 
     -- Draw control tooltip
     do
-        local font = g.getSmallFont(16)
+        local font = g.getMainFont(16)
         local safeAreaR = g.getHUD():getSafeArea()
         local nl = 1 + select(2, CONTROL_TEXT:gsub("\n", ""))
         local controlTextR = safeAreaR:set(nil, nil, nil, font:getHeight() * (1 + nl))
@@ -893,7 +870,6 @@ function upgscene:update(dt)
     self.lastUpgradeMaxxed[2] = math.max(self.lastUpgradeMaxxed[2] - dt, 0)
 
     local w = g.getMainWorld()
-    w:_disableMouseHarvester()
 end
 
 

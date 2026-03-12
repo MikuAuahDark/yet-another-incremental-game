@@ -18,21 +18,6 @@ function LineWidth:pop()
     love.graphics.setLineWidth(self.lw)
 end
 
----@class gsman.Translate: objects.Class
-local Translate = objects.Class("gsman.Translate")
-
----@param x number
----@param y number
-function Translate:init(x, y)
-    self.x = x
-    self.y = y
-    love.graphics.translate(x, y)
-end
-
-function Translate:pop()
-    love.graphics.translate(-self.x, -self.y)
-end
-
 ---@class gsman.Color: objects.Class
 local Color = objects.Class("gsman.Color")
 
@@ -54,6 +39,29 @@ function Color:pop()
     love.graphics.setColor(self.r, self.g, self.b, self.a)
 end
 
+---@class gsman.Transform: objects.Class
+local Transform = objects.Class("gsman.Transform")
+
+---@param x number
+---@param y number
+---@param r number?
+---@param sx number?
+---@param sy number?
+---@param ox number?
+---@param oy number?
+---@param kx number?
+---@param ky number?
+function Transform:init(x, y, r, sx, sy, ox, oy, kx, ky)
+    love.graphics.push()
+    love.graphics.applyTransform(x, y, r, sx, sy, ox, oy, kx, ky)
+end
+
+function Transform:pop()
+    return love.graphics.pop()
+end
+
+
+
 ---@param lw number
 ---@return gsman.LineWidth
 ---@nodiscard
@@ -63,10 +71,11 @@ end
 
 ---@param x number
 ---@param y number
----@return gsman.Translate
+---@return gsman.Transform
+---@deprecated use gsman.transform instead
 ---@nodiscard
 function gsman.translate(x, y)
-    return Translate(x, y)
+    return Transform(x, y)
 end
 
 ---@param r number
@@ -97,6 +106,21 @@ function gsman.mulColor(r, g, b, a)
     else
         return Color(r, g, b, a or 1, true)
     end
+end
+
+---@param x number
+---@param y number
+---@param r number?
+---@param sx number?
+---@param sy number?
+---@param ox number?
+---@param oy number?
+---@param kx number?
+---@param ky number?
+---@return gsman.Transform
+---@nodiscard
+function gsman.transform(x, y, r, sx, sy, ox, oy, kx, ky)
+    return Transform(x, y, r, sx, sy, ox, oy, kx, ky)
 end
 
 return gsman

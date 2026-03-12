@@ -691,9 +691,10 @@ local g_UpgradeDefinition_ProcGen
 ---@class g.UpgradeDefinition
 ---@field kind g.UpgradeKind
 ---@field nameContext string?
----@field tokenType string? (only for kind == "TOKEN")
+---@field frameColor objects.Color? (only for kind == "EFFICIENCY")
 ---@field maxLevel integer?
 ---@field image string?
+---@field color objects.Color? (default is white)
 ---@field priceScaling number?
 ---@field description string?
 ---@field descriptionContext string?
@@ -713,6 +714,7 @@ local g_UpgradeDefinition = {}
 ---@field type string
 ---@field name string
 ---@field maxLevel integer
+---@field color objects.Color
 ---@field description localization.Interpolator?
 ---@field valueFormatter (string|(fun(x:number):string))[]
 
@@ -1134,6 +1136,7 @@ function g.defineUpgrade(id, name, def)
     end
 
     def.image = def.image or id
+    def.color = def.color or objects.Color.WHITE
     def.valueFormatter = def.valueFormatter or {}
     def.maxLevel = def.maxLevel or consts.DEFAULT_UPGRADE_MAX_LEVEL
     table.insert(g.UPGRADE_LIST, id)
@@ -2175,10 +2178,10 @@ g.COLORS = {
     BUTTON_FADE_2 = objects.Color("FF3B12A4"),
 
     UPGRADE_KINDS = {
-        HARVESTING = objects.Color("FFCB8B14"),
-        TOKEN = objects.Color("FF1479CB"),
-        TOKEN_MODIFIER = objects.Color("FF15C39A"),
-        MISC = objects.Color("FFFFFFFF"),
+        UNLOCKS = objects.Color("#43b4e8"),
+        JOB = objects.Color("#61d4b1"),
+        MISC = objects.Color("#c4d14d"),
+        FALLBACK = objects.Color.WHITE,
     },
 
     SHADOW = objects.Color(0,0,0,0.4),
