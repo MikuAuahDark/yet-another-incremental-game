@@ -564,7 +564,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
         -- Load
         local load = world:computeLoadModifier(serverInfo)
         local loadText = TEXT.LOAD_TOOLTIP({load = load})
-        if (world.currentLoad + load) > world.maxLoad then
+        if (world.currentLoad + load) > g.stats.MaxLoad then
             loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
         end
         at[#at+1] = loadText
@@ -651,7 +651,7 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
         -- Load
         local load = world:computeLoadModifier(dpInfo)
         local loadText = TEXT.LOAD_TOOLTIP({load = load})
-        if (world.currentLoad + load) > world.maxLoad then
+        if (world.currentLoad + load) > g.stats.MaxLoad then
             loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
         end
         at[#at+1] = loadText
@@ -735,7 +735,7 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
         -- Load
         local load = world:computeLoadModifier(boosterInfo)
         local loadText = TEXT.LOAD_TOOLTIP({load = load})
-        if (world.currentLoad + load) > world.maxLoad then
+        if (world.currentLoad + load) > g.stats.MaxLoad then
             loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
         end
         at[#at+1] = loadText

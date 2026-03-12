@@ -237,8 +237,8 @@ function HUD:draw(show)
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
             drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", money)
-            local loadColor = world.currentLoad > world.maxLoad and g.COLORS.UI.WARNING or objects.Color.WHITE
-            drawStats(loadR, TEXT.LOAD, TEXT.LOAD_DESCRIPTION, "{bolt}", world.currentLoad.."/"..world.maxLoad, loadColor)
+            local loadColor = world.currentLoad > g.stats.MaxLoad and g.COLORS.UI.WARNING or objects.Color.WHITE
+            drawStats(loadR, TEXT.LOAD, TEXT.LOAD_DESCRIPTION, "{bolt}", world.currentLoad.."/"..g.stats.MaxLoad, loadColor)
             drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
             lw2:pop()
 

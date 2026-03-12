@@ -213,4 +213,99 @@ end
 
 
 
+---@param r kirigami.Region
+---@param col objects.Color
+local function drawServerShape(r, col)
+    local DIAGONAL_PERCENTAGE = 0.2
+    local x, y, w, h = r:get()
+    local dpw = DIAGONAL_PERCENTAGE * w
+    local dph = DIAGONAL_PERCENTAGE * h
+    ---@type number[]
+    local polygons = {
+		-- Top
+		x + dpw, y,
+		x + w - dpw, y,
+		-- Right
+		x + w, y + dph,
+		x + w, y + h - dph,
+		-- Bottom
+		x + w - dpw, y + h,
+		x + dpw, y + h,
+		-- Left
+		x, y + h - dph,
+		x, y + dph,
+	}
+    local c = gsman.mulColor(col)
+    love.graphics.polygon("fill", polygons)
+    c:pop()
+end
+
+---@param r kirigami.Region
+---@param col objects.Color
+function worldutil.drawServerShape(r, col)
+    r = r:shrinkToAspectRatio(1, 1):center(r)
+    local MOVE_DIST = 0.1
+    local h, s, v = col:getHSV()
+    local r1 = r:moveRatio(0, MOVE_DIST)
+    local r2 = r:moveRatio(0, -MOVE_DIST)
+    drawServerShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)))
+    drawServerShape(r2, col)
+    return r2
+end
+
+---@param r kirigami.Region
+---@param col objects.Color
+local function drawDPShape(r, col)
+    local cx, cy = r:getCenter()
+    local rx = r.w / 2
+    local ry = r.h / 2
+    local polygons = {}
+    for i = 0, 5 do
+        local a = (i * math.pi) / 3 - math.pi / 2
+        polygons[#polygons+1] = cx + rx * math.cos(a)
+        polygons[#polygons+1] = cy + ry * math.sin(a)
+    end
+    local c = gsman.mulColor(col)
+    love.graphics.polygon("fill", polygons)
+    c:pop()
+end
+
+---@param r kirigami.Region
+---@param col objects.Color
+function worldutil.drawDPShape(r, col)
+    r = r:shrinkToAspectRatio(1, 1):center(r)
+    local MOVE_DIST = 0.1
+    local h, s, v = col:getHSV()
+    local r1 = r:moveRatio(0, MOVE_DIST)
+    local r2 = r:moveRatio(0, -MOVE_DIST)
+    drawDPShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)))
+    drawDPShape(r2, col)
+    return r2
+end
+
+---@param r kirigami.Region
+---@param col objects.Color
+function worldutil.drawBoosterShape(r, col)
+    r = r:shrinkToAspectRatio(1, 1):center(r)
+    local MOVE_DIST = 0.1
+    local h, s, v = col:getHSV()
+    local r1 = r:moveRatio(0, MOVE_DIST)
+    local r2 = r:moveRatio(0, -MOVE_DIST)
+    local height = r2.y - (r1.y + r1.h)
+
+    local col1 = gsman.mulColor(objects.Color.HSVtoRGB(h, s, v * 0.5))
+    -- Draw rectangle
+    love.graphics.rectangle("fill", r.x, r.y - height / 2, r.w, height)
+    -- Draw arc
+    love.graphics.arc("fill", "closed", r.x, r.y + height / 2, r.w / 2, math.pi, -math.pi)
+    col1:pop()
+    -- Draw circle
+    local col2 = gsman.mulColor(col)
+    love.graphics.circle("fill", r.x + r.w / 2, r.y + r.h / 2, r.w / 2)
+    col2:pop()
+    return r2
+end
+
+
+
 return worldutil

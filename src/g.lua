@@ -1159,6 +1159,8 @@ function g.defineUpgrade(id, name, def)
             end
         end
     end
+
+    log.trace(string.format("g.defineUpgrade(%q)", id))
 end
 
 
@@ -1472,6 +1474,137 @@ function g.isItemUnlocked(itemid)
     end
 
     return g.ask("isItemUnlocked", itemid) or PREUNLOCKED:contains(itemid)
+end
+
+
+
+-- Quick item registration for specific category
+
+
+---@class g._ServerDef
+---@field package nameContext string?
+---@field package rawDescription string?
+---@field package description string?
+---@field package descriptionContext string?
+---@field package color objects.Color
+---@field package price number
+---@field package load number
+---@field package computePerSecond number
+---@field package computePreference string[]
+---@field package heatTolerance [number, number]
+---@field package heat number
+---@field package draw fun(r:kirigami.Region,itemData:g.World.ServerData?)?
+
+---@param id string
+---@param name string
+---@param def g._ServerDef
+function g.defineServer(id, name, def)
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "UNLOCKS",
+        image = "null_image",
+        drawUI = function(uinfo, level, x, y, w, h)
+            -- Draw server
+            local r = Kirigami(x, y, w, h):padRatio(0.875)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+            -- TODO: Draw unlock
+        end
+    })
+    return g.defineItem(id, {
+        category = "server",
+        name = name,
+        nameContext = def.nameContext,
+        rawDescription = def.rawDescription,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        load = def.load,
+        price = def.price,
+        computePerSecond = def.computePerSecond,
+        computePreference = def.computePreference,
+        heatTolerance = def.heatTolerance,
+        heat = def.heat,
+        draw = function(itemData)
+            ---@cast itemData g.World.ServerData
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2, itemData)
+            end
+        end,
+        drawItem = function(r)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+---@class g._DataDef
+---@field package nameContext string?
+---@field package rawDescription string?
+---@field package description string?
+---@field package descriptionContext string?
+---@field package color objects.Color
+---@field package price number
+---@field package load number
+---@field package dataPerSecond number
+---@field package wireLength integer
+---@field package wireCount integer|nil
+---@field package draw fun(r:kirigami.Region,itemData:g.World.DataProcessorData?)
+
+---@param id string
+---@param name string
+---@param def g._DataDef
+function g.defineDataProcessor(id, name, def)
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "UNLOCKS",
+        image = "null_image",
+        drawUI = function(uinfo, level, x, y, w, h)
+            -- Draw data processor
+            local r = Kirigami(x, y, w, h):padRatio(0.875)
+            local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+            -- TODO: Draw unlock
+        end
+    })
+    return g.defineItem(id, {
+        category = "data",
+        name = name,
+        nameContext = def.nameContext,
+        rawDescription = def.rawDescription,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        price = def.price,
+        load = def.load,
+        dataPerSecond = def.dataPerSecond,
+        wireLength = def.wireLength,
+        wireCount = def.wireCount,
+        draw = function(itemData)
+            ---@cast itemData g.World.DataProcessorData
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2, itemData)
+            end
+        end,
+        drawItem = function(r)
+            local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
 end
 
 end

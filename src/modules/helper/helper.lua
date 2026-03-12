@@ -298,13 +298,13 @@ end
 
 ---@param increase integer
 ---@param startingPercentage integer?
----@return function
 function helper.percentageGetter(increase, startingPercentage)
     helper.assert(math.floor(increase) == increase, "Increase must be an integer. E.g. 5%, 10%, etc")
     if startingPercentage then
         helper.assert(math.floor(startingPercentage) == startingPercentage, "startingPercentage must be an integer. E.g. 10%, 20%, etc")
     end
-
+    ---@param self g.UpgradeInfo
+    ---@param level integer
     local function getValues(self, level)
         if startingPercentage then
             return startingPercentage + ((level-1) * increase)

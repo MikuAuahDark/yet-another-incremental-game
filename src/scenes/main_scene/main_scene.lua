@@ -151,7 +151,7 @@ function MainScene:draw()
     end
     if item and self.pinItemInfo ~= item then
         -- Draw hovered tooltip
-        ui.ItemTooltip.DrawWorldTooltip(item, uimx, uimy, safeArea)
+        ui.ItemTooltip.DrawWorldTooltip(item, uimx + 11, uimy + 5, safeArea)
     end
 
     -- Update item dragging (from world)

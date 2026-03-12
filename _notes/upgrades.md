@@ -4,11 +4,11 @@ TODO: Move this to GDD
 
 Let's divide upgrades by multiple broad categories:
 * Unlocks  
-  Upgrades that unlock new things. Like new kind of job, new servers, data processors, and boosters.
+  Upgrades that unlock new things. Like new servers, data processors, and boosters.
 * Efficiency
   Upgrades that improves overall performance on items.
 * Job
-  Upgrade that improves jobs. This includes higher job frequency, higher price, etc.
+  Upgrade that adds new and improves jobs. This includes new job type, higher job frequency, higher price, etc.
 * Misc.
   Upgrades that affect world sizes, job queue, max load, or anything that didn't fit in above category.
 

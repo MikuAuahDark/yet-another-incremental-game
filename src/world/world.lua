@@ -7,6 +7,7 @@ World
 
 local ParticleService = require(".particle.ParticleService")
 local DataCollector = require(".data_collector")
+local jobgen = require(".jobgen")
 
 
 ---@param grid objects.Grid
@@ -62,7 +63,6 @@ function World:init()
     self.analyticsSendTime = 0
     self.loadPercentage = 1
     self.currentLoad = 0 -- Updated every frame
-    self.maxLoad = 10 -- Updated every frame
     zeroTileHeat(self.heat)
 
     self.cpsCollector = DataCollector(60)
@@ -193,8 +193,7 @@ function World:_update(dt)
         end
     end)
     self.currentLoad = loads
-    self.maxLoad = g.ask("getMaxLoadModifier")
-    self.loadPercentage = math.min(1, self.maxLoad / loads)
+    self.loadPercentage = math.min(1, g.stats.MaxLoad / loads)
 
     -- Update tile heat
     zeroTileHeat(self.heat)
@@ -397,6 +396,7 @@ function World:_draw()
 
     -- Draw items
     local wtz = consts.WORLD_TILE_SIZE
+    prof_push("item_draw")
     ---@param itemData g.World.ItemData?
     self.items:foreach(function(itemData, x, y)
         if itemData then
@@ -407,6 +407,30 @@ function World:_draw()
             trans:pop()
         end
     end)
+    prof_pop() -- prof_push("item_draw")
+
+    -- Draw data processor connectors
+    prof_push("dpcon_draw")
+    love.graphics.setColor(0, 0, 0)
+    local lw = gsman.setLineWidth(4)
+    self.items:foreach(function(itemData, x, y)
+        if itemData then
+            local _, category = g.getItemInfo(itemData.type)
+            if category == "data" then
+                ---@cast itemData g.World.DataProcessorData
+                for _, svr in ipairs(itemData.connectsServers) do
+                    love.graphics.line(
+                        (x + 0.5) * wtz,
+                        (y + 0.5) * wtz,
+                        (svr.tileX + 0.5) * wtz,
+                        (svr.tileY + 0.5) * wtz
+                    )
+                end
+            end
+        end
+    end)
+    lw:pop()
+    prof_pop() -- prof_push("dpcon_draw")
 
     prof_push("entity sort")
     -- Add entitiy to be drawn
@@ -421,7 +445,9 @@ function World:_draw()
     -- Draw everything.
     prof_push("entity draw")
     for _, e in ipairs(objlist) do
+        local col = gsman.setColor(1, 1, 1)
         drawEntity(e)
+        col:pop()
     end
     prof_pop() -- prof_push("entity draw")
 

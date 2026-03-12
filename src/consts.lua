@@ -30,7 +30,7 @@ local consts = {
 
     MAX_PLAYING_SOURCES = 14,
 
-    UPGRADE_IMAGE_SIZE = 28,
+    UPGRADE_IMAGE_SIZE = 32,
     UPGRADE_GRID_SPACING = 8, -- spaced 8 units apart
     UPGRADE_CONNECTOR_WIDTH = 8,
 
