@@ -247,7 +247,7 @@ function love.load(arg)
         if love.filesystem.getInfo("saves/save1.json", "file") then
             g.loadSession("saves/save1.json")
         else
-            g.newSession()
+            g.newSession().tree = g.loadTree("mvp")
         end
         sceneManager.gotoScene("main_scene")
     end

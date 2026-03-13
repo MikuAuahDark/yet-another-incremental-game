@@ -492,17 +492,30 @@ function World:_draw()
         love.graphics.draw(self.worldTexture)
     end
 
+    -- Draw tile heat
+    ---@param heat number
+    local wtz = consts.WORLD_TILE_SIZE
+    self.heat:foreach(function(heat, tx, ty)
+        local heatmul = helper.round(heat / 10)
+        if heatmul ~= 0 then
+            local x, y = tx * wtz, ty * wtz
+            local col = heat < 0 and g.COLORS.TILE_COLD or g.COLORS.TILE_HOT
+            local col2 = helper.multiplyAlpha(col, math.min(math.abs(heatmul), 10) / 10)
+            love.graphics.setColor(col2)
+            love.graphics.rectangle("fill", x, y, wtz, wtz)
+        end
+    end)
+
     ---@type g.Entity[]
     local objlist = {}
 
     -- Draw items
-    local wtz = consts.WORLD_TILE_SIZE
     prof_push("item_draw")
     ---@param itemData g.World.ItemData?
     self.items:foreach(function(itemData, x, y)
         if itemData then
             local itemInfo = g.getItemInfo(itemData.type)
-            local trans = gsman.translate((x + 0.5) * wtz, (y + 0.5) * wtz)
+            local trans = gsman.transform((x + 0.5) * wtz, (y + 0.5) * wtz)
             love.graphics.setColor(1, 1, 1)
             itemInfo.draw(itemData)
             trans:pop()

@@ -2,10 +2,11 @@
 local MAX_TOOLTIP_WIDTH = 200
 
 ---@param upgrade g.Tree.Upgrade
+---@param tree g.Tree
 ---@param x number
 ---@param y number
 ---@param safeArea kirigami.Region
-local function description(upgrade, x, y, safeArea)
+local function description(upgrade, tree, x, y, safeArea)
     local uinfo = g.getUpgradeInfo(upgrade.id)
     local titleF = ui.ItemTooltip.getTitleFont()
     local attrF = ui.ItemTooltip.getAttrFont()
@@ -30,7 +31,8 @@ local function description(upgrade, x, y, safeArea)
 
     -- Description
     local level = upgrade.level
-    local descriptionText = g.getUpgradeDescription(uinfo, math.max(level, 1), level > 0)
+    local maxLevel = tree:getUpgradeMaxLevel(upgrade)
+    local descriptionText = g.getUpgradeDescription(uinfo, math.max(level, 1), level > 0 and level < maxLevel)
     local descriptionHeight = 0
     if #descriptionText > 0 then
         local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)

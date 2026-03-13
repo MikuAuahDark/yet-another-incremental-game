@@ -47,7 +47,13 @@ end
 ---@param prestige integer
 ---@return g.Tree
 function g.loadPrestigeTree(prestige)
-    local fname = "assets/prestiges/prestige_" .. prestige .. ".json"
+    return g.loadTree("prestige_" .. prestige)
+end
+
+---@param tree string
+---@return g.Tree
+function g.loadTree(tree)
+    local fname = "assets/prestiges/"..tree..".json"
     local data,er = love.filesystem.read(fname)
     assert(data,er)
     local tabl = assert(json.decode(data))
@@ -777,7 +783,7 @@ g.defineResource("money", {
     image="attach_money",
     limitStat="MoneyLimit",
     limitStatName="Money Limit",
-    startingLimit=1000,
+    startingLimit=100000,
     color = objects.Color("FFF7D127"),
 })
 
@@ -1533,6 +1539,9 @@ function g.defineServer(id, name, def)
             end
             local w = richtext.getWidth(unlockText, font)
             richtext.printRich(unlockText, font, r2.x + r2.w - w, r2.y, w, "right")
+        end,
+        isItemUnlocked = function(uinfo, level, iid)
+            return iid == id
         end
     })
     return g.defineItem(id, {
@@ -1596,6 +1605,9 @@ function g.defineDataProcessor(id, name, def)
                 def.draw(r2)
             end
             -- TODO: Draw unlock
+        end,
+        isItemUnlocked = function(uinfo, level, iid)
+            return iid == id
         end
     })
     return g.defineItem(id, {
@@ -2257,7 +2269,10 @@ g.COLORS = {
         BUFF = objects.Color("FF57DB6F"),
         OVERCLOCKED = objects.Color("FF3FB5EC"),
         WARNING = objects.Color("FFE6C562"),
-    }
+    },
+
+    TILE_HOT = objects.Color("7fD63900"),
+    TILE_COLD = objects.Color("7fabeeff"),
 }
 
 do

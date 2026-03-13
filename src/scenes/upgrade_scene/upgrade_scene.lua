@@ -138,7 +138,7 @@ local RAY_COLOR = objects.Color("#".."FFF2E46C")
 ---This won't draw the godrays. Draw the godrays before this if necessary.
 ---@param upgrade g.Tree.Upgrade
 ---@param noframe boolean?
-local function drawUpgradeBox(upgrade, noframe, overrideR)
+local function drawUpgradeBox(upgrade, noframe)
     local clickableR = Kirigami(getUpgradeClickableArea(upgrade))
     local frameR = clickableR:padRatio(-consts.UPGRADE_GRID_SPACING/consts.UPGRADE_IMAGE_SIZE)
     local iconR = frameR:padRatio(0.33)
@@ -748,7 +748,7 @@ function upgscene:draw()
         local mx, my = ui.getMouse()
         -- Upgrade description
         love.graphics.setColor(1, 1, 1)
-        ui.upgradeDescriptionUI(hoveredUpgrade, mx + 14, my - 3, ui.getFullScreenRegion())
+        ui.upgradeDescriptionUI(hoveredUpgrade, g.getUpgTree(), mx + 14, my - 3, ui.getFullScreenRegion())
     end
 
     if consts.SHOW_DEV_STUFF then
