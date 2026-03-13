@@ -774,4 +774,16 @@ function helper.index(t, value)
 end
 
 
+---@param col objects.Color
+function helper.blackOrWhite(col)
+    local r, g, b = col:getRGBA()
+    local l = (r * 0.2126 + g * 0.7152 + b * 0.0722)
+    if l <= 0.179 then
+        return objects.Color.WHITE
+    else
+        return objects.Color.BLACK
+    end
+end
+
+
 return helper

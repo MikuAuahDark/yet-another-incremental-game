@@ -14,18 +14,6 @@ local upgscene = FreeCameraScene()
 
 local UNLOCKED_UPGRADE_ANIMATION_DURATION = 0.7
 
-local _controlTextList = {
-    loc("Click-Hold Background to Pan", nil, {context = "mouse controls on list of upgrades"}),
-    loc("Hover on Upgrades to See More", nil, {context = "mouse controls about an upgrade"}),
-    loc("Click on Upgrades to Buy", nil, {context = "mouse controls about an upgrade"}),
-}
-if not consts.IS_MOBILE then
-    _controlTextList[#_controlTextList+1] = loc("Press Tab to move to Harvesting Area", nil, {
-        context = "A hotkey (Tab) to move quickly between scenes"
-    })
-end
-local CONTROL_TEXT = table.concat(_controlTextList, "\n")
-
 local TUTORIAL_UPGRADES = "{w}{o thickness=2}"..loc("These are permanent {c r=0 g=1 b=0}upgrades{/c}.\nClick to buy!").."{/o}{/w}"
 local TUTORIAL_UPGRADES_MOBILE = "{w}{o thickness=2}"..loc("These are permanent {c r=0 g=1 b=0}upgrades{/c}.\nTap once to view about the upgrade.\nTap again to buy!").."{/o}{/w}"
 
@@ -149,24 +137,32 @@ local RAY_COLOR = objects.Color("#".."FFF2E46C")
 ---@param upgrade g.Tree.Upgrade
 ---@param noframe boolean?
 local function drawUpgradeBox(upgrade, noframe, overrideR)
-    local x, y, w, h = getUpgradeClickableArea(upgrade)
+    local clickableR = Kirigami(getUpgradeClickableArea(upgrade))
+    local frameR = clickableR:padRatio(-consts.UPGRADE_GRID_SPACING/consts.UPGRADE_IMAGE_SIZE)
+    local iconR = frameR:padRatio(0.33)
     local uinfo = g.getUpgradeInfo(upgrade.id)
 
     -- Draw frame
+    local bgColor = objects.Color.WHITE
     if not noframe then
         if uinfo.kind == "UNLOCKS" then
-            local col = gsman.mulColor(g.COLORS.UPGRADE_KINDS.UNLOCKS)
-            love.graphics.rectangle("line", x, y, w, h, 12, 12)
+            bgColor = g.COLORS.UPGRADE_KINDS.UNLOCKS
+            local col = gsman.mulColor(bgColor)
+            local x, y, w, h = frameR:get()
+            love.graphics.rectangle("fill", x, y, w, h, 12, 12)
             col:pop()
         elseif uinfo.kind == "EFFICIENCY" then
+            local x, y, w, h = frameR:get()
             local r = (w + h) / 4
-            local col = gsman.mulColor(uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK)
-            love.graphics.circle("line", x, y, r)
+            bgColor = uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK
+            local col = gsman.mulColor(bgColor)
+            love.graphics.circle("fill", x, y, r)
             col:pop()
         elseif uinfo.kind == "JOB" then
-            local col = gsman.mulColor(g.COLORS.UPGRADE_KINDS.JOB)
-            --love.graphics.rectangle("line", -w / 2, -h / 2, w, h)
-            love.graphics.polygon("line",
+            bgColor = g.COLORS.UPGRADE_KINDS.JOB
+            local col = gsman.mulColor(bgColor)
+            local x, y, w, h = frameR:get()
+            love.graphics.polygon("fill",
                 x + w / 2, y,
                 x + w, y + h / 2,
                 x + w / 2, y + h,
@@ -174,16 +170,17 @@ local function drawUpgradeBox(upgrade, noframe, overrideR)
             )
             col:pop()
         elseif uinfo.kind == "MISC" then
-            local cx, cy = x + w / 2, y + h / 2
-            local rx = w / 2
-            local ry = h / 2
+            local cx, cy = frameR:getCenter()
+            local rx = frameR.w / 2
+            local ry = frameR.h / 2
             local polygons = {}
             for i = 0, 5 do
                 local a = (i * math.pi) / 3
                 polygons[#polygons+1] = cx + rx * math.cos(a)
                 polygons[#polygons+1] = cy + ry * math.sin(a)
             end
-            local col = gsman.mulColor(g.COLORS.UPGRADE_KINDS.JOB)
+            bgColor = g.COLORS.UPGRADE_KINDS.JOB
+            local col = gsman.mulColor(bgColor)
             love.graphics.polygon("fill", polygons)
             col:pop()
         end
@@ -191,14 +188,18 @@ local function drawUpgradeBox(upgrade, noframe, overrideR)
 
     -- Draw the upgrade
     if uinfo.image then
-        local ucol = gsman.mulColor(uinfo.color)
-        g.drawImageContained(uinfo.image, x, y, w, h)
+        local ucol = gsman.mulColor(helper.blackOrWhite(bgColor))
+        g.drawImageContained(uinfo.image, iconR:get())
         ucol:pop()
     end
 
     if uinfo.drawUI then
-        uinfo:drawUI(upgrade.level, x, y, w, h)
+        uinfo:drawUI(upgrade.level, iconR)
     end
+    local lw = gsman.setLineWidth(1)
+    ui.debugRegion(iconR)
+    ui.debugRegion(frameR)
+    lw:pop()
 end
 
 ---@param self UpgradesScene
@@ -472,6 +473,7 @@ end
 ---@param treeUpgrades g.Tree.Upgrade[]
 local function drawDevEditModeUI(self, treeUpgrades)
     local region = ui.getScreenRegion()
+        :padUnit(0, g.getHUD().topR.h, 0, 0)
     local leftbar, _, sidebar = region:splitHorizontal(1,4,1)
     local _, bigSidebar = region:splitHorizontal(3,2)
     lg.setColor(1,1,1)
@@ -567,9 +569,11 @@ local function drawDevEditModeUI(self, treeUpgrades)
 
                 -- draw upgr icon:
                 local uinfo = g.getUpgradeInfo(utype)
-                g.drawImageContained(uinfo.image, x,y,w,h)
+                if uinfo.image then
+                    g.drawImageContained(uinfo.image, x,y,w,h)
+                end
                 if uinfo.drawUI then
-                    uinfo:drawUI(1, x,y,w,h)
+                    uinfo:drawUI(1, Kirigami(x,y,w,h))
                 end
 
                 if iml.wasJustClicked(x,y,w,h) then
@@ -666,6 +670,7 @@ end
 ---@param self UpgradesScene
 local function drawDevUI(self)
     local region = ui.getScreenRegion()
+        :padUnit(0, g.getHUD().topR.h, 0, 0)
     local header, body,editname = region:splitVertical(2,9,1)
     local _
     _,header,_ = header:splitHorizontal(1,2,1)
@@ -748,19 +753,6 @@ function upgscene:draw()
         ui.upgradeDescriptionUI(hoveredUpgrade, mx + 14, my - 3, ui.getFullScreenRegion())
     end
 
-    -- Draw control tooltip
-    do
-        local font = g.getMainFont(16)
-        local safeAreaR = g.getHUD():getSafeArea()
-        local nl = 1 + select(2, CONTROL_TEXT:gsub("\n", ""))
-        local controlTextR = safeAreaR:set(nil, nil, nil, font:getHeight() * (1 + nl))
-            :attachToBottomOf(safeAreaR)
-            :moveRatio(0, -1)
-            :moveUnit(2, 10)
-        love.graphics.setColor(1, 1, 1, 0.5)
-        love.graphics.printf(CONTROL_TEXT, font, controlTextR.x, controlTextR.y, controlTextR.w, "left")
-    end
-
     if consts.SHOW_DEV_STUFF then
         drawDevUI(self)
     end
@@ -833,7 +825,7 @@ end
 function upgscene:keypressed(k)
     local tree = g.getUpgTree()
     if k == "tab" then
-        g.gotoSceneViaMap("harvest_scene")
+        g.gotoScene("main_scene")
     elseif k == "escape" then
         local s = g.getSn()
         s.paused = not s.paused

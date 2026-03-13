@@ -91,7 +91,7 @@ function World:init()
     self.jobQueue = {}
     ---@type table<integer, g.World.ItemData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.boosters = {}
-    ---@type table<integer, string[]>
+    ---@type table<integer, g.World.ItemData[]>
     self.boostersInTiles = {}
     ---@type table<integer, g.World.DataProcessorData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.dataProcessors = {}
@@ -223,7 +223,7 @@ function World:_update(dt)
                     if self.items:contains(tx, ty) then
                         local tindex = self.items:coordsToIndex(tx, ty)
                         self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
-                        table.insert(self.boostersInTiles[tindex], item.type)
+                        table.insert(self.boostersInTiles[tindex], item)
                     end
                 end
             elseif category == "data" then
@@ -343,8 +343,8 @@ function World:_update(dt)
         end
 
         -- Compute CPS
-        -- TODO: Take booster into account
         serverData.computePerSecond = 0
+        -- Compute heat
         local heat = self.heat:get(serverData.tileX, serverData.tileY)
         local heatPerfMul = 1
         if heat > serverInfo.heatTolerance[2] then
@@ -355,8 +355,21 @@ function World:_update(dt)
             local diff = serverInfo.heatTolerance[1] - heat
             heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
         end
-        local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul
-        serverData.computePerSecond = math.max(serverInfo.computePerSecond + perfMod, 0) * finalMul
+
+        -- Compute booster
+        local boosterMod = 0
+        local boosterMul = 1
+        for _, booster in ipairs(self.boostersInTiles[self.items:coordsToIndex(serverData.tileX, serverData.tileY)]) do
+            local boosterInfo = g.getItemInfo(booster.type, "booster")
+            local reltx = serverData.tileX - booster.tileX
+            local relty = serverData.tileY - booster.tileY
+            boosterMod = boosterMod + boosterInfo.getPerformanceModifier(reltx, relty)
+            boosterMul = boosterMul * boosterInfo.getPerformanceMultiplier(reltx, relty)
+        end
+
+        local finalMod = serverInfo.computePerSecond + perfMod + boosterMod
+        local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul * boosterMul
+        serverData.computePerSecond = math.max(finalMod, 0) * finalMul
     end
     -- Pass 2: Update data processor total data transmit
     for _, dpData in pairs(self.dataProcessors) do

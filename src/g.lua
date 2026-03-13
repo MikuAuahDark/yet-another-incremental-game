@@ -706,7 +706,7 @@ local g_UpgradeDefinition_ProcGen
 ---@field getValues (fun(uinfo: g.UpgradeInfo, level: integer):number,number?,number?,number?)?
 ---@field valueFormatter ((string|(fun(x:number):string))[])?
 ---@field perSecondUpdate (fun(uinfo: g.UpgradeInfo, level: integer, seconds:integer))?
----@field drawUI (fun(uinfo: g.UpgradeInfo, level:integer, x:number,y:number,w:number,h:number))?
+---@field drawUI (fun(uinfo: g.UpgradeInfo, level:integer, r:kirigami.Region))?
 local g_UpgradeDefinition = {}
 
 
@@ -1136,14 +1136,15 @@ function g.defineUpgrade(id, name, def)
         assert(def.procGen.distance[1] <= def.procGen.distance[2], "invalid distance")
     end
 
-    def.image = def.image or id
     def.color = def.color or objects.Color.WHITE
     def.valueFormatter = def.valueFormatter or {}
     def.maxLevel = def.maxLevel or consts.DEFAULT_UPGRADE_MAX_LEVEL
     table.insert(g.UPGRADE_LIST, id)
 
     niceAssert(type(id) == "string")
-    niceAssert(g.isImage(def.image), "Invalid image: ", def.image)
+    if def.image then
+        niceAssert(g.isImage(def.image), "Invalid image: ", def.image)
+    end
 
     def.type = id
 
@@ -1509,11 +1510,11 @@ function g.defineServer(id, name, def)
         description = def.description,
         descriptionContext = def.descriptionContext,
         kind = "UNLOCKS",
-        image = "null_image",
-        drawUI = function(uinfo, level, x, y, w, h)
+        targetItem = id,
+        maxLevel = 1,
+        drawUI = function(uinfo, level, r)
             -- Draw server
-            local r = Kirigami(x, y, w, h):padRatio(0.875)
-            local r2 = worldutil.drawServerShape(r, def.color)
+            local r2 = worldutil.drawServerShape(r:padRatio(0.125), def.color)
             if def.draw then
                 def.draw(r2)
             end
@@ -1572,11 +1573,11 @@ function g.defineDataProcessor(id, name, def)
         description = def.description,
         descriptionContext = def.descriptionContext,
         kind = "UNLOCKS",
-        image = "null_image",
-        drawUI = function(uinfo, level, x, y, w, h)
+        targetItem = id,
+        maxLevel = 1,
+        drawUI = function(uinfo, level, r)
             -- Draw data processor
-            local r = Kirigami(x, y, w, h):padRatio(0.875)
-            local r2 = worldutil.drawDPShape(r, def.color)
+            local r2 = worldutil.drawDPShape(r:padRatio(0.125), def.color)
             if def.draw then
                 def.draw(r2)
             end
@@ -1597,6 +1598,72 @@ function g.defineDataProcessor(id, name, def)
         wireCount = def.wireCount,
         draw = function(itemData)
             ---@cast itemData g.World.DataProcessorData
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2, itemData)
+            end
+        end,
+        drawItem = function(r)
+            local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+---@class g._BoosterDef
+---@field package nameContext string?
+---@field package rawDescription string?
+---@field package description string?
+---@field package descriptionContext string?
+---@field package color objects.Color
+---@field package price number
+---@field package load number
+---@field package radiate integer
+---@field package radiateAlgorithm g.RadiateAlgorithm
+---@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)
+---@field package getTileHeat (fun(reltx:integer,relty:integer):number)?
+---@field package getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
+---@field package getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
+
+---@param id string
+---@param name string
+---@param def g._BoosterDef
+function g.defineBooster(id, name, def)
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "UNLOCKS",
+        targetItem = id,
+        maxLevel = 1,
+        drawUI = function(uinfo, level, r)
+            -- Draw data processor
+            local r2 = worldutil.drawDPShape(r:padRatio(0.125), def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+            -- TODO: Draw unlock
+        end
+    })
+    return g.defineItem(id, {
+        category = "booster",
+        name = name,
+        nameContext = def.nameContext,
+        rawDescription = def.rawDescription,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        price = def.price,
+        load = def.load,
+        radiate = def.radiate,
+        radiateAlgorithm = def.radiateAlgorithm,
+        getTileHeat = def.getTileHeat,
+        getPerformanceModifier = def.getPerformanceModifier,
+        getPerformanceMultiplier = def.getPerformanceMultiplier,
+        draw = function(itemData)
+            ---@cast itemData g.World.ItemData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
             local r2 = worldutil.drawDPShape(r, def.color)

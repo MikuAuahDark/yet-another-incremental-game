@@ -244,8 +244,12 @@ function love.load(arg)
         end
 
         analytics.init(nil)
-        g.newSession()
-        sceneManager.gotoScene("main_scene")
+        if love.filesystem.getInfo("saves/save1.json", "file") then
+            g.loadSession("saves/save1.json")
+        else
+            g.newSession()
+        end
+        sceneManager.gotoScene("upgrade_scene")
     end
 
     if consts.TEST then
