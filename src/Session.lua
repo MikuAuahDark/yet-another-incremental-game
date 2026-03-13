@@ -3,6 +3,7 @@
 
 local World = require("src.world.world")
 local Tree = require("src.upgrades.Tree")
+local Z = require("lib.zorder")
 
 
 ---@class g.Session.TutorialState
@@ -158,6 +159,67 @@ function Session.deserialize(data)
         sess.showTutorials.upgrades = nilIsTrue(data.showTutorials.upgrades)
     end
 
+    -- World
+    if data.world then
+        -- Spawn objects
+        ---@type g.World.DataProcessorData[]
+        local dp = {}
+        if data.world.items then
+            for k,v in pairs(data.world.items) do
+                ---@cast k string
+                ---@cast v string
+                if g.isValidItem(v) then
+                    local x, y = Z.decode(assert(tonumber(k)))
+                    local itemData = sess.mainWorld:putItem(v, x, y)
+                    local _, cat = g.getItemInfo(v)
+                    if cat == "data" then
+                        ---@cast itemData g.World.DataProcessorData
+                        dp[#dp+1] = itemData
+                    end
+                else
+                    log.warn("got invalid item '"..v.."'")
+                end
+            end
+        end
+
+        -- Connect data processors
+        if data.world.connections then
+            for _, dpData in ipairs(dp) do
+                local key = tostring(Z.encode(dpData.tileX, dpData.tileY))
+                local connections = data.world.connections[key]
+                if connections then
+                    for _, conn in ipairs(connections) do
+                        local cx, cy = Z.decode(conn)
+                        local itemData = sess.mainWorld.items:get(cx, cy)
+                        local ok = false
+
+                        if itemData then
+                            local _, cat = g.getItemInfo(itemData.type)
+                            if cat == "server" then
+                                ---@cast itemData g.World.ServerData
+                                if g.canConnectDataWire(itemData, dpData) then
+                                    g.connectDataWire(itemData, dpData)
+                                    ok = true
+                                end
+                            end
+                        end
+
+                        if not ok then
+                            local f = string.format(
+                                "invalid data processor connection '%s' (%d, %d) connect to (%d, %d)",
+                                dpData.type,
+                                dpData.tileX,
+                                dpData.tileY,
+                                cx, cy
+                            )
+                            log.warn(f)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     return sess
 end
 
@@ -166,6 +228,32 @@ function Session:serialize()
     local stats = {}
     for k in pairs(g.VALID_STATS) do
         stats[k] = g.stats[k]
+    end
+
+    -- Save world
+    ---@type g.World.DataProcessorData[]
+    local dp = {}
+    local items = {}
+    local connections = {}
+    ---@param item g.World.ItemData?
+    self.mainWorld.items:foreach(function(item, x, y)
+        if item then
+            items[tostring(Z.encode(x, y))] = item.type
+            local _, cat = g.getItemInfo(item.type)
+            if cat == "data" then
+                ---@cast item g.World.DataProcessorData
+                dp[#dp+1] = item
+            end
+        end
+    end)
+    for _, dpData in ipairs(dp) do
+        if #dpData.connectsServers > 0 then
+            local coords = {}
+            for _, serverData in ipairs(dpData.connectsServers) do
+                coords[#coords+1] = Z.encode(serverData.tileX, serverData.tileY)
+            end
+            connections[tostring(Z.encode(dpData.tileX, dpData.tileY))] = coords
+        end
     end
 
     return {
@@ -177,7 +265,11 @@ function Session:serialize()
         metrics = self.metrics,
         stats = stats,
         tree = self.tree:serialize(),
-        showTutorials = helper.shallowCopy(self.showTutorials)
+        showTutorials = helper.shallowCopy(self.showTutorials),
+        world = {
+            items = items,
+            connections = connections,
+        }
     }
 end
 

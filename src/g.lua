@@ -1483,6 +1483,11 @@ function g.isItemUnlocked(itemid)
     return g.ask("isItemUnlocked", itemid) or PREUNLOCKED:contains(itemid)
 end
 
+---@param itemid string
+function g.isValidItem(itemid)
+    return not not itemList[itemid]
+end
+
 
 
 -- Quick item registration for specific category
@@ -1701,66 +1706,14 @@ end
 ---@param tx integer
 ---@param ty integer
 function g.canPutItem(tx, ty)
-    local world = g.getMainWorld()
-    if not world.items:contains(tx, ty) or world.items:get(tx, ty) then
-        return false
-    end
-
-    return true
+    return g.getMainWorld():canPutItem(tx, ty)
 end
 
 ---@param itemId string
 ---@param tx integer
 ---@param ty integer
 function g.putItem(itemId, tx, ty)
-    local world = g.getMainWorld()
-    if not g.canPutItem(tx, ty) then
-        error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
-    end
-
-    local itemInfo, category = g.getItemInfo(itemId)
-    local itemData
-    if category == "server" then
-        ---@type g.World.ServerData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            load = itemInfo.load,
-            currentJob = nil,
-            jobProgress = 0,
-            connectsTo = nil,
-            computePerSecond = 0,
-            finalCPS = 0,
-        }
-    elseif category == "data" then
-        ---@type g.World.DataProcessorData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            load = itemInfo.load,
-            connectsServers = {},
-            dataPerSecond = 0,
-            serversDataPerSecond = 0,
-        }
-    elseif category == "booster" then
-        ---@type g.World.ItemData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            load = itemInfo.load,
-        }
-    else
-        error("fixme category "..category)
-    end
-
-    world.items:set(tx, ty, itemData)
-    return itemData
+    return g.getMainWorld():putItem(itemId, tx, ty)
 end
 
 ---@param tx integer

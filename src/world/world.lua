@@ -359,12 +359,15 @@ function World:_update(dt)
         -- Compute booster
         local boosterMod = 0
         local boosterMul = 1
-        for _, booster in ipairs(self.boostersInTiles[self.items:coordsToIndex(serverData.tileX, serverData.tileY)]) do
-            local boosterInfo = g.getItemInfo(booster.type, "booster")
-            local reltx = serverData.tileX - booster.tileX
-            local relty = serverData.tileY - booster.tileY
-            boosterMod = boosterMod + boosterInfo.getPerformanceModifier(reltx, relty)
-            boosterMul = boosterMul * boosterInfo.getPerformanceMultiplier(reltx, relty)
+        local biTiles = self.boostersInTiles[self.items:coordsToIndex(serverData.tileX, serverData.tileY)]
+        if biTiles then
+            for _, booster in ipairs(biTiles) do
+                local boosterInfo = g.getItemInfo(booster.type, "booster")
+                local reltx = serverData.tileX - booster.tileX
+                local relty = serverData.tileY - booster.tileY
+                boosterMod = boosterMod + boosterInfo.getPerformanceModifier(reltx, relty)
+                boosterMul = boosterMul * boosterInfo.getPerformanceMultiplier(reltx, relty)
+            end
         end
 
         local finalMod = serverInfo.computePerSecond + perfMod + boosterMod
@@ -604,6 +607,71 @@ function World:computeLoadModifier(itemInfo, mod, mul)
     end
 
     return math.max(math.max(itemInfo.load + v.modifier + (mod or 0), 0) * v.multiplier * (mul or 1), 0)
+end
+
+
+
+---@param tx integer
+---@param ty integer
+function World:canPutItem(tx, ty)
+    if not self.items:contains(tx, ty) or self.items:get(tx, ty) then
+        return false
+    end
+
+    return true
+end
+
+---@param itemId string
+---@param tx integer
+---@param ty integer
+function World:putItem(itemId, tx, ty)
+    if not self:canPutItem(tx, ty) then
+        error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
+    end
+
+    local itemInfo, category = g.getItemInfo(itemId)
+    local itemData
+    if category == "server" then
+        ---@type g.World.ServerData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+            removed = false,
+            load = itemInfo.load,
+            currentJob = nil,
+            jobProgress = 0,
+            connectsTo = nil,
+            computePerSecond = 0,
+            finalCPS = 0,
+        }
+    elseif category == "data" then
+        ---@type g.World.DataProcessorData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+            removed = false,
+            load = itemInfo.load,
+            connectsServers = {},
+            dataPerSecond = 0,
+            serversDataPerSecond = 0,
+        }
+    elseif category == "booster" then
+        ---@type g.World.ItemData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+            removed = false,
+            load = itemInfo.load,
+        }
+    else
+        error("fixme category "..category)
+    end
+
+    self.items:set(tx, ty, itemData)
+    return itemData
 end
 
 

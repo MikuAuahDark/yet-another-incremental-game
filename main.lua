@@ -249,7 +249,7 @@ function love.load(arg)
         else
             g.newSession()
         end
-        sceneManager.gotoScene("upgrade_scene")
+        sceneManager.gotoScene("main_scene")
     end
 
     if consts.TEST then
