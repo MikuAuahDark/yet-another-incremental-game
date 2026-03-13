@@ -718,11 +718,12 @@ function upgscene:draw()
 
     ui.startUI()
 
-    g.getHUD():draw({stats = true, jobQueue = false, itemList = false})
+    local hud = g.getHUD()
+    hud:draw({stats = true, jobQueue = false, itemList = false})
 
     -- Draw tutorial text if needed
     if g.getSn().showTutorials.upgrades and (not consts.DEV_MODE) then
-        local safeArea = g.getHUD():getSafeArea()
+        local safeArea = hud:getSafeArea()
         local tutTextR = safeArea:padRatio(0.1)
         local txt = consts.IS_MOBILE and TUTORIAL_UPGRADES_MOBILE or TUTORIAL_UPGRADES
         richtext.printRich(txt, g.getMainFont(32), tutTextR.x, tutTextR.y, tutTextR.w, "center")
@@ -737,6 +738,16 @@ function upgscene:draw()
 
     if consts.SHOW_DEV_STUFF then
         drawDevUI(self)
+    end
+
+    -- Draw scene switch
+    local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
+    love.graphics.setColor(1, 1, 1)
+    ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
+    g.drawImageContained("schema", switchImageR:get())
+    if iml.wasJustClicked(switchR:get()) then
+        g.playUISound("ui_click_basic", 1.4,0.8)
+        g.gotoScene("main_scene")
     end
 
     self:renderPause()

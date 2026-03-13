@@ -207,6 +207,16 @@ function MainScene:draw()
         end
     end
 
+    -- Draw scene switch
+    local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
+    love.graphics.setColor(1, 1, 1)
+    ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
+    g.drawImageContained("account_tree", switchImageR:get())
+    if iml.wasJustClicked(switchR:get()) then
+        g.playUISound("ui_click_basic", 1.4,0.8)
+        g.gotoScene("upgrade_scene")
+    end
+
     ui.endUI()
 end
 
