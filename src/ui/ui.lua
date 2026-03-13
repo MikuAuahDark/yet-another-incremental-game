@@ -7,7 +7,7 @@ local ui = {}
 local lg = love.graphics
 
 
-ui.upgradeDescriptionUI = require(".upgrades.upgrade_description_ui")
+ui.upgradeDescriptionUI = require(".upgrade_description")
 
 
 
@@ -209,12 +209,13 @@ local simpleUIPanel = nil
 ---@param w number
 ---@param h number
 function ui.drawPanel(x, y, w, h)
-	simpleUIPanel = simpleUIPanel or n9slice.new {
-		image = g.getAtlas(),
-		padding = 9,
-		quad = g.getImageQuad("simple_ui_panel")
-	}
-	return simpleUIPanel:draw(x, y, w, h)
+	return ui.Tooltip(Kirigami(x, y, w, h), objects.Color.BLACK, objects.Color.getCurrent())
+	-- simpleUIPanel = simpleUIPanel or n9slice.new {
+	-- 	image = g.getAtlas(),
+	-- 	padding = 9,
+	-- 	quad = g.getImageQuad("simple_ui_panel")
+	-- }
+	-- return simpleUIPanel:draw(x, y, w, h)
 end
 
 

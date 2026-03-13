@@ -679,4 +679,8 @@ color.RGBAtoHEX = rgba_to_hex
 color.validateHEX = validate_hex
 color.isColor = isColor
 
+function color.getCurrent()
+    return objects.Color(love.graphics.getColor())
+end
+
 return color

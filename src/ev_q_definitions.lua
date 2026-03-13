@@ -15,3 +15,5 @@ g.defineQuestion("getLoadMultiplier", reducers.MULTIPLY, 1) -- arguments: g.Item
 g.defineQuestion("getDataThroughputModifier", reducers.ADD, 0)
 g.defineQuestion("getDataThroughputMultiplier", reducers.MULTIPLY, 1)
 g.defineQuestion("isItemUnlocked", reducers.OR, false) -- arguments: string (item ID)
+
+g.defineQuestion("getUpgradePriceMultiplier", reducers.MULTIPLY, 1) -- arguments: g.UpgradeInfo, integer (level)

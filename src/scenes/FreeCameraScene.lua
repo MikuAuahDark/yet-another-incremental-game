@@ -55,33 +55,6 @@ end
 
 
 
-local MAP_BUTTON = "{wavy}{c r=0.9 g=0.8 b=0.85}{o}" .. loc("Back to Map", {}, {
-    context = "A button that leads back to the game-map"
-}) .. "{/o}{/c}{/wavy}"
-
-function FreeCameraScene:renderMapButton()
-    local r = ui.getScreenRegion()
-    local header,_ = r:splitVertical(1,5)
-
-    local left, right = header:moveUnit(0,16):splitHorizontal(7,1)
-    local mapButton = right:padRatio(0.2)
-
-    lg.setColor(1,1,1)
-    if iml.isHovered(mapButton:get()) then
-        g.drawImageContained("map_button_hover", mapButton:get())
-    end
-    g.drawImageContained("map_button", mapButton:get())
-    local _,txtR = right:splitVertical(3,1)
-    richtext.printRichContained(MAP_BUTTON, g.getSmallFont(16), txtR:get())
-    if iml.wasJustClicked(mapButton:get()) then
-        g.gotoScene("map_scene")
-    end
-
-    return right
-end
-
-
-
 local function resume()
     if g.hasSession() then
         g.getSn().paused = false

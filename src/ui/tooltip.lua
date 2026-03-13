@@ -45,9 +45,9 @@ local function getLogMessages(itemData)
 end
 
 -- Putting this here so font sizes can be changed in one place
-local function getTitleFont() return g.getMainFont(16) end
-local function getAttrFont() return g.getMainFont(13) end
-local function getDescFont() return g.getMainFont(10) end
+function ItemTooltip.getTitleFont() return g.getMainFont(16) end
+function ItemTooltip.getAttrFont() return g.getMainFont(13) end
+function ItemTooltip.getDescFont() return g.getMainFont(10) end
 
 
 
@@ -57,9 +57,9 @@ local function getDescFont() return g.getMainFont(10) end
 ---@param safeArea kirigami.Region
 function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local serverInfo = g.getItemInfo(serverData.type, "server")
-    local titleF = getTitleFont()
-    local attrF = getAttrFont()
-    local descF = g.getMainFont(9)
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
@@ -281,9 +281,9 @@ end
 ---@param safeArea kirigami.Region
 function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     local dpInfo = g.getItemInfo(dpData.type, "data")
-    local titleF = getTitleFont()
-    local attrF = getAttrFont()
-    local descF = g.getMainFont(9)
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
@@ -385,9 +385,9 @@ end
 function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     local world = g.getMainWorld()
     local boosterInfo = g.getItemInfo(boosterData.type, "booster")
-    local titleF = getTitleFont()
-    local attrF = getAttrFont()
-    local descF = g.getMainFont(9)
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
@@ -511,9 +511,9 @@ end
 ---@param x number relative to bottom center
 ---@param y number relative to bottom center
 function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
-    local titleF = getTitleFont()
-    local attrF = getAttrFont()
-    local descF = getDescFont()
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
@@ -614,9 +614,9 @@ end
 ---@param x number
 ---@param y number
 function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
-    local titleF = getTitleFont()
-    local attrF = getAttrFont()
-    local descF = getDescFont()
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
@@ -698,9 +698,9 @@ end
 ---@param x number
 ---@param y number
 function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
-    local titleF = getTitleFont()
-    local attrF = getAttrFont()
-    local descF = getDescFont()
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()

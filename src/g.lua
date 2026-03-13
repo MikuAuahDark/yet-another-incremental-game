@@ -242,7 +242,7 @@ end
 function g.ask(q, arg1, ...)
     local t = questions[q]
     if not t then
-        error("Invalid question")
+        error("Invalid question "..q)
     end
     local reducer, val = t.reducer, t.defaultValue
 
@@ -692,6 +692,7 @@ local g_UpgradeDefinition_ProcGen
 ---@field kind g.UpgradeKind
 ---@field nameContext string?
 ---@field frameColor objects.Color? (only for kind == "EFFICIENCY")
+---@field targetItem string? (only for kind == "UNLOCKS")
 ---@field maxLevel integer?
 ---@field image string?
 ---@field color objects.Color? (default is white)
@@ -2090,12 +2091,12 @@ g.walkDirectory("assets/sfx", loadSound)
 
 -- Higher number means higher priority.
 g.BGMID = {
-    TITLE = 999, -- Title and settings
-    MAP = 1, -- Map scene
-    HARVEST = 2, -- Harvest scene
-    UPGRADE = 3, -- Upgrade scene
-    CUSTOMIZATION = 4, -- Customization scene
-    BOSS = 100, -- Boss theme
+    -- TITLE = 999, -- Title and settings
+    -- MAP = 1, -- Map scene
+    -- HARVEST = 2, -- Harvest scene
+    -- UPGRADE = 3, -- Upgrade scene
+    -- CUSTOMIZATION = 4, -- Customization scene
+    -- BOSS = 100, -- Boss theme
 }
 
 

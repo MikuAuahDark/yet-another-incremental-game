@@ -119,7 +119,7 @@ end
 
 ---@param dt number
 function settingscene:update(dt)
-    g.requestBGM(g.BGMID.TITLE)
+    -- g.requestBGM(g.BGMID.TITLE)
     titleBackground.update(dt)
 end
 

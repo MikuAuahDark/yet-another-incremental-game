@@ -1,5 +1,4 @@
 
-local UpgradeDescription = require("src.ui.upgrades.upgrade_description_ui")
 local Tree = require("src.upgrades.Tree")
 
 local newDevTree = require("src.upgrades.dev_tree")
@@ -45,9 +44,6 @@ function upgscene:init()
     for _, resId in ipairs(g.RESOURCE_LIST) do
         self.dev_priceInputs[resId] = ui.newTextBox()
     end
-
-    ---@type ui.UpgradeDescription|nil
-    self.upgradeDescription = nil
 
     ---@type [g.Tree.Upgrade?, number]
     self.lastUpgradeMaxxed = {nil, 0} -- {upgradeId, lifetime}
@@ -168,11 +164,15 @@ local function drawUpgradeBox(upgrade, noframe, overrideR)
             love.graphics.circle("line", x, y, r)
             col:pop()
         elseif uinfo.kind == "JOB" then
-            local trans = gsman.transform(x + w / 2, y + h / 2, math.pi / 2)
             local col = gsman.mulColor(g.COLORS.UPGRADE_KINDS.JOB)
-            love.graphics.rectangle("line", -w / 2, -h / 2, w, h)
+            --love.graphics.rectangle("line", -w / 2, -h / 2, w, h)
+            love.graphics.polygon("line",
+                x + w / 2, y,
+                x + w, y + h / 2,
+                x + w / 2, y + h,
+                x, y + h / 2
+            )
             col:pop()
-            trans:pop()
         elseif uinfo.kind == "MISC" then
             local cx, cy = x + w / 2, y + h / 2
             local rx = w / 2
@@ -444,37 +444,6 @@ end
 
 
 
-local drawBackground
-do
-function drawBackground()
-    prof_push("drawBackground")
-
-    -- draw background:
-    love.graphics.clear(0.4,0.6,0.8)
-    helper.gradientRect("vertical",
-        objects.Color("#".."FF5B77DA"),
-        objects.Color("#".."FF4228D5"),
-        0,0,love.graphics.getDimensions()
-    )
-    local GAP = 150
-    local rot = math.sin(3*love.timer.getTime() / 1.2) / 8
-    lg.push()
-    love.graphics.scale(ui.getUIScaling())
-    local delta = 0--(love.timer.getTime() * 8) % GAP
-    for x=-300, 3000, GAP do
-        for y=-300, 2000, GAP do
-            love.graphics.setColor(1,1,1,0.07)
-            g.drawImage("upgrade_cat_background_symbol", x+delta,y+delta/3, rot, 1,1)
-        end
-    end
-    lg.pop()
-
-    prof_pop() -- prof_push("drawBackground")
-end
-
-end
-
-
 ---@param str string
 ---@return number?
 local function dev_fromFormattedNumber(str)
@@ -726,10 +695,8 @@ end
 
 
 function upgscene:draw()
+    lg.clear(0.7, 0.7, 0.7)
     lg.setColor(1,1,1)
-    drawBackground()
-
-    love.graphics.setColor(1,1,1)
 
     self:setCamera()
     do
@@ -763,9 +730,8 @@ function upgscene:draw()
     vignette.draw()
 
     ui.startUI()
-    self:renderMapButton()
 
-    g.getHUD():draw({profile = false})
+    g.getHUD():draw({stats = true, jobQueue = false, itemList = false})
 
     -- Draw tutorial text if needed
     if g.getSn().showTutorials.upgrades and (not consts.DEV_MODE) then
@@ -776,20 +742,10 @@ function upgscene:draw()
     end
 
     if hoveredUpgrade then
-        if not self.upgradeDescription or self.upgradeDescription:getUpgrade() ~= hoveredUpgrade then
-            self.upgradeDescription = UpgradeDescription(g.getUpgTree(), hoveredUpgrade)
-        end
-
-        local r = ui.getScreenRegion()
         local mx, my = ui.getMouse()
-        local descriptionBoxR = Kirigami(0, 0, self.upgradeDescription:getDimensions())
-            :set(mx + 14, my - 3)
-            :clampInside(r:padUnit(4))
-
         -- Upgrade description
-        self.upgradeDescription:draw(descriptionBoxR.x, descriptionBoxR.y)
-    else
-        self.upgradeDescription = nil
+        love.graphics.setColor(1, 1, 1)
+        ui.upgradeDescriptionUI(hoveredUpgrade, mx + 14, my - 3, ui.getFullScreenRegion())
     end
 
     -- Draw control tooltip
@@ -866,7 +822,7 @@ function upgscene:update(dt)
 
     self:updateCamera(dt)
     g.getHUD():update(dt)
-    g.requestBGM(g.BGMID.UPGRADE)
+    -- g.requestBGM(g.BGMID.UPGRADE)
     self.lastUpgradeMaxxed[2] = math.max(self.lastUpgradeMaxxed[2] - dt, 0)
 
     local w = g.getMainWorld()
@@ -993,10 +949,6 @@ function upgscene:keyreleased(k)
             upg.level = tree:getUpgradeMaxLevel(upg)
         end
     end
-end
-
-function upgscene:textinput()
-    self.upgradeDescription = nil
 end
 
 upgscene.wheelmoved = upgscene.defaultWheelmoved

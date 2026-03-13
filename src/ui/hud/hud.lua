@@ -221,9 +221,15 @@ function HUD:draw(show)
     local lineWidth = gsman.setLineWidth(2)
     local theme = g.getSystemTheme()
     local tabF = g.getMainFont(16)
-    drawPanelWithBorder(self.topR, theme)
-    drawPanelWithBorder(self.leftR, theme)
-    drawPanelWithBorder(self.botR:padUnit(0, tabF:getHeight(), 0, 0), theme)
+    if showStats then
+        drawPanelWithBorder(self.topR, theme)
+    end
+    if showJobQueue then
+        drawPanelWithBorder(self.leftR, theme)
+    end
+    if showItemList then
+        drawPanelWithBorder(self.botR:padUnit(0, tabF:getHeight(), 0, 0), theme)
+    end
 
     if g.hasSession() then
         local world = g.getMainWorld()
