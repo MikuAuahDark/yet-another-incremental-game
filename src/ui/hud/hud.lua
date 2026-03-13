@@ -40,14 +40,14 @@ local function drawJobCard(job, r, theme)
 
     -- Draw text
     love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-    ui.printRichInRegion(job.name, titleF, titleR, true, "left")
+    richtext.printRichContainedNoWrap(job.name, titleF, titleR:get())
     ui.printRichInRegion(g.getJobCategoryName(job.category), catF, catR, true, "left")
     local computeR, dataR, moneyR = outR:splitHorizontal(1, 1, 1)
-    ui.printRichInRegion(job.computePower.." {dns}", titleF, computeR, true, "left")
-    ui.printRichInRegion(job.outputData.." {database}", titleF, dataR, true, "center")
+    ui.printRichInRegion(g.formatNumber(job.computePower).."{dns}", catF, computeR, true, "left")
+    ui.printRichInRegion(g.formatNumber(job.outputData).."{database}", catF, dataR, true, "center")
     -- We only have "money"
     -- FIXME: Change it if we have more than 1 resources
-    ui.printRichInRegion("{money}"..assert(job.resource.money), titleF, moneyR, true, "right")
+    ui.printRichInRegion("{money}"..g.formatNumber(job.resource.money), catF, moneyR, true, "right")
 
     -- Draw timeout bar
     local timeoutWidth = helper.clamp(job.timeout * r.w / math.max(getJobTimeout(job), 1), 0, r.w)
@@ -57,7 +57,7 @@ end
 local function getJobCardHeight()
     local titleF = g.getMainFont(16)
     local catF = g.getMainFont(10)
-    return 4 * 2 + titleF:getHeight() * 2 + catF:getHeight() + 4
+    return 4 + titleF:getHeight() + catF:getHeight() * 2 + 4
 end
 
 ---@param r kirigami.Region
@@ -234,25 +234,6 @@ function HUD:draw(show)
     if g.hasSession() then
         local world = g.getMainWorld()
 
-        -- Draw resource and stats (top area)
-        if showStats then
-            local _, moneyR, loadR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
-                self.topR, "horizontal",
-                8, 128, 128, 128, 0, self.topR.h, 8, self.topR.h, 8
-            )
-            local lw2 = gsman.setLineWidth(1)
-            local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
-            drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", money)
-            local loadColor = world.currentLoad > g.stats.MaxLoad and g.COLORS.UI.WARNING or objects.Color.WHITE
-            drawStats(loadR, TEXT.LOAD, TEXT.LOAD_DESCRIPTION, "{bolt}", world.currentLoad.."/"..g.stats.MaxLoad, loadColor)
-            drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
-            lw2:pop()
-
-            love.graphics.setColor(0, 0, 0)
-            ui.debugRegion(hideButtonR)
-            ui.debugRegion(pauseButtonR)
-        end
-
         -- Draw job queue
         if showJobQueue then
             local jobQueueF = g.getMainFont(10)
@@ -349,6 +330,7 @@ function HUD:draw(show)
             local scrollSize = math.max(itemListR.w - totalWidth, 0)
             local itemNameF = g.getMainFont(10)
             local showDescriptionOf = nil
+            local gotDrag = nil
             -- TODO: Draw scrollbar
             for i, itemBaseR in ipairs(itemListGrid) do
                 local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
@@ -363,9 +345,8 @@ function HUD:draw(show)
                     if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
                         self.activeDragging = {0, itemInfo}
                     end
+                    gotDrag = self.activeDragging
                 else
-                    self.activeDragging = nil
-
                     if iml.isHovered(x, y, w, h, itemInfo) then
                         love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
                         love.graphics.rectangle("fill", itemBaseR:get())
@@ -389,11 +370,31 @@ function HUD:draw(show)
                 end
             end
 
+            self.activeDragging = gotDrag
             love.graphics.setColor(1, 1, 1)
 
             if showDescriptionOf then
                 ui.ItemTooltip.DrawHUDTooltip(showDescriptionOf[3], showDescriptionOf[1], showDescriptionOf[2])
             end
+        end
+
+        -- Draw resource and stats (top area)
+        if showStats then
+            local _, moneyR, loadR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
+                self.topR, "horizontal",
+                8, 144, 144, 144, 0, self.topR.h, 8, self.topR.h, 8
+            )
+            local lw2 = gsman.setLineWidth(1)
+            local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
+            drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", money)
+            local loadColor = world.currentLoad > g.stats.MaxLoad and g.COLORS.UI.WARNING or objects.Color.WHITE
+            drawStats(loadR, TEXT.LOAD, TEXT.LOAD_DESCRIPTION, "{bolt}", world.currentLoad.."/"..g.stats.MaxLoad, loadColor)
+            drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
+            lw2:pop()
+
+            love.graphics.setColor(0, 0, 0)
+            ui.debugRegion(hideButtonR)
+            ui.debugRegion(pauseButtonR)
         end
     end
 

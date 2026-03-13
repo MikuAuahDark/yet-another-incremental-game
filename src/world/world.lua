@@ -347,13 +347,15 @@ function World:_update(dt)
         -- Compute heat
         local heat = self.heat:get(serverData.tileX, serverData.tileY)
         local heatPerfMul = 1
+        local heatdiff = serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]
         if heat > serverInfo.heatTolerance[2] then
             -- Overheat. Reduce performance
-            heatPerfMul = serverInfo.heatTolerance[2] / heat
+            local diff = heat - serverInfo.heatTolerance[2]
+            heatPerfMul = 2 ^ (-diff / heatdiff)
         elseif heat < serverInfo.heatTolerance[1] then
             -- Chilling. Increase performance
             local diff = serverInfo.heatTolerance[1] - heat
-            heatPerfMul = (serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]) / diff
+            heatPerfMul = 1 + diff / heatdiff
         end
 
         -- Compute booster

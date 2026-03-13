@@ -136,9 +136,10 @@ local RAY_COLOR = objects.Color("#".."FFF2E46C")
 
 ---Note: Set the line width first before calling this function.
 ---This won't draw the godrays. Draw the godrays before this if necessary.
+---@param mode love.DrawMode
 ---@param upgrade g.Tree.Upgrade
 ---@param noframe boolean?
-local function drawUpgradeBox(upgrade, noframe)
+local function drawUpgradeBox(mode, upgrade, noframe)
     local clickableR = Kirigami(getUpgradeClickableArea(upgrade))
     local frameR = clickableR:padRatio(-consts.UPGRADE_GRID_SPACING/consts.UPGRADE_IMAGE_SIZE)
     local iconR = frameR:padRatio(0.33)
@@ -151,20 +152,20 @@ local function drawUpgradeBox(upgrade, noframe)
             bgColor = g.COLORS.UPGRADE_KINDS.UNLOCKS
             local col = gsman.mulColor(bgColor)
             local x, y, w, h = frameR:get()
-            love.graphics.rectangle("fill", x, y, w, h, 12, 12)
+            love.graphics.rectangle(mode, x, y, w, h, 12, 12)
             col:pop()
         elseif uinfo.kind == "EFFICIENCY" then
             local x, y, w, h = frameR:get()
             local r = (w + h) / 4
             bgColor = uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK
             local col = gsman.mulColor(bgColor)
-            love.graphics.circle("fill", x, y, r)
+            love.graphics.circle(mode, x, y, r)
             col:pop()
         elseif uinfo.kind == "JOB" then
             bgColor = g.COLORS.UPGRADE_KINDS.JOB
             local col = gsman.mulColor(bgColor)
             local x, y, w, h = frameR:get()
-            love.graphics.polygon("fill",
+            love.graphics.polygon(mode,
                 x + w / 2, y,
                 x + w, y + h / 2,
                 x + w / 2, y + h,
@@ -183,7 +184,7 @@ local function drawUpgradeBox(upgrade, noframe)
             end
             bgColor = g.COLORS.UPGRADE_KINDS.JOB
             local col = gsman.mulColor(bgColor)
-            love.graphics.polygon("fill", polygons)
+            love.graphics.polygon(mode, polygons)
             col:pop()
         end
     end
@@ -243,31 +244,13 @@ local function drawUpgradeBoxes(self)
         return forceVisibility or (not hidden)
     end
 
-    ---@type table<g.Tree.Upgrade, boolean>
-    local isNextToVisibleCache = {}
-    for _, upg in ipairs(upgrades) do
-        -- cache, (another expensive operation)
-        -- MUST BE DONE 2-PASS, THATS WHY THERES 2 LOOPS.
-        local neighs = tree:getNeighbors(upg.x,upg.y)
-        for _, upg2 in ipairs(neighs) do
-            if isVisible(upg2) then
-                isNextToVisibleCache[upg] = true
-                break
-            end
-        end
-    end
-
-    local function isNextToVisible(upg)
-        return isNextToVisibleCache[upg] or isVisible(upg)
-    end
-
     -- Draw connectors
     local toAnimate = objects.Set() -- contains the upgrade tree
     prof_push("drawConnectors")
     for _, upg in ipairs(upgrades) do
         -- Draw connector first
         for _, upg2 in ipairs(tree:getNeighbors(upg.x,upg.y)) do
-            if isNextToVisible(upg2) and isNextToVisible(upg) then
+            if isVisible(upg2) and isVisible(upg) then
                 drawConnector(upg, upg2)
 
                 if self.lastUpgradeMaxxed[2] > 0 and self.lastUpgradeMaxxed[1] == upg and upg2.level == 0 then
@@ -343,8 +326,9 @@ local function drawUpgradeBoxes(self)
     local lw = gsman.setLineWidth(4)
     for _, upg in ipairs(upgrades) do
         if isVisible(upg) then
-            local col = gsman.setColor((upg.level > 0 or self.dev_editMode) and objects.Color.WHITE or objects.Color.BLACK)
-            drawUpgradeBox(upg)
+            local show = upg.level > 0 or self.dev_editMode
+            local col = gsman.setColor(show and objects.Color.WHITE or objects.Color.BLACK)
+            drawUpgradeBox(show and "fill" or "line", upg)
             col:pop()
         end
     end

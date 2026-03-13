@@ -126,8 +126,8 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         at[#at+1] = cpsText
         -- Heat
         local heatText = TEXT.SERVER_HEAT_NUMBER({
-            heat = heat,
-            max_heat = serverInfo.heatTolerance[2]
+            heat = g.formatNumber(heat),
+            max_heat = g.formatNumber(serverInfo.heatTolerance[2])
         })
         if heat > serverInfo.heatTolerance[2] then
             heatText = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, heatText.." {emergency_heat}")
@@ -179,11 +179,12 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         end
         -- Adjust width to fit data info
         do
+            -- +8 for padding
             local w = math.max(
-                richtext.getWidth(jobData.computeText, attrF),
-                richtext.getWidth(jobData.outdataText, attrF),
-                richtext.getWidth(jobData.earnText, attrF)
-            ) + 4 -- +4 for padding
+                richtext.getWidth(jobData.computeText, attrF) + 8,
+                richtext.getWidth(jobData.outdataText, attrF) + 8,
+                richtext.getWidth(jobData.earnText, attrF) + 8
+            )
             width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
         end
 
@@ -572,8 +573,8 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
         at[#at+1] = TEXT.CPS_NUMBER({cps = g.formatNumber(serverInfo.computePerSecond)})
         -- Heat tolerance
         at[#at+1] = TEXT.HEAT_TOLERANCE({
-            min_heat = serverInfo.heatTolerance[1],
-            max_heat = serverInfo.heatTolerance[2]
+            min_heat = g.formatNumber(serverInfo.heatTolerance[1]),
+            max_heat = g.formatNumber(serverInfo.heatTolerance[2])
         })
 
         attributesText = table.concat(at, "\n")

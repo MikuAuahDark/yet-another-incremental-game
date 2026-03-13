@@ -63,7 +63,7 @@ g.defineEntity("TEXT_ANIMATION", {
         local alpha = 1
 
         lg.setColor(1, 1, 1, alpha)
-        local f = g.getMainFont(16)
+        local f = g.getMainFont(10)
         local sc = 1.2
         richtext.printRichCentered(text, assert(f), ent.x, ent.y - yOffset, 5000, "left", 0, sc)
     end
