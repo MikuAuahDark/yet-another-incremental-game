@@ -24,3 +24,18 @@ end
 for i = 1, 3 do
     defWZUpgrade(i)
 end
+
+
+
+----------------
+-- Max Job Queue
+----------------
+
+g.defineUpgrade("max_job", "Job Queue", {
+    kind = "MISC",
+    description = "Increase max job queue by %{1}.",
+    image = "add_to_queue",
+    maxLevel = 10,
+    getValues = helper.valueGetter(1, 1),
+    getMaxJobQueueModifier = getWorldSizeModifier
+})

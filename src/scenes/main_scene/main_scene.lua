@@ -340,4 +340,10 @@ function MainScene:mousereleased(x, y, b)
     end
 end
 
+function MainScene:keyreleased(k)
+    if k == "tab" then
+        g.gotoScene("upgrade_scene")
+    end
+end
+
 return MainScene

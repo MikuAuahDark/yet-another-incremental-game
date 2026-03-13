@@ -1519,6 +1519,15 @@ function g.defineServer(id, name, def)
                 def.draw(r2)
             end
             -- TODO: Draw unlock
+            local font = g.getMainFont(10)
+            local unlockText
+            if g.getSystemTheme() == "light" then
+                unlockText = "{o thickness=0.5}{c r=1 g=1 b=1}{lock_open}{/c}{/o}"
+            else
+                unlockText = "{o r=1 g=1 b=1 thickness=0.5}{c r=0 g=0 b=0}{lock_open}{/c}{/o}"
+            end
+            local w = richtext.getWidth(unlockText, font)
+            richtext.printRich(unlockText, font, r2.x + r2.w - w, r2.y, w, "right")
         end
     })
     return g.defineItem(id, {
@@ -1645,6 +1654,7 @@ function g.defineBooster(id, name, def)
             if def.draw then
                 def.draw(r2)
             end
+
             -- TODO: Draw unlock
         end
     })

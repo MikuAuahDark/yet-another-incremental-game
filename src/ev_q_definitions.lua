@@ -7,7 +7,6 @@ g.defineEvent("perSecondUpdate")
 
 g.defineEvent("jobCompleted") -- args: g.World.ServerData, g.Job
 
-g.defineQuestion("getMaxJobQueueModifier", reducers.ADD, 1)
 g.defineQuestion("getPerformanceModifier", reducers.ADD, 0) -- For server only. arguments: g.ServerInfo
 g.defineQuestion("getPerformanceMultiplier", reducers.MULTIPLY, 1) -- For server only. arguments: g.ServerInfo
 g.defineQuestion("getLoadModifier", reducers.ADD, 0) -- arguments: g.ItemInfo

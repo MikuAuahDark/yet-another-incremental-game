@@ -50,6 +50,8 @@ function upgscene:init()
         m2 = nil,
         m1x = 0, m1y = 0, m2x = 0, m2y = 0
     }
+
+    self:setZoom(0.5)
 end
 
 
@@ -196,10 +198,6 @@ local function drawUpgradeBox(upgrade, noframe, overrideR)
     if uinfo.drawUI then
         uinfo:drawUI(upgrade.level, iconR)
     end
-    local lw = gsman.setLineWidth(1)
-    ui.debugRegion(iconR)
-    ui.debugRegion(frameR)
-    lw:pop()
 end
 
 ---@param self UpgradesScene
@@ -824,9 +822,7 @@ end
 ---@param k love.KeyConstant
 function upgscene:keypressed(k)
     local tree = g.getUpgTree()
-    if k == "tab" then
-        g.gotoScene("main_scene")
-    elseif k == "escape" then
+    if k == "escape" then
         local s = g.getSn()
         s.paused = not s.paused
     elseif consts.DEV_MODE then
@@ -940,6 +936,10 @@ function upgscene:keyreleased(k)
         for _, upg in ipairs(tree:getUpgradesOnTree()) do
             upg.level = tree:getUpgradeMaxLevel(upg)
         end
+    end
+
+    if k == "tab" then
+        g.gotoScene("main_scene")
     end
 end
 
