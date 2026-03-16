@@ -73,7 +73,30 @@ function MainScene:draw()
     local item = nil
     local beforeActiveDragWorld, currentActiveDragWorld = self.targetDrag, nil
     if world.items:contains(tx, ty) then
-        love.graphics.setColor(0, 0, 0, 1)
+        -- tile indicator
+        local t = math.sin(love.timer.getTime() * 2) ^ 2
+        if self.candidateWirePos then
+            local server, dp = self:_getServerAndDP(self.candidateWirePos[1], self.candidateWirePos[2], tx, ty)
+            if server and dp and self:_canConnectOrDisconnect(server, dp) then
+                love.graphics.setColor(0, 1, 0, t)
+            else
+                love.graphics.setColor(1, 0, 0, t)
+            end
+        elseif hud.activeDragging and hud.activeDragging[1] >= DRAG_ITEM_DURATION then
+            if g.canPutItem(tx, ty) then
+                love.graphics.setColor(0, 1, 0, t)
+            else
+                love.graphics.setColor(1, 0, 0, t)
+            end
+        elseif self.targetDrag and self.targetDrag[1] >= DRAG_ITEM_DURATION then
+            if (tx == self.targetDrag[2].tileX and ty == self.targetDrag[2].tileY) or g.canPutItem(tx, ty) then
+                love.graphics.setColor(0, 1, 0, t)
+            else
+                love.graphics.setColor(1, 0, 0, t)
+            end
+        else
+            love.graphics.setColor(0, 0, 0, 1)
+        end
         love.graphics.rectangle("line", tx * wtz, ty * wtz, wtz, wtz)
 
         item = self.targetDrag and self.targetDrag[2]
@@ -247,13 +270,11 @@ function MainScene:_regionFromUIToWorld(r)
     return Kirigami(x1, y1, x2 - x1, y2 - y1)
 end
 
----@param tx integer second tile X
----@param ty integer second tile Y
-function MainScene:_tryConnectWire(tx, ty)
+function MainScene:_getServerAndDP(tx1, ty1, tx2, ty2)
     local world = g.getMainWorld()
     local server, dp = nil, nil
     -- Get info on 1st tile pos
-    local firstItem = g.getItem(self.candidateWirePos[1], self.candidateWirePos[2])
+    local firstItem = g.getItem(tx1, ty1)
     if firstItem then
         local _, category = g.getItemInfo(firstItem.type)
         if category == "server" then
@@ -265,7 +286,7 @@ function MainScene:_tryConnectWire(tx, ty)
         end
     end
     -- Get info on 2nd tile pos
-    local secondItem = g.getItem(tx, ty)
+    local secondItem = g.getItem(tx2, ty2)
     if secondItem then
         local _, category = g.getItemInfo(secondItem.type)
         if category == "server" then
@@ -276,6 +297,25 @@ function MainScene:_tryConnectWire(tx, ty)
             dp = secondItem
         end
     end
+
+    return server, dp
+end
+
+---@param server g.World.ServerData
+---@param dp g.World.DataProcessorData
+function MainScene:_canConnectOrDisconnect(server, dp)
+    if server.connectsTo == dp then
+        return true
+    elseif g.canConnectDataWire(server, dp) then
+        return true
+    end
+    return false
+end
+
+---@param tx integer second tile X
+---@param ty integer second tile Y
+function MainScene:_tryConnectWire(tx, ty)
+    local server, dp = self:_getServerAndDP(self.candidateWirePos[1], self.candidateWirePos[2], tx, ty)
     if server and dp then
         if server.connectsTo == dp then
             g.disconnectDataWire(server, dp)
@@ -291,45 +331,7 @@ end
 
 
 
----@param k love.KeyConstant
-function MainScene:keyreleased(k)
-    if consts.DEV_MODE and g.hasSession() then
-        if k == "1" then
-            local tx, ty = self:_getTilePos()
-
-            if g.canPutItem(tx, ty) then
-                g.putItem("basic_server", tx, ty)
-            end
-        elseif k == "2" then
-            local tx, ty = self:_getTilePos()
-
-            if g.canPutItem(tx, ty) then
-                g.putItem("basic_data", tx, ty)
-            end
-        elseif k == "3" then
-            local tx, ty = self:_getTilePos()
-
-            if self.candidateWirePos then
-                self:_tryConnectWire(tx, ty)
-                self.candidateWirePos = nil
-            else
-                self.candidateWirePos = {tx, ty}
-            end
-        elseif k == "4" then
-            local tx, ty = self:_getTilePos()
-            g.removeItem(tx, ty)
-        elseif k == "return" then
-            print(g.queueJob({
-                name = "Test Job",
-                category = "general",
-                computePower = 5,
-                outputData = 5,
-                resource = {money = 1},
-                timeout = 30
-            }))
-        end
-    end
-end
+MainScene.keyreleased = MainScene.defaultKeyreleased
 
 ---@param x number
 ---@param y number
