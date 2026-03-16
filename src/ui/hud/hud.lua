@@ -236,12 +236,12 @@ function HUD:draw(show)
 
         -- Draw job queue
         if showJobQueue then
-            local jobQueueF = g.getMainFont(10)
+            local jobQueueF = g.getMainFont(12)
             -- TODO: Add scrollbars
             local jobTextR, jobQR = helper.splitRegionByExactSizes(
                 self.leftR:padUnit(4, 4, 4, 0),
                 "vertical",
-                jobQueueF:getHeight(),
+                jobQueueF:getHeight() * 2,
                 0
             )
 
@@ -251,7 +251,7 @@ function HUD:draw(show)
                 maxjobs = helper.round(g.stats.MaxJobQueue),
             })
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-            ui.printRichInRegion(jobQueueText, jobQueueF, jobTextR)
+            ui.printRichInRegion(jobQueueText, jobQueueF, jobTextR, true)
 
             local jobCardHeight = getJobCardHeight()
             local iterCount = math.min(#world.jobQueue, math.floor(jobQR.h / (jobCardHeight + 4)))
@@ -261,6 +261,52 @@ function HUD:draw(show)
                 local y = jobQR.y + (i - 1) * (jobCardHeight + 4)
                 local jobCardR = Kirigami(jobQR.x, y, jobQR.w, jobCardHeight)
                 drawJobCard(jq, jobCardR, theme)
+            end
+
+            if iml.isHovered(jobTextR:get()) then
+                -- Request info
+                local descF = g.getMainFont(10)
+                ---@type g.JobInfo[]
+                local jobs = {}
+                for k, v in pairs(g.VALID_JOBS) do
+                    if world.jobPoller[k] and world.jobPoller[k][2] > 0 then
+                        jobs[#jobs+1] = v
+                    end
+                end
+
+                if #jobs > 0 then
+                    table.sort(jobs, function(a, b) return a.id < b.id end)
+                    local height = descF:getHeight() * #jobs
+
+                    local maxNameWidth = 0
+                    local jpsMaxWidth = 0
+                    for _, ji in ipairs(jobs) do
+                        local w = richtext.getWidth(ji.name, descF)
+                        maxNameWidth = math.max(maxNameWidth, w)
+                        local jps = g.formatNumber(world.jobPoller[ji.id][2])
+                        local jpsW = richtext.getWidth(jps.." J/s", descF)
+                        jpsMaxWidth = math.max(jpsMaxWidth, jpsW)
+                    end
+
+                    local width = 8 + maxNameWidth + jpsMaxWidth
+                    local mx, my = ui.getMouse()
+                    local tdrawableR, tcntR = ui.getTooltipRegion(mx + 8, my + 8, width, height, ui.getFullScreenRegion())
+
+                    local nameListR, _, jpsListR = helper.splitRegionByExactSizes(tcntR, "horizontal", maxNameWidth, 8, jpsMaxWidth)
+                    local nameG = nameListR:grid(1, #jobs)
+                    local jpsG = jpsListR:grid(1, #jobs)
+
+                    love.graphics.setColor(1, 1, 1)
+                    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+                    for i, ji in ipairs(jobs) do
+                        local nameR = nameG[i]
+                        local jpsR = jpsG[i]
+                        local jps = g.formatNumber(world.jobPoller[ji.id][2]).." J/s"
+                        ui.printRichInRegion(ji.name, descF, nameR, true)
+                        ui.printRichInRegion(jps, descF, jpsR, true)
+                    end
+                end
             end
         end
 
