@@ -8,7 +8,7 @@ g.defineBooster("water_cooler", "Water Cooler", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(1, 1, 1, 0.4)
-        g.drawImageContained("water_drop", r:get())
+        g.drawImageContained("water_drop", r:padRatio(0.1):get())
         col:pop()
     end,
     getTileHeat = function(reltx, relty)
@@ -29,7 +29,7 @@ g.defineBooster("ice_cooler", "Ice Cooler", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(1, 1, 1, 0.4)
-        g.drawImageContained("water_drop", r:get())
+        g.drawImageContained("water_drop", r:padRatio(0.1):get())
         col:pop()
     end,
     getTileHeat = function(reltx, relty)
@@ -50,7 +50,7 @@ g.defineBooster("overclocker", "Overclock", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(1, 1, 1, 0.4)
-        g.drawImageContained("quick_reorder", r:get())
+        g.drawImageContained("quick_reorder", r:padRatio(0.1):get())
         col:pop()
     end,
     getPerformanceMultiplier = function(reltx, relty)

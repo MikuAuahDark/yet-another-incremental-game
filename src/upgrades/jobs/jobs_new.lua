@@ -130,7 +130,7 @@ defJob("research_model", "Research Model", "ai", {
 })
 defJob("llm", "LLM", "ai", {
     image = "article_shortcut",
-    compute = {10000, 500000},
+    compute = {10000, 50000},
     data = {45000, 60000},
     money = {80000, 950000},
 })

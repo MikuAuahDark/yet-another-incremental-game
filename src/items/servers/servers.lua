@@ -19,9 +19,30 @@ g.defineServer("basic_server", "Basic Server", {
     end,
 })
 
+g.defineServer("normal_server", "Normal Server", {
+    price = 0,
+    computePerSecond = 10,
+    computePreference = {"general"},
+    load = 1,
+    heatTolerance = {40, 60},
+    heat = 40,
+    color = objects.Color("FFB6E67C"),
+    draw = function(r)
+        local col = gsman.setColor(0, 0, 0)
+        local _, decorR = r:splitHorizontal(2, 1, 2)
+        local a, _, b = decorR:set(nil, nil, nil, decorR.h * 0.1)
+            :attachToBottomOf(decorR)
+            :moveRatio(0, -1)
+            :splitHorizontal(1, 3, 1)
+        love.graphics.rectangle("fill", a:get())
+        love.graphics.rectangle("fill", b:get())
+        col:pop()
+    end,
+})
+
 g.defineServer("advanced_server", "Advanced Server", {
     price = 100,
-    computePerSecond = 500,
+    computePerSecond = 25,
     computePreference = {"general", "video"},
     load = 10,
     heatTolerance = {30, 80},
