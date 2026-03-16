@@ -300,37 +300,22 @@ end
 
 ---@param increase integer
 ---@param startingPercentage integer?
+---@deprecated use helper.valueGetter instead
 function helper.percentageGetter(increase, startingPercentage)
-    helper.assert(math.floor(increase) == increase, "Increase must be an integer. E.g. 5%, 10%, etc")
-    if startingPercentage then
-        helper.assert(math.floor(startingPercentage) == startingPercentage, "startingPercentage must be an integer. E.g. 10%, 20%, etc")
-    end
-    ---@param self g.UpgradeInfo
-    ---@param level integer
-    local function getValues(self, level)
-        if startingPercentage then
-            return startingPercentage + ((level-1) * increase)
-        end
-        return level*increase
-    end
-    return getValues
+    return helper.valueGetter(increase, startingPercentage)
 end
 
 
 ---@param increase number
 ---@param startingVal number?
 function helper.valueGetter(increase, startingVal)
+    startingVal = startingVal or 0
     helper.assert(type(increase)=="number","Increase needs to be a number")
-    if startingVal then
-        helper.assert(type(startingVal)=="number","startingVal needs to be a number")
-    end
+    helper.assert(type(startingVal)=="number","startingVal needs to be a number")
     ---@param self g.UpgradeInfo
     ---@param level integer
     local function getValues(self, level)
-        if startingVal then
-            return startingVal + ((level-1) * increase)
-        end
-        return level*increase
+        return startingVal + ((level-1) * increase)
     end
     return getValues
 end
@@ -783,6 +768,65 @@ function helper.blackOrWhite(col)
     else
         return objects.Color.BLACK
     end
+end
+
+
+
+do
+
+local THICKNESS_MAP = {
+    {-1, -1},
+    {1, -1},
+    {-1, 1},
+    {1, 1},
+}
+---For upgrade.drawUI function.
+---@param icon string
+---@param bgcol objects.Color|"theme" Border color or "theme" to follow system theme
+---@param fgcol objects.Color|"theme" Foreground color or "theme" to follow system theme
+function helper.genDrawUIIntuition(icon, bgcol, fgcol)
+    local bgcolget, fgcolget
+    if bgcol == "theme" then
+        function bgcolget()
+            return g.COLORS.UI.MAIN[g.getSystemTheme()].PRIMARY_INVERT
+        end
+    else
+        ---@cast bgcol objects.Color
+        function bgcolget()
+            return bgcol
+        end
+    end
+    if fgcol == "theme" then
+        function fgcolget()
+            return g.COLORS.UI.MAIN[g.getSystemTheme()].PRIMARY
+        end
+    else
+        ---@cast fgcol objects.Color
+        function fgcolget()
+            return fgcol
+        end
+    end
+
+    ---@param uinfo g.UpgradeInfo
+    ---@param level integer
+    ---@param r kirigami.Region
+    return function(uinfo, level, r)
+        local r1, _ = r:splitVertical(1, 1)
+        local _, rf = r1:splitHorizontal(1, 1)
+        local f = math.sin(love.timer.getTime() * 3)
+
+        local col = gsman.mulColor(bgcolget())
+        for _, oxoy in ipairs(THICKNESS_MAP) do
+            local ox, oy = oxoy[1] * 0.02, oxoy[2] * 0.02
+            g.drawImageContained(icon, rf:moveRatio(ox, oy + f * 0.1):get())
+        end
+        col:pop()
+        local col2 = gsman.mulColor(fgcolget())
+        g.drawImageContained(icon, rf:moveRatio(0, f * 0.1):get())
+        col2:pop()
+    end
+end
+
 end
 
 

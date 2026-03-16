@@ -266,6 +266,22 @@ function g.ask(q, arg1, ...)
     return tree:askUpgrades(q, val, arg1, ...)
 end
 
+---@param qname string
+---@param initmodval number?
+---@param initmulval number?
+function g.defineProperty(qname, initmodval, initmulval)
+    g.defineQuestion(qname .. "Modifier", reducers.ADD, initmodval or 0)
+    g.defineQuestion(qname .. "Multiplier", reducers.MULTIPLY, initmulval or 1)
+end
+
+---@param qname string
+---@param initmodval number?
+---@param initmulval number?
+---@return number
+function g.getProperty(qname, initmodval, initmulval)
+    return (g.ask(qname.."Modifier") + (initmodval or 0)) * (g.ask(qname.."Multiplier") * (initmulval or 1))
+end
+
 
 
 
@@ -1249,6 +1265,7 @@ do
 g.VALID_JOB_CATEGORIES = {}
 
 ---@class g.Job
+---@field public type string
 ---@field public name string
 ---@field public category g.JobCategory
 ---@field public computePower number
@@ -1264,7 +1281,6 @@ function g.defineJobCategory(id, name, def)
     local ctx = def.nameContext
     if not ctx then ctx = nil end
     g.VALID_JOB_CATEGORIES[id] = {name, loc(name, nil, {context = ctx})}
-    g.defineEvent("populate"..name.."JobCandidates") -- args: g.Job[]
     return g.defineStat(name.."JobFrequency", def.startingStatValue, name.." Job Spawn Frequency")
 end
 
@@ -1277,20 +1293,6 @@ function g.getJobCategoryName(jobCategory, raw)
         error("unknown job category '"..jobCategory.."'")
     end
     return info[raw and 2 or 1]
-end
-
----@param job g.Job
-function g.queueJob(job)
-    local world = g.getMainWorld()
-
-    if #world.jobQueue >= helper.round(g.stats.MaxJobQueue) then
-        return false
-    end
-
-    world.jobQueue[#world.jobQueue+1] = job
-    return true
-end
-
 end
 
 ---@alias g.JobCategory
@@ -1309,6 +1311,110 @@ g.stats.VideoJobFrequency = g.defineJobCategory("video", "Video", {
 g.stats.AIJobFrequency = g.defineJobCategory("ai", "AI", {
     startingStatValue = 0,
     nameContext = "AI processing job for computer (e.g. inferencing or training)"})
+
+end
+
+
+
+-------------
+-- Job System
+-------------
+do
+
+---@type table<string, g.JobInfo>
+g.VALID_JOBS = {}
+
+---@class g.JobInfo
+---@field public id string
+---@field public name string
+---@field public category g.JobCategory
+---@field public compute [integer,integer] -- min, max
+---@field public data [integer,integer] -- min, max
+---@field public money [integer,integer] -- min, max
+
+---@class g.JobDef
+---@field package compute [integer,integer]|integer -- min, max
+---@field package data [integer,integer]|integer -- min, max
+---@field package money [integer,integer]|integer -- min, max
+
+---@param id string
+---@param name string
+---@param category g.JobCategory
+---@param def g.JobDef
+function g.defineJob(id, name, category, def)
+    if g.VALID_JOBS[id] then
+        error("job '"..id.."' already defined")
+    end
+    g.getJobCategoryName(category) -- for assertion
+
+    local dc, dd, dm
+    if type(def.compute) == "number" then
+        dc = {def.compute, def.compute}
+    else
+        dc = def.compute
+    end
+    if type(def.data) == "number" then
+        dd = {def.data, def.data}
+    else
+        dd = def.data
+    end
+    if type(def.money) == "number" then
+        dm = {def.money, def.money}
+    else
+        dm = def.money
+    end
+    g.VALID_JOBS[id] = {
+        id = id,
+        name = name,
+        category = category,
+        compute = {math.min(dc[1], dc[2]), math.max(dc[1], dc[2])},
+        data = {math.min(dd[1], dd[2]), math.max(dd[1], dd[2])},
+        money = {math.min(dm[1], dm[2]), math.max(dm[1], dm[2])},
+    }
+end
+
+---@param id string
+function g.genJob(id)
+    local ji = g.VALID_JOBS[id]
+    if not ji then
+        error("unknown job id '"..id.."'")
+    end
+
+    local cp = helper.lerp(ji.compute[1], ji.compute[2], love.math.random())
+    cp = (cp + g.ask("getJobComputePowerModifier", id)) * g.ask("getJobComputePowerMultiplier", id)
+    local od = helper.lerp(ji.data[1], ji.data[2], love.math.random())
+    od = (od + g.ask("getJobOutputDataModifier", id)) * g.ask("getJobOutputDataMultiplier", id)
+    local mr = helper.lerp(ji.money[1], ji.money[2], love.math.random())
+    mr = (mr + g.ask("getJobMoneyRewardModifier", id)) * g.ask("getJobMoneyRewardMultiplier", id)
+
+    ---@type g.Job
+    local job = {
+        type = id,
+        name = ji.name,
+        -- FIXME: This is MSOT. Fortunately it's limited here. Gotta move fast.
+        category = ji.category,
+        computePower = helper.round(cp),
+        outputData = helper.round(od),
+        resource = {money = helper.round(mr)},
+        timeout = g.ask("getJobTimeoutModifier", id) * g.ask("getJobTimeoutMultiplier", id),
+    }
+    g.call("jobCreated", job)
+    return job
+end
+
+---@param job g.Job
+function g.queueJob(job)
+    local world = g.getMainWorld()
+
+    if #world.jobQueue >= helper.round(g.stats.MaxJobQueue) then
+        return false
+    end
+
+    world.jobQueue[#world.jobQueue+1] = job
+    return true
+end
+
+end
 
 
 
@@ -1498,6 +1604,7 @@ end
 
 -- Quick item registration for specific category
 
+local drawLockOpen = helper.genDrawUIIntuition("lock_open", "theme", "theme")
 
 ---@class g._ServerDef
 ---@field package nameContext string?
@@ -1529,16 +1636,7 @@ function g.defineServer(id, name, def)
             if def.draw then
                 def.draw(r2)
             end
-
-            local font = g.getMainFont(10)
-            local unlockText
-            if g.getSystemTheme() == "light" then
-                unlockText = "{o thickness=0.5}{c r=1 g=1 b=1}{lock_open}{/c}{/o}"
-            else
-                unlockText = "{o r=1 g=1 b=1 thickness=0.5}{c r=0 g=0 b=0}{lock_open}{/c}{/o}"
-            end
-            local w = richtext.getWidth(unlockText, font)
-            richtext.printRich(unlockText, font, r2.x + r2.w - w, r2.y, w, "right")
+            drawLockOpen(uinfo, level, r)
         end,
         isItemUnlocked = function(uinfo, level, iid)
             return iid == id
@@ -1604,16 +1702,7 @@ function g.defineDataProcessor(id, name, def)
             if def.draw then
                 def.draw(r2)
             end
-
-            local font = g.getMainFont(10)
-            local unlockText
-            if g.getSystemTheme() == "light" then
-                unlockText = "{o thickness=0.5}{c r=1 g=1 b=1}{lock_open}{/c}{/o}"
-            else
-                unlockText = "{o r=1 g=1 b=1 thickness=0.5}{c r=0 g=0 b=0}{lock_open}{/c}{/o}"
-            end
-            local w = richtext.getWidth(unlockText, font)
-            richtext.printRich(unlockText, font, r2.x + r2.w - w, r2.y, w, "right")
+            drawLockOpen(uinfo, level, r)
         end,
         isItemUnlocked = function(uinfo, level, iid)
             return iid == id
@@ -1680,16 +1769,7 @@ function g.defineBooster(id, name, def)
             if def.draw then
                 def.draw(r2)
             end
-
-            local font = g.getMainFont(10)
-            local unlockText
-            if g.getSystemTheme() == "light" then
-                unlockText = "{o thickness=0.5}{c r=1 g=1 b=1}{lock_open}{/c}{/o}"
-            else
-                unlockText = "{o r=1 g=1 b=1 thickness=0.5}{c r=0 g=0 b=0}{lock_open}{/c}{/o}"
-            end
-            local w = richtext.getWidth(unlockText, font)
-            richtext.printRich(unlockText, font, r2.x + r2.w - w, r2.y, w, "right")
+            drawLockOpen(uinfo, level, r)
         end,
         isItemUnlocked = function(uinfo, level, iid)
             return iid == id

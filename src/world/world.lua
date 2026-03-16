@@ -108,11 +108,8 @@ function World:init()
     self.cpsCollector = DataCollector(60)
     ---@type table<string, {dirty:boolean,modifier:number,multiplier:number}>
     self.loadModifiers = {}
-    ---@type table<g.JobCategory, number>
+    ---@type table<string, [number,number]> 1st value is current time, 2nd value is spawn time
     self.jobPoller = {}
-    for k in pairs(g.VALID_JOB_CATEGORIES) do
-        self.jobPoller[k] = 0
-    end
 
     self.worldTexture = generateWorldTexture(12345)
 end
@@ -418,30 +415,32 @@ function World:_update(dt)
 
     -- Run job poll
     local maxJobs = helper.round(g.stats.MaxJobQueue)
-    for k in pairs(g.VALID_JOB_CATEGORIES) do
-        local name = g.getJobCategoryName(k, true)
+    for k, ji in pairs(g.VALID_JOBS) do
+        if not self.jobPoller[k] then
+            self.jobPoller[k] = {0, 0}
+        end
+        local jpinfo = self.jobPoller[k]
+
+        local catname = g.getJobCategoryName(ji.category, true)
         -- Yea these stat name and evbus name is MSOT.
         -- Is there a better way?
-        local stat = g.stats[name.."JobFrequency"]
-        if stat > 0 then
-            local time = 1 / stat -- the stat is frequency
-            self.jobPoller[k] = self.jobPoller[k] + dt
+        local stat = g.stats[catname.."JobFrequency"]
+        local spawnChance = math.max(g.getProperty("getJobFrequency", stat), 0)
+        jpinfo[2] = spawnChance
+        if spawnChance > 0 then
+            local time = 1 / spawnChance -- the stat is frequency
+            jpinfo[1] = jpinfo[1] + dt
 
-            while self.jobPoller[k] >= time do
+            while jpinfo[1] >= time do
                 if #self.jobQueue < maxJobs then
-                    ---@type g.Job[]
-                    local jobCandidates = {}
-                    g.call("populate"..name.."JobCandidates", jobCandidates)
-
-                    if #jobCandidates > 0 then
-                        g.queueJob(helper.randomChoice(jobCandidates))
-                    end
+                    local job = g.genJob(k)
+                    g.queueJob(job)
                 end
 
-                self.jobPoller[k] = self.jobPoller[k] - time
+                jpinfo[1] = jpinfo[1] - time
             end
         else
-            self.jobPoller[k] = 0
+            jpinfo[1] = 0
         end
     end
 

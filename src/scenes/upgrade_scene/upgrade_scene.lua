@@ -159,7 +159,7 @@ local function drawUpgradeBox(mode, upgrade, noframe)
             local r = (w + h) / 4
             bgColor = uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK
             local col = gsman.mulColor(bgColor)
-            love.graphics.circle(mode, x, y, r)
+            love.graphics.circle(mode, x + r, y + r, r)
             col:pop()
         elseif uinfo.kind == "JOB" then
             bgColor = g.COLORS.UPGRADE_KINDS.JOB
