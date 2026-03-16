@@ -505,9 +505,15 @@ local function drawDevEditModeUI(self, treeUpgrades)
         end
     end
 
-    if tree._filename and ui.Button("SAVE TREE", objects.Color.AQUA,objects.Color.BLACK, regs[6]) then
-        local fname = consts.DEV_UPGRADE_TREE_PATH..consts.FILE_SEP..tree._filename
-        love.filesystem.write(fname, json.encode(g.getUpgTree():serialize()))
+    if ui.Button("SAVE TREE", objects.Color.AQUA,objects.Color.BLACK, regs[6]) then
+        local serializedTree = g.getUpgTree():serialize()
+        love.window.showFileDialog("savefile", function(files, filtername, errorstring)
+            if files and files[1] then
+                love.filesystem.write(files[1], serializedTree)
+            elseif errorstring then
+                log.error("Failed to save tree: ", errorstring)
+            end
+        end, {filters = {["JavaScript Object Notation (*.json)"] = "json"}})
     end
 
     local function calculateGrid(itemCount, regionWidth, regionHeight)
