@@ -1,4 +1,4 @@
-local rewards = require("src.rewards.rewards")
+local rewards = nil--require("src.rewards.rewards")
 
 ---@class _Simulation
 local simulation = {}
