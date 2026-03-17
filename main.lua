@@ -212,6 +212,18 @@ if consts.DEV_MODE then
     emulation.init()
 end
 
+local function realLoad()
+    if love.keyboard.isModifierActive("capslock") then
+        local new = love.window.showMessageBox("Start New Game?", "Start New Game?", {"Yes", "No"}, "warning")
+        print(new)
+        if new == 1 then
+            return false
+        end
+    end
+
+    return true
+end
+
 function love.load(arg)
     log.debug(love.graphics.getRendererInfo())
     assert(love.filesystem.createDirectory("saves"))
@@ -244,7 +256,7 @@ function love.load(arg)
         end
 
         analytics.init(nil)
-        if love.filesystem.getInfo("saves/save1.json", "file") then
+        if love.filesystem.getInfo("saves/save1.json", "file") and realLoad() then
             g.loadSession("saves/save1.json")
         else
             g.newSession().tree = g.loadTree("mvp")
