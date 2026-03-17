@@ -20,7 +20,7 @@ g.defineServer("basic_server", "Basic Server", {
 })
 
 g.defineServer("normal_server", "Normal Server", {
-    price = 0,
+    price = 10,
     computePerSecond = 10,
     computePreference = {"general"},
     load = 4,
@@ -64,7 +64,7 @@ g.defineServer("advanced_server", "Advanced Server", {
 
 g.defineServer("ai_server", "AI Server", {
     price = 1000,
-    computePerSecond = 4000,
+    computePerSecond = 10000,
     computePreference = {"ai"},
     load = 50,
     heatTolerance = {20, 90},

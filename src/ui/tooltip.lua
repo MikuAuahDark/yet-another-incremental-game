@@ -317,8 +317,8 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
         local at = {}
         at[#at+1] = getItemLoadText(dpInfo, dpData)
         at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)})
-        at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireCount})
-        local wcattr = TEXT.WIRE_COUNT({s = #dpData.connectsServers})
+        at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireLength})
+        local wcattr
         if dpInfo.wireCount then
             wcattr = TEXT.WIRE_COUNT({s = #dpData.connectsServers.."/"..dpInfo.wireCount})
             if #dpData.connectsServers >= dpInfo.wireCount then

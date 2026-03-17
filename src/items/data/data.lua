@@ -24,7 +24,7 @@ g.defineDataProcessor("basic_data", "Basic Data Processor", {
 })
 
 g.defineDataProcessor("normal_data", "Data Processor", {
-    price = 0,
+    price = 7,
     load = 2,
     dataPerSecond = 100,
     wireLength = 2,
@@ -49,7 +49,7 @@ g.defineDataProcessor("normal_data", "Data Processor", {
 })
 
 g.defineDataProcessor("advanced_data", "Advanced Data Processor", {
-    price = 10,
+    price = 25,
     load = 10,
     dataPerSecond = 500,
     wireLength = 4,
@@ -76,7 +76,7 @@ g.defineDataProcessor("advanced_data", "Advanced Data Processor", {
 g.defineDataProcessor("he_data", "High-End Data Processor", {
     price = 1000,
     load = 30,
-    dataPerSecond = 5000,
+    dataPerSecond = 10000,
     wireLength = 6,
     color = objects.Color("#e06e92"),
     draw = function(r)

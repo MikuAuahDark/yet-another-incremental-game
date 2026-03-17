@@ -34,6 +34,16 @@ local function defJob(id, name, category, def)
             end
             return 0
         end,
+        ---@param uinfo g.UpgradeInfo
+        ---@param level integer
+        ---@param jobid string
+        isJobUnlocked = function(uinfo, level, jobid)
+            if jobid == id then
+                return level > 0
+            end
+
+            return false
+        end,
     })
     -- Job Frequency Multiplier
     g.defineUpgrade(id.."_mul", "Faster "..name.." Spawn", {

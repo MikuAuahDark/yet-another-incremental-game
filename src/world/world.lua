@@ -280,13 +280,13 @@ function World:_update(dt)
     for _, dpData in pairs(self.dataProcessors) do
         local dpInfo = g.getItemInfo(dpData.type, "data")
 
-        -- Disconnect servers which are out of range
+        -- Disconnect servers which are out of range or invalid
         for i = #dpData.connectsServers, 1, -1 do
             local serverData = dpData.connectsServers[i]
             local sx, sy = serverData.tileX, serverData.tileY
             -- Enforce constraints (SSOT)
             serverData.connectsTo = dpData
-            if worldutil.getDistance("chessboard", sx - dpData.tileX, sy - dpData.tileY) > dpInfo.wireLength then
+            if serverData.removed or worldutil.getDistance("chessboard", sx - dpData.tileX, sy - dpData.tileY) > dpInfo.wireLength then
                 serverData.connectsTo = nil
                 table.remove(dpData.connectsServers, i)
             end
@@ -421,26 +421,34 @@ function World:_update(dt)
         end
         local jpinfo = self.jobPoller[k]
 
-        local catname = g.getJobCategoryName(ji.category, true)
-        -- Yea these stat name and evbus name is MSOT.
-        -- Is there a better way?
-        local stat = g.stats[catname.."JobFrequency"]
-        local spawnChance = math.max(g.getProperty("getJobFrequency", stat), 0)
-        jpinfo[2] = spawnChance
-        if spawnChance > 0 then
-            local time = 1 / spawnChance -- the stat is frequency
-            jpinfo[1] = jpinfo[1] + dt
+        if g.ask("isJobUnlocked", k) then
+            local catname = g.getJobCategoryName(ji.category, true)
+            -- Yea these stat name and evbus name is MSOT.
+            -- Is there a better way?
+            local stat = g.VALID_STATS[catname.."JobFrequency"]
+            -- TODO: Cache this
+            local jobFreqMod = g.ask(stat.addQuestion)
+            local jobFreqMul = g.ask(stat.multQuestion)
+            local spawnChance = g.getProperty("getJobFrequency", jobFreqMod, jobFreqMul, k)
+            jpinfo[2] = spawnChance
+            if spawnChance > 0 then
+                local time = 1 / spawnChance -- the stat is frequency
+                jpinfo[1] = jpinfo[1] + dt
 
-            while jpinfo[1] >= time do
-                if #self.jobQueue < maxJobs then
-                    local job = g.genJob(k)
-                    g.queueJob(job)
+                while jpinfo[1] >= time do
+                    if #self.jobQueue < maxJobs then
+                        local job = g.genJob(k)
+                        g.queueJob(job)
+                    end
+
+                    jpinfo[1] = jpinfo[1] - time
                 end
-
-                jpinfo[1] = jpinfo[1] - time
+            else
+                jpinfo[1] = 0
             end
         else
             jpinfo[1] = 0
+            jpinfo[2] = 0
         end
     end
 
