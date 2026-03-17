@@ -20,10 +20,10 @@ g.defineServer("basic_server", "Basic Server", {
 })
 
 g.defineServer("normal_server", "Normal Server", {
-    price = 0,
+    price = 10,
     computePerSecond = 10,
     computePreference = {"general"},
-    load = 1,
+    load = 4,
     heatTolerance = {40, 60},
     heat = 40,
     color = objects.Color("FFB6E67C"),

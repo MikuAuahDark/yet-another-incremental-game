@@ -24,8 +24,8 @@ g.defineDataProcessor("basic_data", "Basic Data Processor", {
 })
 
 g.defineDataProcessor("normal_data", "Data Processor", {
-    price = 0,
-    load = 1,
+    price = 7,
+    load = 2,
     dataPerSecond = 100,
     wireLength = 2,
     wireCount = 4,
@@ -49,7 +49,7 @@ g.defineDataProcessor("normal_data", "Data Processor", {
 })
 
 g.defineDataProcessor("advanced_data", "Advanced Data Processor", {
-    price = 10,
+    price = 25,
     load = 10,
     dataPerSecond = 500,
     wireLength = 4,

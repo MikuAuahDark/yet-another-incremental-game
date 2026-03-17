@@ -509,7 +509,13 @@ local function drawDevEditModeUI(self, treeUpgrades)
         local serializedTree = g.getUpgTree():serialize()
         love.window.showFileDialog("savefile", function(files, filtername, errorstring)
             if files and files[1] then
-                love.filesystem.write(files[1], serializedTree)
+                local f, err = love.filesystem.openNativeFile(files[1], "w")
+                if f then
+                    f:write(json.encode(serializedTree))
+                    f:close()
+                else
+                    log.error("Failed to save tree: ", err)
+                end
             elseif errorstring then
                 log.error("Failed to save tree: ", errorstring)
             end
@@ -747,13 +753,15 @@ function upgscene:draw()
     end
 
     -- Draw scene switch
-    local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
-    love.graphics.setColor(1, 1, 1)
-    ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
-    g.drawImageContained("schema", switchImageR:get())
-    if iml.wasJustClicked(switchR:get()) then
-        g.playUISound("ui_click_basic", 1.4,0.8)
-        g.gotoScene("main_scene")
+    if not self.dev_editMode then
+        local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
+        love.graphics.setColor(1, 1, 1)
+        ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
+        g.drawImageContained("schema", switchImageR:get())
+        if iml.wasJustClicked(switchR:get()) then
+            g.playUISound("ui_click_basic", 1.4,0.8)
+            g.gotoScene("main_scene")
+        end
     end
 
     self:renderPause()
