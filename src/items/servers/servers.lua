@@ -64,7 +64,7 @@ g.defineServer("advanced_server", "Advanced Server", {
 
 g.defineServer("ai_server", "AI Server", {
     price = 1000,
-    computePerSecond = 4000,
+    computePerSecond = 10000,
     computePreference = {"ai"},
     load = 50,
     heatTolerance = {20, 90},

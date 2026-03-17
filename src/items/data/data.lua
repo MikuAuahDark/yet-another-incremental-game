@@ -76,7 +76,7 @@ g.defineDataProcessor("advanced_data", "Advanced Data Processor", {
 g.defineDataProcessor("he_data", "High-End Data Processor", {
     price = 1000,
     load = 30,
-    dataPerSecond = 5000,
+    dataPerSecond = 10000,
     wireLength = 6,
     color = objects.Color("#e06e92"),
     draw = function(r)

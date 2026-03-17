@@ -277,9 +277,10 @@ end
 ---@param qname string
 ---@param initmodval number?
 ---@param initmulval number?
+---@param ... any
 ---@return number
-function g.getProperty(qname, initmodval, initmulval)
-    return (g.ask(qname.."Modifier") + (initmodval or 0)) * (g.ask(qname.."Multiplier") * (initmulval or 1))
+function g.getProperty(qname, initmodval, initmulval, ...)
+    return (g.ask(qname.."Modifier", ...) + (initmodval or 0)) * (g.ask(qname.."Multiplier", ...) * (initmulval or 1))
 end
 
 
@@ -799,7 +800,7 @@ g.defineResource("money", {
     image="attach_money",
     limitStat="MoneyLimit",
     limitStatName="Money Limit",
-    startingLimit=100000,
+    startingLimit=1000000,
     color = objects.Color("FFF7D127"),
 })
 
