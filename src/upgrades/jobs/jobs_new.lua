@@ -23,7 +23,7 @@ local function defJob(id, name, category, def)
         descriptionContext = "A compute job for computer or server to process",
         kind = "JOB",
         image = def.image,
-        getValues = helper.valueGetter(0.05),
+        getValues = helper.valueGetter(0.05, 0.05),
         valueFormatter = {"+%.14g"},
         ---@param uinfo g.UpgradeInfo
         ---@param level integer
@@ -41,14 +41,14 @@ local function defJob(id, name, category, def)
         descriptionContext = "A compute job for computer or server to process",
         kind = "JOB",
         image = def.image,
-        getValues = helper.valueGetter(0.05, 1),
+        getValues = helper.valueGetter(0.05, 0.05),
         valueFormatter = {function(v) return string.format("%.14g%%", v * 100) end},
         ---@param uinfo g.UpgradeInfo
         ---@param level integer
         ---@param jobid string
         getJobFrequencyMultiplier = function(uinfo, level, jobid)
             if jobid == id then
-                return (uinfo:getValues(level))
+                return 1 + (uinfo:getValues(level))
             end
             return 1
         end,
@@ -60,7 +60,7 @@ local function defJob(id, name, category, def)
         descriptionContext = "A compute job for computer or server to process",
         kind = "JOB",
         image = def.image,
-        getValues = helper.valueGetter(0.05, 1),
+        getValues = helper.valueGetter(0.05, 0.05),
         valueFormatter = {function(v) return string.format("%.14g%%", v * 100) end},
         ---@param uinfo g.UpgradeInfo
         ---@param level integer
