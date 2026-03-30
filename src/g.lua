@@ -1479,6 +1479,7 @@ do
 ---@field public category "data"
 ---@field public dataPerSecond number
 ---@field public wireLength integer
+---@field public wireDPS number
 
 ---@class g.DataOutInfo: g.ItemInfo, g._DataInfoCommon
 ---@class g.DataOutDefinition: g.ItemDefinition, g._DataInfoCommon
@@ -1550,6 +1551,7 @@ function g.defineItem(id, def)
         ---@cast def g.DataOutInfo
         assert(def.dataPerSecond, "invalid dps")
         assert(def.wireLength and def.wireLength > 0, "invalid wire length")
+        assert(def.wireDPS > 0, "invalid wire dps")
     elseif def.category == "booster" then
         ---@cast def g.BoosterInfo
         def.radiate = def.radiate or 1
@@ -1681,6 +1683,7 @@ end
 ---@field package load number
 ---@field package dataPerSecond number
 ---@field package wireLength integer
+---@field package wireDPS number? (defaults to dataPerSecond / 4)
 ---@field package draw fun(r:kirigami.Region,itemData:g.World.DataOutputData?)
 
 ---@param id string
@@ -1716,6 +1719,7 @@ function g.defineDataOutput(id, name, def)
         load = def.load,
         dataPerSecond = def.dataPerSecond,
         wireLength = def.wireLength,
+        wireDPS = def.wireDPS or (def.dataPerSecond / 4),
         draw = function(itemData)
             ---@cast itemData g.World.DataOutputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
