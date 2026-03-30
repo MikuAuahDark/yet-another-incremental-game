@@ -1381,11 +1381,12 @@ function g.genJob(id)
         error("unknown job id '"..id.."'")
     end
 
-    local cp = helper.lerp(ji.compute[1], ji.compute[2], love.math.random())
+    local t = love.math.random()
+    local cp = helper.lerp(ji.compute[1], ji.compute[2], t)
     cp = (cp + g.ask("getJobComputePowerModifier", id)) * g.ask("getJobComputePowerMultiplier", id)
-    local od = helper.lerp(ji.data[1], ji.data[2], love.math.random())
+    local od = helper.lerp(ji.data[1], ji.data[2], t)
     od = (od + g.ask("getJobOutputDataModifier", id)) * g.ask("getJobOutputDataMultiplier", id)
-    local mr = helper.lerp(ji.money[1], ji.money[2], love.math.random())
+    local mr = helper.lerp(ji.money[1], ji.money[2], t)
     mr = (mr + g.ask("getJobMoneyRewardModifier", id)) * g.ask("getJobMoneyRewardMultiplier", id)
 
     ---@type g.Job
