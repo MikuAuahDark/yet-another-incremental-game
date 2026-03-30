@@ -91,7 +91,7 @@ end
 defJob("webhost", "Web Hosting", "general", {
     image = "language",
     compute = {2,5},
-    data = {5,10},
+    data = {2,5},
     money = {1,5},
 })
 defJob("cdn", "Content Delivery Network", "general", {
