@@ -29,7 +29,8 @@ end
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
 ---@field jobProgress number
----@field connectsTo g.World.DataOutputData? (readonly; connect to this data output, quick lookup only)
+---@field connectedOutputs g.World.DataOutputData[] (readonly; connected data outputs, quick lookup only)
+---@field activeOutput g.World.DataOutputData? (readonly; the data output used this frame)
 ---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
 ---@field finalCPS number (readonly; updated every frame) Actual CPS, taking data bottleneck into account
 
@@ -284,15 +285,12 @@ function World:_update(dt)
         for i = #dpData.connectsServers, 1, -1 do
             local serverData = dpData.connectsServers[i]
             local sx, sy = serverData.tileX, serverData.tileY
-            -- Enforce constraints (SSOT)
-            serverData.connectsTo = dpData
             if serverData.removed or worldutil.getDistance("chessboard", sx - dpData.tileX, sy - dpData.tileY) > dpInfo.wireLength then
-                serverData.connectsTo = nil
                 table.remove(dpData.connectsServers, i)
             end
         end
 
-        -- Connect servers which are in range and not connected
+        -- Connect servers which are in range
         local range = dpInfo.wireLength
         for dx = -range, range do
             for dy = -range, range do
@@ -302,8 +300,8 @@ function World:_update(dt)
                     local _, category = g.getItemInfo(item.type)
                     if category == "server" then
                         ---@cast item g.World.ServerData
-                        if not item.connectsTo then
-                            item.connectsTo = dpData
+                        -- Check if already in connectsServers
+                        if not helper.index(dpData.connectsServers, item) then
                             dpData.connectsServers[#dpData.connectsServers+1] = item
                         end
                     end
@@ -312,6 +310,22 @@ function World:_update(dt)
         end
 
         dpData.dataPerSecond = math.max(dpInfo.dataPerSecond + dpsModifier, 0) * dpsMultiplier * self.loadPercentage
+        -- Sync connectedOutputs for quick lookup
+        for _, serverData in ipairs(dpData.connectsServers) do
+            if not helper.index(serverData.connectedOutputs, dpData) then
+                serverData.connectedOutputs[#serverData.connectedOutputs+1] = dpData
+            end
+        end
+    end
+
+    -- Since connectedOutputs is quick lookup, we need to clear it first then rebuild
+    for _, serverData in pairs(self.servers) do
+        table.clear(serverData.connectedOutputs)
+    end
+    for _, dpData in pairs(self.dataProcessors) do
+        for _, serverData in ipairs(dpData.connectsServers) do
+            serverData.connectedOutputs[#serverData.connectedOutputs+1] = dpData
+        end
     end
 
     -- Run server update
@@ -324,12 +338,7 @@ function World:_update(dt)
     for _, serverData in pairs(self.servers) do
         local serverInfo = g.getItemInfo(serverData.type, "server")
 
-        if serverData.connectsTo and serverData.connectsTo.removed then
-            -- Data output is gone
-            serverData.connectsTo = nil
-        end
-
-        if serverData.connectsTo then
+        if #serverData.connectedOutputs > 0 then
             -- Pull job queue
             if not serverData.currentJob then
                 local candidateIndex = nil
@@ -383,34 +392,38 @@ function World:_update(dt)
         local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul * boosterMul
         serverData.computePerSecond = math.max(finalMod, 0) * finalMul
     end
-    -- Pass 2: Update data output total data transmit
-    for _, dpData in pairs(self.dataProcessors) do
-        local totalDPS = 0
+    -- Pass 2: Data transmit logic (packing)
+    ---@type table<g.World.DataOutputData, number>
+    local currentTransmit = {}
+    for _, serverData in pairs(self.servers) do
+        serverData.activeOutput = nil
+        local job = serverData.currentJob
+        if job and #serverData.connectedOutputs > 0 then
+            local requiredDPS = serverData.computePerSecond * job.outputData / job.computePower
+            for _, dpData in ipairs(serverData.connectedOutputs) do
+                local dpInfo = g.getItemInfo(dpData.type, "data")
+                local wireDPS = dpInfo.wireDPS or (dpInfo.dataPerSecond / 4)
+                local capacity = dpData.dataPerSecond
+                local used = currentTransmit[dpData] or 0
 
-        -- Compute theoretical DPS for all servers
-        for _, serverData in ipairs(dpData.connectsServers) do
-            local job = serverData.currentJob
-            if job then
-                local dps = serverData.computePerSecond * job.outputData / job.computePower
-                totalDPS = totalDPS + dps
+                if requiredDPS <= wireDPS and requiredDPS <= (capacity - used) then
+                    serverData.activeOutput = dpData
+                    currentTransmit[dpData] = used + requiredDPS
+                    break
+                end
             end
         end
-
-        dpData.serversDataPerSecond = totalDPS
+    end
+    -- Sync dpData.serversDataPerSecond for UI/HUD
+    for dpData, transmit in pairs(currentTransmit) do
+        dpData.serversDataPerSecond = transmit
     end
     -- Pass 3: Update job progress
     for _, serverData in pairs(self.servers) do
         serverData.finalCPS = 0
         local job = serverData.currentJob
-        if job and serverData.connectsTo then
+        if job and serverData.activeOutput then
             local finalCPS = serverData.computePerSecond
-            local dpData = assert(serverData.connectsTo)
-            if dpData.serversDataPerSecond > dpData.dataPerSecond then
-                local ratio = dpData.dataPerSecond / dpData.serversDataPerSecond
-                -- Data bottleneck, reduce final CPSes
-                finalCPS = finalCPS * ratio
-            end
-
             serverData.finalCPS = finalCPS
             serverData.jobProgress = serverData.jobProgress + finalCPS * dt
             cps = cps + finalCPS * dt
@@ -701,7 +714,8 @@ function World:putItem(itemId, tx, ty)
             load = itemInfo.load,
             currentJob = nil,
             jobProgress = 0,
-            connectsTo = nil,
+            connectedOutputs = {},
+            activeOutput = nil,
             computePerSecond = 0,
             finalCPS = 0,
         }

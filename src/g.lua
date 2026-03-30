@@ -1889,19 +1889,14 @@ end
 ---@param server g.World.ServerData
 ---@param dp g.World.DataOutputData
 function g.disconnectDataWire(server, dp)
-    if server.connectsTo ~= dp then
-        error("not connected")
-    end
-
     for i, s in ipairs(dp.connectsServers) do
         if s == server then
             table.remove(dp.connectsServers, i)
-            server.connectsTo = nil
             return
         end
     end
 
-    error("g.disconnectDataWire unreachable codepath")
+    error("not connected")
 end
 
 ---This only checks the server position and DP wire length/count
@@ -1919,15 +1914,14 @@ end
 ---@param server g.World.ServerData
 ---@param dp g.World.DataOutputData
 function g.connectDataWire(server, dp)
-    if server.connectsTo then
-        error("already connected (elsewhere)")
+    if helper.index(dp.connectsServers, server) then
+        error("already connected")
     end
 
     if not g.canConnectDataWire(server, dp) then
         error("cannot connect data wire")
     end
 
-    server.connectsTo = dp
     dp.connectsServers[#dp.connectsServers+1] = server
 end
 
@@ -1960,6 +1954,8 @@ do
 ---| "booster_noop"
 ---Data output is overloaded
 ---| "data_bottleneck"
+---No suitable data output found
+---| "no_suitable_output"
 local ITEM_PROBLEMS = {
     not_connected = {
         error = true,
@@ -1996,6 +1992,12 @@ local ITEM_PROBLEMS = {
         icon = "database",
         text = loc("Server is sending too much data to the data output!", nil, {
             context = "The server performance is bottlenecked by the data lines"}),
+    },
+    no_suitable_output = {
+        error = true,
+        icon = "database",
+        text = loc("No suitable data output found for the current data load!", nil, {
+            context = "The server cannot find any data output that can handle its data load."}),
     }
 }
 
@@ -2008,16 +2010,14 @@ function g.getItemProblems(itemData)
     if category == "server" then
         ---@cast itemData g.World.ServerData
         ---@cast itemInfo g.ServerInfo
-        if not itemData.connectsTo then
+        if #itemData.connectedOutputs == 0 then
             result[#result+1] = "not_connected"
+        elseif itemData.currentJob and not itemData.activeOutput then
+            result[#result+1] = "no_suitable_output"
         end
 
         if g.getTileHeat(itemData.tileX, itemData.tileY) > itemInfo.heatTolerance[2] then
             result[#result+1] = "overheat"
-        end
-
-        if itemData.currentJob and itemData.finalCPS < itemData.computePerSecond then
-            result[#result+1] = "data_bottleneck"
         end
     elseif category == "data" then
         ---@cast itemData g.World.DataOutputData

@@ -310,7 +310,7 @@ end
 ---@param server g.World.ServerData
 ---@param dp g.World.DataOutputData
 function MainScene:_canConnectOrDisconnect(server, dp)
-    if server.connectsTo == dp then
+    if helper.index(server.connectedOutputs, dp) then
         return true
     elseif g.canConnectDataWire(server, dp) then
         return true
