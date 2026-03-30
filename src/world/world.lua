@@ -519,7 +519,7 @@ function World:_draw()
     do
         -- Draw white rectnagle across the world
         local size = consts.WORLD_TILE_SIZE * World.TILE_SIZE
-        love.graphics.setColor(g.COLORS.UI.MAIN[g.getSystemTheme()].PRIMARY)
+        love.graphics.setColor(g.COLORS.UI.MAIN[g.getSystemTheme()].WORLD_BACKGROUND)
         love.graphics.rectangle("fill", 0, 0, size, size)
 
         -- Draw world blocked area

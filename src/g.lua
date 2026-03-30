@@ -2349,7 +2349,8 @@ g.COLORS = {
                 PANEL = objects.Color("FF3E3E3E"),
                 CARD = objects.Color("FF101010"),
                 TEXT = objects.Color.WHITE,
-                TAB_INACTIVE = objects.Color("FF404040")
+                TAB_INACTIVE = objects.Color("FF404040"),
+                WORLD_BACKGROUND = objects.Color("#444444"),
             },
             light = {
                 PRIMARY = objects.Color.WHITE,
@@ -2357,7 +2358,8 @@ g.COLORS = {
                 PANEL = objects.Color("#eeeeee"),
                 CARD = objects.Color.WHITE,
                 TEXT = objects.Color.BLACK,
-                TAB_INACTIVE = objects.Color("FFB0B0B0")
+                TAB_INACTIVE = objects.Color("FFB0B0B0"),
+                WORLD_BACKGROUND = objects.Color("#eeeeee"),
             }
         },
         BORDER = objects.Color("FF979797"),
