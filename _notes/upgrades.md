@@ -4,7 +4,7 @@ TODO: Move this to GDD
 
 Let's divide upgrades by multiple broad categories:
 * Unlocks  
-  Upgrades that unlock new things. Like new servers, data processors, and boosters. This is only for item unlocks.
+  Upgrades that unlock new things. Like new servers, data outputs, and boosters. This is only for item unlocks.
 * Efficiency
   Upgrades that improves overall performance on items.
 * Job

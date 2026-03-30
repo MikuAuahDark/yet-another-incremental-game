@@ -17,7 +17,7 @@ function MainScene:init()
     self.pinItemInfo = nil
     ---@type [number,g.World.ItemData]?
     self.targetDrag = nil
-    ---@type [number,g.World.DataProcessorData]?
+    ---@type [number,g.World.DataOutputData]?
     self.dpDoubleClickData = nil
 end
 MainScene.mousemoved = MainScene.defaultMousemoved
@@ -116,22 +116,6 @@ function MainScene:draw()
                 end
             else
                 self.targetDrag = nil
-
-                if iml.wasJustClicked(x, y, wtz, wtz, 1, item) then
-                    -- Double-clicking data processor?
-                    local itemInfo = g.getItemInfo(item.type)
-                    if itemInfo.category == "data" then
-                        ---@cast item g.World.DataProcessorData
-                        if self.dpDoubleClickData and self.dpDoubleClickData[1] > 0 and self.dpDoubleClickData[2] == item then
-                            -- Initiate wire connection
-                            self.candidateWirePos = {item.tileX, item.tileY}
-                            self.dpDoubleClickData = nil
-                        else
-                            -- Begin double click check
-                            self.dpDoubleClickData = {DOUBLE_CLICK_TIMEOUT, item}
-                        end
-                    end
-                end
             end
         end
     end
@@ -303,7 +287,7 @@ function MainScene:_getServerAndDP(tx1, ty1, tx2, ty2)
             ---@cast firstItem g.World.ServerData
             server = firstItem
         elseif category == "data" then
-            ---@cast firstItem g.World.DataProcessorData
+            ---@cast firstItem g.World.DataOutputData
             dp = firstItem
         end
     end
@@ -315,7 +299,7 @@ function MainScene:_getServerAndDP(tx1, ty1, tx2, ty2)
             ---@cast secondItem g.World.ServerData
             server = secondItem
         elseif category == "data" then
-            ---@cast secondItem g.World.DataProcessorData
+            ---@cast secondItem g.World.DataOutputData
             dp = secondItem
         end
     end
@@ -324,7 +308,7 @@ function MainScene:_getServerAndDP(tx1, ty1, tx2, ty2)
 end
 
 ---@param server g.World.ServerData
----@param dp g.World.DataProcessorData
+---@param dp g.World.DataOutputData
 function MainScene:_canConnectOrDisconnect(server, dp)
     if server.connectsTo == dp then
         return true

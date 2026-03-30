@@ -162,7 +162,7 @@ function Session.deserialize(data)
     -- World
     if data.world then
         -- Spawn objects
-        ---@type g.World.DataProcessorData[]
+        ---@type g.World.DataOutputData[]
         local dp = {}
         if data.world.items then
             for k,v in pairs(data.world.items) do
@@ -173,7 +173,7 @@ function Session.deserialize(data)
                     local itemData = sess.mainWorld:putItem(v, x, y)
                     local _, cat = g.getItemInfo(v)
                     if cat == "data" then
-                        ---@cast itemData g.World.DataProcessorData
+                        ---@cast itemData g.World.DataOutputData
                         dp[#dp+1] = itemData
                     end
                 else
@@ -194,7 +194,7 @@ function Session:serialize()
     end
 
     -- Save world
-    ---@type g.World.DataProcessorData[]
+    ---@type g.World.DataOutputData[]
     local dp = {}
     local items = {}
     ---@param item g.World.ItemData?
@@ -203,7 +203,7 @@ function Session:serialize()
             items[tostring(Z.encode(x, y))] = item.type
             local _, cat = g.getItemInfo(item.type)
             if cat == "data" then
-                ---@cast item g.World.DataProcessorData
+                ---@cast item g.World.DataOutputData
                 dp[#dp+1] = item
             end
         end

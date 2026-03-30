@@ -15,11 +15,10 @@ Player will focus on targetting to process as many compute job as possible by st
 considering other constraints.
 
 The general gameloop would be as follows:
-1. Buy server
-2. Wire server to data processor
-3. Server process jobs
-4. Gain money after job is processed
-5. Unlock upgrades or buy more servers.
+1. Buy/place server near data output
+2. Server process jobs
+3. Gain money after job is processed
+4. Unlock upgrades or buy more servers.
 
 The game is considered "finished" once player reaches 1 billion CPS (Compute Per Second) on average.
 
@@ -71,7 +70,7 @@ Compute job is the main source of income in the game. Each compute job has the f
 
 The speed of the actual processing depends on lowest demonimator on these 2 factors:
 * Server CPS capability. If the wire has less data going through it, then the limiting factor is server CPS.
-* Data Processor DPS capability. If the server CPS is huge but the data transfer is clogged, then the server is not
+* Data Output DPS capability. If the server CPS is huge but the data transfer is clogged, then the server is not
   fully utilized.
 
 Job in queue has a `timeout` property (seconds). If the `timeout` in job queue is 0, the job will be removed from the
@@ -102,23 +101,22 @@ To give more perspective, each server has the following property:
 
 The types of servers will be decided later.
 
-Server must be wired to a single data processor to function. If server is not wired, the server will be marked with
+Server must be wired to a single data output to function. If server is not wired, the server will be marked with
 triangle red X symbol on top of it.
 
 Server also has performance metric that depends on their heat tolerance, overall datacenter load, and data throughput.
 If the server has metric performance of less than 1, server will be marked with ⚠️ symbol.
 
-### Data Processor
+### Data Output
 
-Data processor consolidates data from the servers to be sent to final destination. This acts as the logistics part of
-the data. However, data processors can only receive so much data from the servers. This is called DPS (Data Per Second)
+Data output consolidates data from the servers to be sent to final destination. This acts as the logistics part of
+the data. However, data outputs can only receive so much data from the servers. This is called DPS (Data Per Second)
 
-Data processor have these properties:
+Data output have these properties:
 * `price` (number) - The booster price to buy.
 * `load` (number) - How much electricity load it needs.
 * `dataPerSecond` (number) - How much data it can consolidates per second.
 * `wireLength` (number) - How long wires can be reach to servers in tiles, using Chebyshev distance.
-* `wireCount` (number|nil) - How many wires it can connect to servers, or nil if unlimited.
 
 ### Boosters
 
@@ -128,7 +126,7 @@ Boosters can:
 * Reduce tile heat.
 * Boost server performance.
 * Make server efficient.
-* Boost data processor DPS.
+* Boost data output DPS.
 
 Boosters have these properties:
 * `price` (number) - The booster price to buy.
@@ -155,7 +153,7 @@ The equivalent of upgrade trees in common incremental games.
 Upgrades ranging as follows:
 * Opens new server types
 * Improve server stats
-* Improve data processor stats
+* Improve data output stats
 * Improve booster stats
 * Unlock more area
 
@@ -166,11 +164,11 @@ Upgrades ranging as follows:
 
 All item does not fully occupy the complete tile size. It only occupies 75% of the total tile size. This allows a light
 indicator below the item itself. The indicator shows:
-* Red - Item doesn't working. For example: server is not hooked to data processors.
+* Red - Item doesn't working. For example: server is not hooked to data outputs.
 * Yellow - Item performance is not optimal. For example: server heat is too high.
 * Green - Item is working optimally. Server process job at normal or boosted rate, booster affects something, and data
   processor is at least connected to a server.
-* Blue - Item is idling. For example: server has no job to process, booster does not affect anything, data processors
+* Blue - Item is idling. For example: server has no job to process, booster does not affect anything, data outputs
   is not connected to any servers.
 
 In addition to light indicator below it, there's also symbols on top of it to improve clarity.
@@ -215,7 +213,7 @@ For UX reasons, it only shows job queues that fits the container.
 
 Bottom part contains item list.
 
-Item list is categorized into 3 tabs: Servers, Data Processors, and Boosters.
+Item list is categorized into 3 tabs: Servers, Data I/O, and Boosters.
 
 Each category will show the respective items in that particular category.
 
@@ -242,7 +240,7 @@ Glossary
 * Servers - Items that process compute jobs.
 * Compute Jobs - An equivalent of "task" that needs to be processed by servers to earn money.
 * CPS - Compute Per Second. How many computation is done by server.
-* DPS - Data Per Second. How many data is transferred by the server to data processors.
+* DPS - Data Per Second. How many data is transferred by the server to data outputs.
 * Items - Things that can be placed on the world grid. This includes servers, boosters, relays.
-* Boosters - Items that improve overall performance of the servers or data processors.
-* Data Processors - Items that collect data from the servers and send it outside the datacenters.
+* Boosters - Items that improve overall performance of the servers or data outputs.
+* Data Outputs - Items that collect data from the servers and send it outside the datacenters.

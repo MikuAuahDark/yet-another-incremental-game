@@ -29,11 +29,11 @@ end
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
 ---@field jobProgress number
----@field connectsTo g.World.DataProcessorData? (readonly; connect to this data processor, quick lookup only)
+---@field connectsTo g.World.DataOutputData? (readonly; connect to this data output, quick lookup only)
 ---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
 ---@field finalCPS number (readonly; updated every frame) Actual CPS, taking data bottleneck into account
 
----@class g.World.DataProcessorData: g.World.ItemData
+---@class g.World.DataOutputData: g.World.ItemData
 ---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
 ---@field dataPerSecond number (readonly; updated every frame)
 ---@field serversDataPerSecond number (readonly; updated every frame)
@@ -93,7 +93,7 @@ function World:init()
     self.boosters = {}
     ---@type table<integer, g.World.ItemData[]>
     self.boostersInTiles = {}
-    ---@type table<integer, g.World.DataProcessorData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
+    ---@type table<integer, g.World.DataOutputData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.dataProcessors = {}
     ---@type table<integer, g.World.ServerData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.servers = {}
@@ -224,7 +224,7 @@ function World:_update(dt)
                     end
                 end
             elseif category == "data" then
-                ---@cast item g.World.DataProcessorData
+                ---@cast item g.World.DataOutputData
                 self.dataProcessors[index] = item
             elseif category == "server" then
                 ---@cast item g.World.ServerData
@@ -274,7 +274,7 @@ function World:_update(dt)
         end
     end)
 
-    -- Run data processor update
+    -- Run data output update
     local dpsModifier = g.ask("getDataThroughputModifier") --[[@as number]]
     local dpsMultiplier = g.ask("getDataThroughputMultiplier") --[[@as number]]
     for _, dpData in pairs(self.dataProcessors) do
@@ -316,7 +316,7 @@ function World:_update(dt)
 
     -- Run server update
     -- We need to do the server update in 3 pass: Computing the CPS, Compute data bottleneck, then updating the job
-    -- progress. The data processor bottleneck calculation needs all server CPSes first.
+    -- progress. The data output bottleneck calculation needs all server CPSes first.
     local perfMod = g.ask("getPerformanceModifier") --[[@as number]]
     local perfMultiplier = g.ask("getPerformanceMultiplier") --[[@as number]]
     local cps = 0
@@ -325,7 +325,7 @@ function World:_update(dt)
         local serverInfo = g.getItemInfo(serverData.type, "server")
 
         if serverData.connectsTo and serverData.connectsTo.removed then
-            -- Data processor is gone
+            -- Data output is gone
             serverData.connectsTo = nil
         end
 
@@ -383,7 +383,7 @@ function World:_update(dt)
         local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul * boosterMul
         serverData.computePerSecond = math.max(finalMod, 0) * finalMul
     end
-    -- Pass 2: Update data processor total data transmit
+    -- Pass 2: Update data output total data transmit
     for _, dpData in pairs(self.dataProcessors) do
         local totalDPS = 0
 
@@ -562,7 +562,7 @@ function World:_draw()
     end)
     prof_pop() -- prof_push("item_draw")
 
-    -- Draw data processor connectors
+    -- Draw data output connectors
     prof_push("dpcon_draw")
     love.graphics.setColor(0, 0, 0)
     local lw = gsman.setLineWidth(4)
@@ -570,7 +570,7 @@ function World:_draw()
         if itemData then
             local _, category = g.getItemInfo(itemData.type)
             if category == "data" then
-                ---@cast itemData g.World.DataProcessorData
+                ---@cast itemData g.World.DataOutputData
                 for _, svr in ipairs(itemData.connectsServers) do
                     love.graphics.line(
                         (x + 0.5) * wtz,
@@ -706,7 +706,7 @@ function World:putItem(itemId, tx, ty)
             finalCPS = 0,
         }
     elseif category == "data" then
-        ---@type g.World.DataProcessorData
+        ---@type g.World.DataOutputData
         itemData = {
             type = itemId,
             tileX = tx,

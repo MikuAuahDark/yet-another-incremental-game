@@ -276,7 +276,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     end
 end
 
----@param dpData g.World.DataProcessorData
+---@param dpData g.World.DataOutputData
 ---@param mx number
 ---@param my number
 ---@param safeArea kirigami.Region
@@ -485,7 +485,7 @@ function ItemTooltip.DrawWorldTooltip(itemData, x, y, safeArea)
         ---@cast itemData g.World.ServerData
         ItemTooltip.ServerTooltipWorld(itemData, x, y, safeArea)
     elseif cat == "data" then
-        ---@cast itemData g.World.DataProcessorData
+        ---@cast itemData g.World.DataOutputData
         ItemTooltip.DPTooltipWorld(itemData, x, y, safeArea)
     elseif cat == "booster" then
         ItemTooltip.BoosterTooltipWorld(itemData, x, y, safeArea)

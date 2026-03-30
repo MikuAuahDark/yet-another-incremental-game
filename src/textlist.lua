@@ -10,7 +10,7 @@ local text = {
         context = "Used in place to list tasks, with specific maximum amount of queueable tasks"}),
     MONEY = loc("Money", nil, {
         context = "A resource"}),
-    MONEY_DESCRIPTION = loc("Use the money to buy servers, data processors, boosters, and unlock upgrades.", nil, {
+    MONEY_DESCRIPTION = loc("Use the money to buy servers, data output, boosters, and unlock upgrades.", nil, {
         context = "A description on what \"Money\" (a resource in-game) is usable for."}),
     CPS = loc("Compute Per Second", nil, {
         context = "CPS (Compute Per Second) is a measurement how fast server can process computation."}),
@@ -18,7 +18,7 @@ local text = {
         context = "A description on what \"CPS\" (Compute Per Second) is for."}),
     LOAD = loc("Load", nil, {
         context = "Think of \"load\" as the \"electricity load\""}),
-    LOAD_DESCRIPTION = loc("\"Load\" measures how many servers, data processors, and boosters can be in the datacenter. {c r=0.9 g=0.77 b=0.38}Exceeding the maximum load will impact the whole datacenter!{/c}", nil, {
+    LOAD_DESCRIPTION = loc("\"Load\" measures how many servers, data output, and boosters can be in the datacenter. {c r=0.9 g=0.77 b=0.38}Exceeding the maximum load will impact the whole datacenter!{/c}", nil, {
         context = "A description on what does \"Load\" do."}),
 
     CATEGORY_LIST = interp("Category: %{categories}", {
@@ -35,11 +35,11 @@ local text = {
     SERVER_HEAT_NUMBER = interp("%{heat}/%{max_heat} Heat", {
         context = "Denotes heat of a machine."}),
     DPS_NUMBER = interp("%{dps} {database}/second", {
-        context = "DPS (Data Per Second) is a measurement how fast data processor can process data. {database} reflects \"Data\" icon in-game."}),
+        context = "DPS (Data Per Second) is a measurement how fast data output can process data. {database} reflects \"Data\" icon in-game."}),
     WIRE_RANGE = interp("Wire Range: %{range} Tiles", {
-        context = "Denotes the maximum range of data processor wire connection"}),
+        context = "Denotes the maximum range of data output wire connection"}),
     WIRE_COUNT = interp("Connections: %{s}", {
-        context = "Denotes the number of servers connected to this data processor."}),
+        context = "Denotes the number of servers connected to this data output."}),
     EFFECTIVITY = interp("Effectivity: %{effectivity}", {
         context = "Denotes the effectivity of a booster. The %{effectivity} is percentage of the booster efficiency."}),
     HEAT_TOLERANCE = interp("Heat Tolerance: %{min_heat}-%{max_heat}", {

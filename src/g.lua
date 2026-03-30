@@ -1682,7 +1682,7 @@ end
 ---@field package dataPerSecond number
 ---@field package wireLength integer
 ---@field package wireCount integer|nil
----@field package draw fun(r:kirigami.Region,itemData:g.World.DataProcessorData?)
+---@field package draw fun(r:kirigami.Region,itemData:g.World.DataOutputData?)
 
 ---@param id string
 ---@param name string
@@ -1695,7 +1695,7 @@ function g.defineDataOutput(id, name, def)
         targetItem = id,
         maxLevel = 1,
         drawUI = function(uinfo, level, r)
-            -- Draw data processor
+            -- Draw data output
             local r2 = worldutil.drawDPShape(r:padRatio(0.125), def.color)
             if def.draw then
                 def.draw(r2)
@@ -1718,7 +1718,7 @@ function g.defineDataOutput(id, name, def)
         dataPerSecond = def.dataPerSecond,
         wireLength = def.wireLength,
         draw = function(itemData)
-            ---@cast itemData g.World.DataProcessorData
+            ---@cast itemData g.World.DataOutputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
             local r2 = worldutil.drawDPShape(r, def.color)
@@ -1761,7 +1761,7 @@ function g.defineBooster(id, name, def)
         targetItem = id,
         maxLevel = 1,
         drawUI = function(uinfo, level, r)
-            -- Draw data processor
+            -- Draw data output
             local r2 = worldutil.drawDPShape(r:padRatio(0.125), def.color)
             if def.draw then
                 def.draw(r2)
@@ -1884,7 +1884,7 @@ function g.moveItem(targetItem, tx, ty)
 end
 
 ---@param server g.World.ServerData
----@param dp g.World.DataProcessorData
+---@param dp g.World.DataOutputData
 function g.disconnectDataWire(server, dp)
     if server.connectsTo ~= dp then
         error("not connected")
@@ -1903,7 +1903,7 @@ end
 
 ---This only checks the server position and DP wire length/count
 ---@param server g.World.ServerData
----@param dp g.World.DataProcessorData
+---@param dp g.World.DataOutputData
 function g.canConnectDataWire(server, dp)
     local dpInfo = g.getItemInfo(dp.type, "data")
     if worldutil.getDistance("chessboard", server.tileX - dp.tileX, server.tileY - dp.tileY) > dpInfo.wireLength then
@@ -1914,7 +1914,7 @@ function g.canConnectDataWire(server, dp)
 end
 
 ---@param server g.World.ServerData
----@param dp g.World.DataProcessorData
+---@param dp g.World.DataOutputData
 function g.connectDataWire(server, dp)
     if server.connectsTo then
         error("already connected (elsewhere)")
@@ -1951,17 +1951,17 @@ do
 ---| "overloaded"
 ---Server is too hot
 ---| "overheat"
----Data processor is not connected to any server.
+---Data output is not connected to any server.
 ---| "no_connection"
 ---Booster does not provide any benefit
 ---| "booster_noop"
----Data processor is overloaded
+---Data output is overloaded
 ---| "data_bottleneck"
 local ITEM_PROBLEMS = {
     not_connected = {
         error = true,
         icon = "power_off",
-        text = loc("Server is not connected to data processor!", nil, {
+        text = loc("Server is not connected to data output!", nil, {
             context = "Think of it as connection between machines."}),
     },
     overloaded = {
@@ -1979,7 +1979,7 @@ local ITEM_PROBLEMS = {
     no_connection = {
         error = false,
         icon = "power_off",
-        text = loc("Data processor is not connected to any server!", nil, {
+        text = loc("Data output is not connected to any server!", nil, {
             context = "Think of it as connection between machines."})
     },
     booster_noop = {
@@ -1991,7 +1991,7 @@ local ITEM_PROBLEMS = {
     data_bottleneck = {
         error = false,
         icon = "database",
-        text = loc("Server is sending too much data to the data processor!", nil, {
+        text = loc("Server is sending too much data to the data output!", nil, {
             context = "The server performance is bottlenecked by the data lines"}),
     }
 }
@@ -2017,7 +2017,7 @@ function g.getItemProblems(itemData)
             result[#result+1] = "data_bottleneck"
         end
     elseif category == "data" then
-        ---@cast itemData g.World.DataProcessorData
+        ---@cast itemData g.World.DataOutputData
         ---@cast itemInfo g.DataOutInfo
         if #itemData.connectsServers == 0 then
             result[#result+1] = "no_connection"
