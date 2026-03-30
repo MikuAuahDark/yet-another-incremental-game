@@ -1,7 +1,6 @@
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local World = require("src.world.world")
 
-local DRAG_ITEM_DURATION = 0.5
 local DOUBLE_CLICK_TIMEOUT = 0.5
 
 ---@class MainScene: FreeCameraScene
@@ -14,7 +13,7 @@ function MainScene:init()
 
     ---@type [integer,integer]?
     self.candidateWirePos = nil
-    ---@type g.World.ItemData?
+    ---@type g.World.ItemData? pinning item description
     self.pinItemInfo = nil
     ---@type [number,g.World.ItemData]?
     self.targetDrag = nil
@@ -82,13 +81,13 @@ function MainScene:draw()
             else
                 love.graphics.setColor(1, 0, 0, t)
             end
-        elseif hud.activeDragging and hud.activeDragging[1] >= DRAG_ITEM_DURATION then
+        elseif hud.activeDragging and hud.activeDragging[1] >= consts.DRAG_ITEM_DURATION then
             if g.canPutItem(tx, ty) then
                 love.graphics.setColor(0, 1, 0, t)
             else
                 love.graphics.setColor(1, 0, 0, t)
             end
-        elseif self.targetDrag and self.targetDrag[1] >= DRAG_ITEM_DURATION then
+        elseif self.targetDrag and self.targetDrag[1] >= consts.DRAG_ITEM_DURATION then
             if (tx == self.targetDrag[2].tileX and ty == self.targetDrag[2].tileY) or g.canPutItem(tx, ty) then
                 love.graphics.setColor(0, 1, 0, t)
             else
@@ -108,7 +107,9 @@ function MainScene:draw()
             local x, y = item.tileX * wtz, item.tileY * wtz
             local drag = iml.consumeDrag(item, x, y, wtz, wtz, 1)
             if drag or iml.isClicked(x, y, wtz, wtz, 1, item) then
-                self.pinItemInfo = item
+                if not drag then
+                    self.pinItemInfo = item
+                end
 
                 if self.targetDrag and self.targetDrag[2] ~= item or not self.targetDrag then
                     self.targetDrag = {0, item}
@@ -163,27 +164,29 @@ function MainScene:draw()
         )
     end
 
-    if self.pinItemInfo then
-        -- Draw pinned tooltip
-        ---@type number,number
-        local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
-            self.camera:toScreen((self.pinItemInfo.tileX + 0.5) * wtz, (self.pinItemInfo.tileY + 0.5) * wtz)
-        )
-        ui.ItemTooltip.DrawWorldTooltip(self.pinItemInfo, uix, uiy, safeArea)
-    end
-    if item and self.pinItemInfo ~= item then
-        -- Draw hovered tooltip
-        ui.ItemTooltip.DrawWorldTooltip(item, uimx + 11, uimy + 5, safeArea)
+    if (not currentActiveDragWorld or currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION) and (not hud.activeDragging) then
+        if self.pinItemInfo then
+            -- Draw pinned tooltip
+            ---@type number,number
+            local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
+                self.camera:toScreen((self.pinItemInfo.tileX + 0.5) * wtz, (self.pinItemInfo.tileY + 0.5) * wtz)
+            )
+            ui.ItemTooltip.DrawWorldTooltip(self.pinItemInfo, uix, uiy, safeArea)
+        end
+        if item and self.pinItemInfo ~= item then
+            -- Draw hovered tooltip
+            ui.ItemTooltip.DrawWorldTooltip(item, uimx + 11, uimy + 5, safeArea)
+        end
     end
 
     -- Update item dragging (from world)
     if currentActiveDragWorld then
-        if currentActiveDragWorld[1] < DRAG_ITEM_DURATION then
-            local t = helper.clamp(helper.remap(currentActiveDragWorld[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
+        if currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION then
+            local t = helper.clamp(helper.remap(currentActiveDragWorld[1], 0, consts.DRAG_ITEM_DURATION, 0, 1), 0, 1)
             ui.arcLoadingBar(uimx, uimy, t)
         else
         end
-    elseif beforeActiveDragWorld and beforeActiveDragWorld[1] >= DRAG_ITEM_DURATION then
+    elseif beforeActiveDragWorld and beforeActiveDragWorld[1] >= consts.DRAG_ITEM_DURATION then
         -- Move or remove?
         if helper.isInsideRect(uimx, uimy, safeArea:get()) then
             -- Move if possible
@@ -203,14 +206,14 @@ function MainScene:draw()
     local currentActiveDragHUD = hud.activeDragging
 
     if currentActiveDragHUD then
-        if currentActiveDragHUD[1] < DRAG_ITEM_DURATION then
-            local t = helper.clamp(helper.remap(currentActiveDragHUD[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
+        if currentActiveDragHUD[1] < consts.DRAG_ITEM_DURATION then
+            local t = helper.clamp(helper.remap(currentActiveDragHUD[1], 0, consts.DRAG_ITEM_DURATION, 0, 1), 0, 1)
             ui.arcLoadingBar(uimx, uimy, t)
         elseif currentActiveDragHUD[3] > 0 then
             local t = helper.EASINGS.sineOut(math.min(currentActiveDragHUD[3], 1))
             hud:drawCancelIntuition("cancel", t)
         end
-    elseif beforeActiveDragHUD and beforeActiveDragHUD[1] >= DRAG_ITEM_DURATION then
+    elseif beforeActiveDragHUD and beforeActiveDragHUD[1] >= consts.DRAG_ITEM_DURATION then
         -- Place or put out?
         if helper.isInsideRect(uimx, uimy, safeArea:get()) then
             -- Place
@@ -222,7 +225,7 @@ function MainScene:draw()
     end
 
     if currentActiveDragWorld then
-        local t0 = math.min((currentActiveDragWorld[1] - DRAG_ITEM_DURATION) * 2, 1)
+        local t0 = math.min((currentActiveDragWorld[1] - consts.DRAG_ITEM_DURATION) * 2, 1)
         if t0 > 0 then
             local t = helper.EASINGS.sineOut(t0)
             hud:drawCancelIntuition("delete", t)
@@ -242,9 +245,9 @@ function MainScene:draw()
     -- Draw item visual
     local showVisualForItem = nil
 
-    if currentActiveDragWorld and currentActiveDragWorld[1] >= DRAG_ITEM_DURATION then
+    if currentActiveDragWorld and currentActiveDragWorld[1] >= consts.DRAG_ITEM_DURATION then
         showVisualForItem = g.getItemInfo(currentActiveDragWorld[2].type)
-    elseif currentActiveDragHUD and currentActiveDragHUD[1] >= DRAG_ITEM_DURATION then
+    elseif currentActiveDragHUD and currentActiveDragHUD[1] >= consts.DRAG_ITEM_DURATION then
         showVisualForItem = currentActiveDragHUD[2]
     end
 
@@ -255,6 +258,8 @@ function MainScene:draw()
         local itemR = Kirigami(uimx + 6, uimy + 6 + t * 3, 48, 48)
         showVisualForItem.drawItem(itemR)
         col:pop()
+
+        self.pinItemInfo = nil
     end
 
     ui.endUI()

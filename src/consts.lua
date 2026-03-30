@@ -48,6 +48,7 @@ local consts = {
 
     WORLD_TILE_SIZE = 32, -- World tile size on both width and height.
 
+    DRAG_ITEM_DURATION = 0.5,
 }
 
 if not consts.DEV_MODE then
