@@ -145,8 +145,8 @@ function HUD:init()
     self.botR = Kirigami(0, 0, 1, 1)
     ---@type g.ItemCategory
     self.activeTab = "server"
-    ---@type [number,g.ItemInfo]? when dragging from item list to world. [1] = duration, [2] = item info
-    self.activeDragging = nil
+    ---@type [number,g.ItemInfo,number]? when dragging from item list to world.
+    self.activeDragging = nil -- [1] = duration, [2] = item info, [3] = has mouse ever on tiles (-1 = no, >=0 = yes)
     ---@type [number,number,g.ItemInfo]? for tooltip pinning
     self.selectedItem = nil
 end
@@ -169,6 +169,10 @@ function HUD:update(dt)
 
     if self.activeDragging then
         self.activeDragging[1] = self.activeDragging[1] + dt
+
+        if self.activeDragging[3] >= 0 then
+            self.activeDragging[3] = self.activeDragging[3] + dt * 2
+        end
     end
 end
 
@@ -389,7 +393,7 @@ function HUD:draw(show)
                     showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
 
                     if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
-                        self.activeDragging = {0, itemInfo}
+                        self.activeDragging = {0, itemInfo, -1}
                     end
                     gotDrag = self.activeDragging
                 else
@@ -422,6 +426,12 @@ function HUD:draw(show)
             if showDescriptionOf then
                 ui.ItemTooltip.DrawHUDTooltip(showDescriptionOf[3], showDescriptionOf[1], showDescriptionOf[2])
             end
+
+            if self.activeDragging then
+                if self.activeDragging[3] == -1 and not self.botR:containsCoords(ui.getMouse()) then
+                    self.activeDragging[3] = 0
+                end
+            end
         end
 
         -- Draw resource and stats (top area)
@@ -446,6 +456,18 @@ function HUD:draw(show)
 
     lineWidth:pop()
     prof_pop() -- prof_push("HUD:draw")
+end
+
+---@param image string
+---@param opacity number
+function HUD:drawCancelIntuition(image, opacity)
+    love.graphics.setColor(1, 0, 0, opacity * 0.25)
+    love.graphics.rectangle("fill", self.botR:get())
+    local imageR = self.botR:padRatio(0.5)
+        :shrinkToAspectRatio(1, 1)
+        :center(self.botR)
+    love.graphics.setColor(1, 0, 0, opacity * 0.67)
+    g.drawImageContained(image, imageR:get())
 end
 
 function HUD:getSafeArea()

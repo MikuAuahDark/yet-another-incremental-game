@@ -182,12 +182,6 @@ function MainScene:draw()
             local t = helper.clamp(helper.remap(currentActiveDragWorld[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
             ui.arcLoadingBar(uimx, uimy, t)
         else
-            -- TODO: Visual feedback when moving
-            local col = gsman.setColor(1, 1, 1, 0.5)
-            local itemR = Kirigami(uimx + 6, uimy + 6, 48, 48)
-            local itemInfo = g.getItemInfo(currentActiveDragWorld[2].type)
-            itemInfo.drawItem(itemR)
-            col:pop()
         end
     elseif beforeActiveDragWorld and beforeActiveDragWorld[1] >= DRAG_ITEM_DURATION then
         -- Move or remove?
@@ -212,12 +206,9 @@ function MainScene:draw()
         if currentActiveDragHUD[1] < DRAG_ITEM_DURATION then
             local t = helper.clamp(helper.remap(currentActiveDragHUD[1], 0, DRAG_ITEM_DURATION, 0, 1), 0, 1)
             ui.arcLoadingBar(uimx, uimy, t)
-        else
-            -- TODO: Visual feedback when placing
-            local col = gsman.setColor(1, 1, 1, 0.5)
-            local itemR = Kirigami(uimx + 6, uimy + 6, 48, 48)
-            currentActiveDragHUD[2].drawItem(itemR)
-            col:pop()
+        elseif currentActiveDragHUD[3] > 0 then
+            local t = helper.EASINGS.sineOut(math.min(currentActiveDragHUD[3], 1))
+            hud:drawCancelIntuition("cancel", t)
         end
     elseif beforeActiveDragHUD and beforeActiveDragHUD[1] >= DRAG_ITEM_DURATION then
         -- Place or put out?
@@ -230,6 +221,14 @@ function MainScene:draw()
         end
     end
 
+    if currentActiveDragWorld then
+        local t0 = math.min((currentActiveDragWorld[1] - DRAG_ITEM_DURATION) * 2, 1)
+        if t0 > 0 then
+            local t = helper.EASINGS.sineOut(t0)
+            hud:drawCancelIntuition("delete", t)
+        end
+    end
+
     -- Draw scene switch
     local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
     love.graphics.setColor(1, 1, 1)
@@ -238,6 +237,24 @@ function MainScene:draw()
     if iml.wasJustClicked(switchR:get()) then
         g.playUISound("ui_click_basic", 1.4,0.8)
         g.gotoScene("upgrade_scene")
+    end
+
+    -- Draw item visual
+    local showVisualForItem = nil
+
+    if currentActiveDragWorld and currentActiveDragWorld[1] >= DRAG_ITEM_DURATION then
+        showVisualForItem = g.getItemInfo(currentActiveDragWorld[2].type)
+    elseif currentActiveDragHUD and currentActiveDragHUD[1] >= DRAG_ITEM_DURATION then
+        showVisualForItem = currentActiveDragHUD[2]
+    end
+
+    if showVisualForItem then
+        -- TODO: Visual feedback when placing
+        local col = gsman.setColor(1, 1, 1, 0.5)
+        local t = math.sin(love.timer.getTime() * 5)
+        local itemR = Kirigami(uimx + 6, uimy + 6 + t * 3, 48, 48)
+        showVisualForItem.drawItem(itemR)
+        col:pop()
     end
 
     ui.endUI()
