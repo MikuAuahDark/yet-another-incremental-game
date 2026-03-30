@@ -73,7 +73,7 @@ function MainScene:draw()
     local beforeActiveDragWorld, currentActiveDragWorld = self.targetDrag, nil
     if world.items:contains(tx, ty) then
         -- tile indicator
-        local t = math.sin(love.timer.getTime() * 2) ^ 2
+        local t = math.sin(love.timer.getTime() * 4) ^ 2
         if self.candidateWirePos then
             local server, dp = self:_getServerAndDP(self.candidateWirePos[1], self.candidateWirePos[2], tx, ty)
             if server and dp and self:_canConnectOrDisconnect(server, dp) then
