@@ -636,7 +636,15 @@ end
 ---@param tx integer
 ---@param ty integer
 function World:canPutItem(tx, ty)
+    -- Is coords on grid?
     if not self.items:contains(tx, ty) or self.items:get(tx, ty) then
+        return false
+    end
+
+    -- Check world size constraints
+    local center = math.floor(World.TILE_SIZE / 2)
+    local worldSize = g.stats.WorldTileSize
+    if math.abs(tx - center) > worldSize or math.abs(ty - center) > worldSize then
         return false
     end
 

@@ -647,7 +647,7 @@ g.stats.MaxLoad = g.defineStat("MaxLoad", 10, "Max Load")
 g.stats.MaxJobQueue = g.defineStat("MaxJobQueue", 1, "Max Job Queue")
 g.stats.JobFrequency = g.defineStat("JobFrequency", 0, "Job Spawn Frequency")
 -- World stat
-g.stats.WorldTileSize = g.defineStat("WorldTileSize", 3, "World Size")
+g.stats.WorldTileSize = g.defineStat("WorldTileSize", 3, "World Size") -- maxed at floor(World.TILE_SIZE / 2)
 
 
 ---@return integer
