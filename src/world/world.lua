@@ -30,14 +30,17 @@ end
 ---@field currentJob g.Job?
 ---@field jobProgress number
 ---@field connectedOutputs g.World.DataOutputData[] (readonly; connected data outputs, quick lookup only)
+---@field connectedInputs g.World.DataInputData[] (readonly; connected data inputs, quick lookup only)
 ---@field activeOutput g.World.DataOutputData? (readonly; the data output used this frame)
 ---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
----@field finalCPS number (readonly; updated every frame) Actual CPS, taking data bottleneck into account
+
+---@class g.World.DataInputData: g.World.ItemData
+---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
 
 ---@class g.World.DataOutputData: g.World.ItemData
 ---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
 ---@field dataPerSecond number (readonly; updated every frame)
----@field serversDataPerSecond number (readonly; updated every frame)
+---@field wireDPS number (readonly; updated every frame)
 
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")
@@ -96,6 +99,8 @@ function World:init()
     self.boostersInTiles = {}
     ---@type table<integer, g.World.DataOutputData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.dataProcessors = {}
+    ---@type table<integer, g.World.DataInputData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
+    self.dataInputs = {}
     ---@type table<integer, g.World.ServerData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.servers = {}
     self.particles = ParticleService()
@@ -202,6 +207,7 @@ function World:_update(dt)
     table.clear(self.boosters)
     table.clear(self.boostersInTiles)
     table.clear(self.dataProcessors)
+    table.clear(self.dataInputs)
     table.clear(self.servers)
     ---@param item g.World.ItemData?
     self.items:foreach(function(item, x, y)
@@ -227,6 +233,9 @@ function World:_update(dt)
             elseif category == "data" then
                 ---@cast item g.World.DataOutputData
                 self.dataProcessors[index] = item
+            elseif category == "indata" then
+                ---@cast item g.World.DataInputData
+                self.dataInputs[index] = item
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
@@ -276,8 +285,6 @@ function World:_update(dt)
     end)
 
     -- Run data output update
-    local dpsModifier = g.ask("getDataThroughputModifier") --[[@as number]]
-    local dpsMultiplier = g.ask("getDataThroughputMultiplier") --[[@as number]]
     for _, dpData in pairs(self.dataProcessors) do
         local dpInfo = g.getItemInfo(dpData.type, "data")
 
@@ -309,28 +316,69 @@ function World:_update(dt)
             end
         end
 
-        dpData.dataPerSecond = math.max(dpInfo.dataPerSecond + dpsModifier, 0) * dpsMultiplier * self.loadPercentage
-        -- Sync connectedOutputs for quick lookup
-        for _, serverData in ipairs(dpData.connectsServers) do
-            if not helper.index(serverData.connectedOutputs, dpData) then
-                serverData.connectedOutputs[#serverData.connectedOutputs+1] = dpData
+        --- Compute DPS
+        dpData.dataPerSecond = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, self.loadPercentage, dpInfo)
+        dpData.wireDPS = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
+    end
+
+    -- Run data input update
+    for _, diData in pairs(self.dataInputs) do
+        local diInfo = g.getItemInfo(diData.type, "indata")
+
+        -- Disconnect servers which are out of range or invalid
+        for i = #diData.connectsServers, 1, -1 do
+            local serverData = diData.connectsServers[i]
+            local sx, sy = serverData.tileX, serverData.tileY
+            if serverData.removed or worldutil.getDistance("chessboard", sx - diData.tileX, sy - diData.tileY) > diInfo.wireLength then
+                table.remove(diData.connectsServers, i)
+            end
+        end
+
+        -- Connect servers which are in range
+        local range = diInfo.wireLength
+        for dx = -range, range do
+            for dy = -range, range do
+                local tx, ty = diData.tileX + dx, diData.tileY + dy
+                local item = self.items:get(tx, ty)
+                if item and not item.removed then
+                    local _, category = g.getItemInfo(item.type)
+                    if category == "server" then
+                        ---@cast item g.World.ServerData
+                        -- Check if already in connectsServers
+                        if not helper.index(diData.connectsServers, item) then
+                            diData.connectsServers[#diData.connectsServers+1] = item
+                        end
+                    end
+                end
+            end
+        end
+
+        -- Sync connectedInputs for quick lookup
+        for _, serverData in ipairs(diData.connectsServers) do
+            if not helper.index(serverData.connectedInputs, diData) then
+                serverData.connectedInputs[#serverData.connectedInputs+1] = diData
             end
         end
     end
 
-    -- Since connectedOutputs is quick lookup, we need to clear it first then rebuild
+    -- Clear connectedOutputs/Inputs first to be rebuild
     for _, serverData in pairs(self.servers) do
         table.clear(serverData.connectedOutputs)
+        table.clear(serverData.connectedInputs)
     end
     for _, dpData in pairs(self.dataProcessors) do
         for _, serverData in ipairs(dpData.connectsServers) do
             serverData.connectedOutputs[#serverData.connectedOutputs+1] = dpData
         end
     end
+    for _, diData in pairs(self.dataInputs) do
+        for _, serverData in ipairs(diData.connectsServers) do
+            serverData.connectedInputs[#serverData.connectedInputs+1] = diData
+        end
+    end
 
     -- Run server update
-    -- We need to do the server update in 3 pass: Computing the CPS, Compute data bottleneck, then updating the job
-    -- progress. The data output bottleneck calculation needs all server CPSes first.
+    -- We need to do the server update in multiple pass: Computing the CPS, then updating the job progress.
     local perfMod = g.ask("getPerformanceModifier") --[[@as number]]
     local perfMultiplier = g.ask("getPerformanceMultiplier") --[[@as number]]
     local cps = 0
@@ -338,16 +386,28 @@ function World:_update(dt)
     for _, serverData in pairs(self.servers) do
         local serverInfo = g.getItemInfo(serverData.type, "server")
 
-        if #serverData.connectedOutputs > 0 then
+        if #serverData.connectedOutputs > 0 and #serverData.connectedInputs > 0 then
             -- Pull job queue
             if not serverData.currentJob then
                 local candidateIndex = nil
                 local candidatePrio = math.huge
                 for i, v in ipairs(self.jobQueue) do
-                    local indices = helper.index(serverInfo.computePreference, v.category)
-                    if indices and indices < candidatePrio then
-                        candidateIndex = i
-                        candidatePrio = indices
+                    -- Check if any connected input can handle this job category
+                    local canHandle = false
+                    for _, diData in ipairs(serverData.connectedInputs) do
+                        local diInfo = g.getItemInfo(diData.type, "indata")
+                        if diInfo.queuesJob == v.category then
+                            canHandle = true
+                            break
+                        end
+                    end
+
+                    if canHandle then
+                        local indices = helper.index(serverInfo.computePreference, v.category)
+                        if indices and indices < candidatePrio then
+                            candidateIndex = i
+                            candidatePrio = indices
+                        end
                     end
                 end
 
@@ -414,19 +474,12 @@ function World:_update(dt)
             end
         end
     end
-    -- Sync dpData.serversDataPerSecond for UI/HUD
-    for dpData, transmit in pairs(currentTransmit) do
-        dpData.serversDataPerSecond = transmit
-    end
     -- Pass 3: Update job progress
     for _, serverData in pairs(self.servers) do
-        serverData.finalCPS = 0
         local job = serverData.currentJob
         if job and serverData.activeOutput then
-            local finalCPS = serverData.computePerSecond
-            serverData.finalCPS = finalCPS
-            serverData.jobProgress = serverData.jobProgress + finalCPS * dt
-            cps = cps + finalCPS * dt
+            serverData.jobProgress = serverData.jobProgress + serverData.computePerSecond * dt
+            cps = cps + serverData.computePerSecond * dt
             if serverData.jobProgress >= job.computePower then
                 g.call("jobCompleted", serverData, job)
                 g.addResources(job.resource)
@@ -545,8 +598,8 @@ function World:_draw()
     end
 
     -- Draw tile heat
-    ---@param heat number
     local wtz = consts.WORLD_TILE_SIZE
+    ---@param heat number
     self.heat:foreach(function(heat, tx, ty)
         local heatmul = helper.round(heat / 10)
         if heatmul ~= 0 then
@@ -584,6 +637,18 @@ function World:_draw()
             local _, category = g.getItemInfo(itemData.type)
             if category == "data" then
                 ---@cast itemData g.World.DataOutputData
+                for _, svr in ipairs(itemData.connectsServers) do
+                    love.graphics.line(
+                        (x + 0.5) * wtz,
+                        (y + 0.5) * wtz,
+                        (svr.tileX + 0.5) * wtz,
+                        (svr.tileY + 0.5) * wtz
+                    )
+                end
+            elseif category == "indata" then
+                ---@cast itemData g.World.DataInputData
+                -- TODO: Change Data Input wire color to distinguish it from Data Output
+                love.graphics.setColor(0, 0, 0)
                 for _, svr in ipairs(itemData.connectsServers) do
                     love.graphics.line(
                         (x + 0.5) * wtz,
@@ -715,9 +780,9 @@ function World:putItem(itemId, tx, ty)
             currentJob = nil,
             jobProgress = 0,
             connectedOutputs = {},
+            connectedInputs = {},
             activeOutput = nil,
             computePerSecond = 0,
-            finalCPS = 0,
         }
     elseif category == "data" then
         ---@type g.World.DataOutputData
@@ -729,7 +794,7 @@ function World:putItem(itemId, tx, ty)
             load = itemInfo.load,
             connectsServers = {},
             dataPerSecond = 0,
-            serversDataPerSecond = 0,
+            wireDPS = 0,
         }
     elseif category == "booster" then
         ---@type g.World.ItemData
@@ -739,6 +804,16 @@ function World:putItem(itemId, tx, ty)
             tileY = ty,
             removed = false,
             load = itemInfo.load,
+        }
+    elseif category == "indata" then
+        ---@type g.World.DataInputData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+            removed = false,
+            load = itemInfo.load,
+            connectsServers = {},
         }
     else
         error("fixme category "..category)

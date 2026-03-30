@@ -1485,6 +1485,16 @@ do
 ---@class g.DataOutDefinition: g.ItemDefinition, g._DataInfoCommon
 
 
+---@class g._DataInInfoCommon: g.ItemInfo
+---@field public category "indata"
+---@field public queuesJob g.JobCategory
+---@field public maxJobQueue integer
+---@field public wireLength integer
+
+---@class g.DataInInfo: g.ItemInfo, g._DataInInfoCommon
+---@class g.DataInDefinition: g.ItemDefinition, g._DataInInfoCommon
+
+
 ---@class g.BoosterInfo: g.ItemInfo
 ---@field public category "booster"
 ---@field public radiate integer
@@ -1512,7 +1522,7 @@ local function return1() return 1 end
 local function dummy() end
 
 ---@param id string
----@param def g.ServerDefinition | g.DataOutDefinition | g.BoosterDefinition
+---@param def g.ServerDefinition | g.DataInDefinition | g.DataOutDefinition | g.BoosterDefinition
 function g.defineItem(id, def)
     if itemList[id] then
         error("Redefined item: "..id)
@@ -1529,7 +1539,7 @@ function g.defineItem(id, def)
         def.description = loc(def.description, nil, {context = def.descriptionContext})
     end
 
-    ---@cast def g.ServerInfo | g.DataOutInfo | g.BoosterInfo
+    ---@cast def g.ServerInfo | g.DataInInfo | g.DataOutInfo | g.BoosterInfo
     assert(def.price, "invalid price")
     assert(def.load, "invalid load")
 
@@ -1552,6 +1562,11 @@ function g.defineItem(id, def)
         assert(def.dataPerSecond, "invalid dps")
         assert(def.wireLength and def.wireLength > 0, "invalid wire length")
         assert(def.wireDPS > 0, "invalid wire dps")
+    elseif def.category == "indata" then
+        ---@cast def g.DataInInfo
+        assert(g.VALID_JOB_CATEGORIES[def.queuesJob], "invalid queuesJob")
+        assert(def.maxJobQueue and def.maxJobQueue > 0, "invalid maxJobQueue")
+        assert(def.wireLength and def.wireLength > 0, "invalid wireLength")
     elseif def.category == "booster" then
         ---@cast def g.BoosterInfo
         def.radiate = def.radiate or 1
@@ -1570,6 +1585,7 @@ end
 ---@return g.ItemInfo, g.ItemCategory
 ---@overload fun(itemid: string, assertCategory: "server"):(g.ServerInfo, "server")
 ---@overload fun(itemid: string, assertCategory: "data"):(g.DataOutInfo, "data")
+---@overload fun(itemid: string, assertCategory: "indata"):(g.DataInInfo, "indata")
 ---@overload fun(itemid: string, assertCategory: "booster"):(g.BoosterInfo, "booster")
 function g.getItemInfo(itemid, assertCategory)
     local itemInfo = itemList[itemid]
@@ -1584,7 +1600,7 @@ function g.getItemInfo(itemid, assertCategory)
     return itemInfo, itemInfo.category
 end
 
-local PREUNLOCKED = objects.Set({"basic_server", "basic_data"})
+local PREUNLOCKED = objects.Set({"basic_server", "basic_data", "basic_indata"})
 
 ---@param itemid string
 function g.isItemUnlocked(itemid)
@@ -1722,6 +1738,71 @@ function g.defineDataOutput(id, name, def)
         wireDPS = def.wireDPS or (def.dataPerSecond / 4),
         draw = function(itemData)
             ---@cast itemData g.World.DataOutputData
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2, itemData)
+            end
+        end,
+        drawItem = function(r)
+            local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+---@class g._DataInDef
+---@field package nameContext string?
+---@field package rawDescription string?
+---@field package description string?
+---@field package descriptionContext string?
+---@field package color objects.Color
+---@field package price number
+---@field package load number
+---@field package queuesJob g.JobCategory
+---@field package maxJobQueue integer
+---@field package wireLength integer
+---@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
+
+---@param id string
+---@param name string
+---@param def g._DataInDef
+function g.defineDataInput(id, name, def)
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "UNLOCKS",
+        targetItem = id,
+        maxLevel = 1,
+        drawUI = function(uinfo, level, r)
+            -- Draw data input (same shape as output for now)
+            local r2 = worldutil.drawDPShape(r:padRatio(0.125), def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+            drawLockOpen(uinfo, level, r)
+        end,
+        isItemUnlocked = function(uinfo, level, iid)
+            return iid == id
+        end
+    })
+    return g.defineItem(id, {
+        category = "indata",
+        name = name,
+        nameContext = def.nameContext,
+        rawDescription = def.rawDescription,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        price = def.price,
+        load = def.load,
+        queuesJob = def.queuesJob,
+        maxJobQueue = def.maxJobQueue,
+        wireLength = def.wireLength,
+        draw = function(itemData)
+            ---@cast itemData g.World.ItemData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
             local r2 = worldutil.drawDPShape(r, def.color)
@@ -1956,6 +2037,10 @@ do
 ---| "data_bottleneck"
 ---No suitable data output found
 ---| "no_suitable_output"
+---No suitable data input found
+---| "no_input_connection"
+---Data input is not connected to any server
+---| "input_not_connected"
 local ITEM_PROBLEMS = {
     not_connected = {
         error = true,
@@ -1998,6 +2083,18 @@ local ITEM_PROBLEMS = {
         icon = "database",
         text = loc("No suitable data output found for the current data load!", nil, {
             context = "The server cannot find any data output that can handle its data load."}),
+    },
+    no_input_connection = {
+        error = true,
+        icon = "power_off",
+        text = loc("Server is not connected to data input!", nil, {
+            context = "Think of it as connection between machines."}),
+    },
+    input_not_connected = {
+        error = false,
+        icon = "power_off",
+        text = loc("Data input is not connected to any server!", nil, {
+            context = "Think of it as connection between machines."})
     }
 }
 
@@ -2016,6 +2113,10 @@ function g.getItemProblems(itemData)
             result[#result+1] = "no_suitable_output"
         end
 
+        if #itemData.connectedInputs == 0 then
+            result[#result+1] = "no_input_connection"
+        end
+
         if g.getTileHeat(itemData.tileX, itemData.tileY) > itemInfo.heatTolerance[2] then
             result[#result+1] = "overheat"
         end
@@ -2024,6 +2125,12 @@ function g.getItemProblems(itemData)
         ---@cast itemInfo g.DataOutInfo
         if #itemData.connectsServers == 0 then
             result[#result+1] = "no_connection"
+        end
+    elseif category == "indata" then
+        ---@cast itemData g.World.DataInputData
+        ---@cast itemInfo g.DataInInfo
+        if #itemData.connectsServers == 0 then
+            result[#result+1] = "input_not_connected"
         end
     end
 

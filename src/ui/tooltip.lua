@@ -260,8 +260,8 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         ui.printRichInRegion(jobData.earnText, attrF, moneyR, true, "center")
         height = height + attrFH
         -- Final CPS and DPS side-by-side
-        local cps = g.formatNumber(serverData.finalCPS).." {dns}/s"
-        if serverData.finalCPS < serverData.computePerSecond then
+        local cps = g.formatNumber(serverData.computePerSecond).." {dns}/s"
+        if serverData.computePerSecond < serverInfo.computePerSecond then
             cps = helper.wrapRichtextColor(g.COLORS.UI.WARNING, cps)
         end
         local dpsVal = serverData.computePerSecond * job.outputData / job.computePower
@@ -482,6 +482,108 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     end
 end
 
+---@param diData g.World.DataInputData
+---@param mx number
+---@param my number
+---@param safeArea kirigami.Region
+function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
+    local world = g.getMainWorld()
+    local diInfo = g.getItemInfo(diData.type, "indata")
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
+    local titleFH = titleF:getHeight()
+    local attrFH = attrF:getHeight()
+    local descFH = descF:getHeight()
+    local width, height = 120, 0
+
+    -- Pass 1: Compute tooltip sizes
+
+    -- Title
+    local titleHeight
+    do
+        local w, l = richtext.getWrap(diInfo.name, titleF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        titleHeight = l * titleFH
+        height = height + titleHeight
+    end
+
+    -- Description
+    local descriptionHeight = 0
+    local descriptionText = nil
+    if diInfo.description then
+        descriptionText = "\n"..diInfo.description.."\n"
+        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        descriptionHeight = l * descFH
+        height = height + descriptionHeight
+    end
+
+    -- Attributes
+    local attributesText, attributesHeight
+    do
+        local at = {}
+        -- Load
+        at[#at+1] = getItemLoadText(diInfo, diData)
+        -- Queued Job Category
+        at[#at+1] = TEXT.CATEGORY_LIST({
+            categories = g.getJobCategoryName(diInfo.queuesJob)
+        })
+        -- Wire Range
+        at[#at+1] = TEXT.WIRE_RANGE({range = diInfo.wireLength})
+        -- Connections
+        at[#at+1] = TEXT.WIRE_COUNT({s = #diData.connectsServers})
+
+        attributesText = table.concat(at, "\n")
+        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        attributesHeight = l * attrFH
+        height = height + attributesHeight
+    end
+
+    -- Log message
+    local logText, logHeight = nil, 0
+    do
+        local l = getLogMessages(diData)
+
+        if #l > 0 then
+            logText = table.concat(l, "\n")
+            local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)
+            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+            logHeight = lines * attrFH
+            height = height + logHeight
+        end
+    end
+
+    -- Generate region now
+    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
+    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+    -- Pass 2: Draw the tooltip
+    height = 0
+    -- Draw name
+    do
+        richtext.printRich(diInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleHeight
+    end
+    -- Draw description
+    if descriptionText then
+        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + descriptionHeight
+    end
+    -- Draw attributes
+    do
+        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
+        height = height + attributesHeight
+    end
+    -- Draw log message
+    if logText then
+        local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, logHeight)
+        ui.printRichInRegion(logText, attrF, r, true, "center")
+        height = height + logHeight
+    end
+end
+
 ---@param itemData g.World.ItemData
 ---@param x number relative to bottom center
 ---@param y number relative to bottom center
@@ -495,6 +597,9 @@ function ItemTooltip.DrawWorldTooltip(itemData, x, y, safeArea)
     elseif cat == "data" then
         ---@cast itemData g.World.DataOutputData
         ItemTooltip.DPTooltipWorld(itemData, x, y, safeArea)
+    elseif cat == "indata" then
+        ---@cast itemData g.World.DataInputData
+        ItemTooltip.DITooltipWorld(itemData, x, y, safeArea)
     elseif cat == "booster" then
         ItemTooltip.BoosterTooltipWorld(itemData, x, y, safeArea)
     else
@@ -692,6 +797,88 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
     end
 end
 
+---@param diInfo g.DataInInfo
+---@param x number relative to bottom center
+---@param y number relative to bottom center
+function ItemTooltip.DITooltipHUD(diInfo, x, y)
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
+    local titleFH = titleF:getHeight()
+    local attrFH = attrF:getHeight()
+    local descFH = descF:getHeight()
+    local width, height = 0, 0
+
+    -- Pass 1: Compute tooltip sizes
+
+    -- Title
+    local titleHeight
+    do
+        local w, l = richtext.getWrap(diInfo.name, titleF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        titleHeight = l * titleFH
+        height = height + titleHeight
+    end
+
+    -- Description
+    local descriptionText, descriptionHeight = nil, 0
+    if diInfo.description then
+        descriptionText = "\n"..diInfo.description.."\n"
+        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        descriptionHeight = l * descFH
+        height = height + descriptionHeight
+    end
+
+    -- Attributes
+    local attributesText, attributesHeight
+    do
+        local at = {}
+        local world = g.getMainWorld()
+        -- Load
+        local load = world:computeLoadModifier(diInfo)
+        local loadText = TEXT.LOAD_TOOLTIP({load = load})
+        if (world.currentLoad + load) > g.stats.MaxLoad then
+            loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
+        end
+        at[#at+1] = loadText
+        -- Queued Job Category
+        at[#at+1] = TEXT.CATEGORY_LIST({
+            categories = g.getJobCategoryName(diInfo.queuesJob)
+        })
+        -- Wire Range
+        at[#at+1] = TEXT.WIRE_RANGE({range = diInfo.wireLength})
+
+        attributesText = table.concat(at, "\n")
+        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
+        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
+        attributesHeight = l * attrFH
+        height = height + attributesHeight
+    end
+
+    -- Generate region
+    local tdrawableR, tcntR = ui.getTooltipRegion(x - width / 2, y - height, width, height)
+    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
+
+    -- Pass 2: Draw the tooltip
+    height = 0
+    -- Draw name
+    do
+        richtext.printRich(diInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + titleHeight
+    end
+    -- Draw description
+    if descriptionText then
+        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        height = height + descriptionHeight
+    end
+    -- Draw attributes
+    do
+        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
+        height = height + attributesHeight
+    end
+end
+
 ---@param boosterInfo g.BoosterInfo
 ---@param x number
 ---@param y number
@@ -779,6 +966,9 @@ function ItemTooltip.DrawHUDTooltip(itemInfo, x, y)
     elseif itemInfo.category == "data" then
         ---@cast itemInfo g.DataOutInfo
         ItemTooltip.DPTooltipHUD(itemInfo, x, y)
+    elseif itemInfo.category == "indata" then
+        ---@cast itemInfo g.DataInInfo
+        ItemTooltip.DITooltipHUD(itemInfo, x, y)
     elseif itemInfo.category == "booster" then
         ---@cast itemInfo g.BoosterInfo
         ItemTooltip.BoosterTooltipHUD(itemInfo, x, y)
