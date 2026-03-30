@@ -63,9 +63,6 @@ local function description(upgrade, tree, x, y, safeArea)
             ---@cast itemInfo g.DataOutInfo
             at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(itemInfo.dataPerSecond)})
             at[#at+1] = TEXT.WIRE_RANGE({range = itemInfo.wireLength})
-            if itemInfo.wireCount then
-                at[#at+1] = TEXT.MAX_WIRE_COUNT({s = itemInfo.wireCount})
-            end
         end
 
         if #at > 0 then

@@ -318,16 +318,7 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
         at[#at+1] = getItemLoadText(dpInfo, dpData)
         at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)})
         at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireLength})
-        local wcattr
-        if dpInfo.wireCount then
-            wcattr = TEXT.WIRE_COUNT({s = #dpData.connectsServers.."/"..dpInfo.wireCount})
-            if #dpData.connectsServers >= dpInfo.wireCount then
-                wcattr = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, wcattr)
-            end
-        else
-            wcattr = TEXT.WIRE_COUNT({s = #dpData.connectsServers})
-        end
-        at[#at+1] = wcattr
+        at[#at+1] = TEXT.WIRE_COUNT({s = #dpData.connectsServers})
 
         attributesText = table.concat(at, "\n")
         local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
@@ -660,10 +651,6 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
         at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpInfo.dataPerSecond)})
         -- Wire Range
         at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireLength})
-        -- Wire count
-        if dpInfo.wireCount then
-            at[#at+1] = TEXT.MAX_WIRE_COUNT({s = dpInfo.wireCount})
-        end
 
         attributesText = table.concat(at, "\n")
         local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)

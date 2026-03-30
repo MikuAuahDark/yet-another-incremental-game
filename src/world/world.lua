@@ -292,15 +292,6 @@ function World:_update(dt)
             end
         end
 
-        if dpInfo.wireCount then
-            -- Truncate connected servers to max wire count
-            for i = #dpData.connectsServers, dpInfo.wireCount + 1, -1 do
-                local serverData = dpData.connectsServers[i]
-                serverData.connectsTo = nil
-                table.remove(dpData.connectsServers, i)
-            end
-        end
-
         dpData.dataPerSecond = math.max(dpInfo.dataPerSecond + dpsModifier, 0) * dpsMultiplier * self.loadPercentage
     end
 

@@ -1479,7 +1479,6 @@ do
 ---@field public category "data"
 ---@field public dataPerSecond number
 ---@field public wireLength integer
----@field public wireCount integer|nil
 
 ---@class g.DataOutInfo: g.ItemInfo, g._DataInfoCommon
 ---@class g.DataOutDefinition: g.ItemDefinition, g._DataInfoCommon
@@ -1551,9 +1550,6 @@ function g.defineItem(id, def)
         ---@cast def g.DataOutInfo
         assert(def.dataPerSecond, "invalid dps")
         assert(def.wireLength and def.wireLength > 0, "invalid wire length")
-        if def.wireCount then
-            assert(def.wireCount > 0, "invalid wire count")
-        end
     elseif def.category == "booster" then
         ---@cast def g.BoosterInfo
         def.radiate = def.radiate or 1
@@ -1721,7 +1717,6 @@ function g.defineDataOutput(id, name, def)
         load = def.load,
         dataPerSecond = def.dataPerSecond,
         wireLength = def.wireLength,
-        wireCount = def.wireCount,
         draw = function(itemData)
             ---@cast itemData g.World.DataProcessorData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
@@ -1912,10 +1907,6 @@ end
 function g.canConnectDataWire(server, dp)
     local dpInfo = g.getItemInfo(dp.type, "data")
     if worldutil.getDistance("chessboard", server.tileX - dp.tileX, server.tileY - dp.tileY) > dpInfo.wireLength then
-        return false
-    end
-
-    if dpInfo.wireCount and #dp.connectsServers > dpInfo.wireCount then
         return false
     end
 
