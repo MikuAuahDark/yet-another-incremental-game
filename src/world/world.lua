@@ -494,11 +494,31 @@ function World:_draw()
 
     -- Draw the actual world
     do
+        -- Draw white rectnagle across the world
         local size = consts.WORLD_TILE_SIZE * World.TILE_SIZE
+        love.graphics.setColor(g.COLORS.UI.MAIN[g.getSystemTheme()].PRIMARY)
+        love.graphics.rectangle("fill", 0, 0, size, size)
+
+        -- Draw world blocked area
+        local center = math.floor(World.TILE_SIZE / 2)
+        local worldSize = g.stats.WorldTileSize
+        if center > worldSize then
+            -- Draw stencil relative to the center of world
+            love.graphics.setStencilMode("draw", 1)
+            love.graphics.rectangle("fill",
+                (center - worldSize) * consts.WORLD_TILE_SIZE,
+                (center - worldSize) * consts.WORLD_TILE_SIZE,
+                (worldSize * 2 + 1) * consts.WORLD_TILE_SIZE,
+                (worldSize * 2 + 1) * consts.WORLD_TILE_SIZE
+            )
+            love.graphics.setStencilMode("test", 1)
+        end
+        -- Draw world area
         love.graphics.setColor(objects.Color("#b0b0b0"))
         love.graphics.rectangle("fill", 0, 0, size, size)
         love.graphics.setColor(1, 1, 1)
         love.graphics.draw(self.worldTexture)
+        love.graphics.setStencilMode() -- should be harmless
     end
 
     -- Draw tile heat
