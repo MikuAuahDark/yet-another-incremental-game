@@ -181,43 +181,6 @@ function Session.deserialize(data)
                 end
             end
         end
-
-        -- Connect data processors
-        if data.world.connections then
-            for _, dpData in ipairs(dp) do
-                local key = tostring(Z.encode(dpData.tileX, dpData.tileY))
-                local connections = data.world.connections[key]
-                if connections then
-                    for _, conn in ipairs(connections) do
-                        local cx, cy = Z.decode(conn)
-                        local itemData = sess.mainWorld.items:get(cx, cy)
-                        local ok = false
-
-                        if itemData then
-                            local _, cat = g.getItemInfo(itemData.type)
-                            if cat == "server" then
-                                ---@cast itemData g.World.ServerData
-                                if g.canConnectDataWire(itemData, dpData) then
-                                    g.connectDataWire(itemData, dpData)
-                                    ok = true
-                                end
-                            end
-                        end
-
-                        if not ok then
-                            local f = string.format(
-                                "invalid data processor connection '%s' (%d, %d) connect to (%d, %d)",
-                                dpData.type,
-                                dpData.tileX,
-                                dpData.tileY,
-                                cx, cy
-                            )
-                            log.warn(f)
-                        end
-                    end
-                end
-            end
-        end
     end
 
     return sess
@@ -234,7 +197,6 @@ function Session:serialize()
     ---@type g.World.DataProcessorData[]
     local dp = {}
     local items = {}
-    local connections = {}
     ---@param item g.World.ItemData?
     self.mainWorld.items:foreach(function(item, x, y)
         if item then
@@ -246,15 +208,6 @@ function Session:serialize()
             end
         end
     end)
-    for _, dpData in ipairs(dp) do
-        if #dpData.connectsServers > 0 then
-            local coords = {}
-            for _, serverData in ipairs(dpData.connectsServers) do
-                coords[#coords+1] = Z.encode(serverData.tileX, serverData.tileY)
-            end
-            connections[tostring(Z.encode(dpData.tileX, dpData.tileY))] = coords
-        end
-    end
 
     return {
         prestige = self.prestige,
@@ -268,7 +221,6 @@ function Session:serialize()
         showTutorials = helper.shallowCopy(self.showTutorials),
         world = {
             items = items,
-            connections = connections,
         }
     }
 end

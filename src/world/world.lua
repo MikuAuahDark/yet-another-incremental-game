@@ -292,6 +292,25 @@ function World:_update(dt)
             end
         end
 
+        -- Connect servers which are in range and not connected
+        local range = dpInfo.wireLength
+        for dx = -range, range do
+            for dy = -range, range do
+                local tx, ty = dpData.tileX + dx, dpData.tileY + dy
+                local item = self.items:get(tx, ty)
+                if item and not item.removed then
+                    local _, category = g.getItemInfo(item.type)
+                    if category == "server" then
+                        ---@cast item g.World.ServerData
+                        if not item.connectsTo then
+                            item.connectsTo = dpData
+                            dpData.connectsServers[#dpData.connectsServers+1] = item
+                        end
+                    end
+                end
+            end
+        end
+
         dpData.dataPerSecond = math.max(dpInfo.dataPerSecond + dpsModifier, 0) * dpsMultiplier * self.loadPercentage
     end
 

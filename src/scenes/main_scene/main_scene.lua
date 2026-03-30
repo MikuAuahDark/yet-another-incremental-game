@@ -334,23 +334,6 @@ function MainScene:_canConnectOrDisconnect(server, dp)
     return false
 end
 
----@param tx integer second tile X
----@param ty integer second tile Y
-function MainScene:_tryConnectWire(tx, ty)
-    local server, dp = self:_getServerAndDP(self.candidateWirePos[1], self.candidateWirePos[2], tx, ty)
-    if server and dp then
-        if server.connectsTo == dp then
-            g.disconnectDataWire(server, dp)
-        elseif g.canConnectDataWire(server, dp) then
-            if server.connectsTo then
-                g.disconnectDataWire(server, server.connectsTo)
-            end
-
-            g.connectDataWire(server, dp)
-        end
-    end
-end
-
 
 
 MainScene.keyreleased = MainScene.defaultKeyreleased
@@ -360,16 +343,6 @@ MainScene.keyreleased = MainScene.defaultKeyreleased
 ---@param b integer
 function MainScene:mousereleased(x, y, b)
     if self.candidateWirePos and b == 1 then
-        -- Make sure clicks are contained in safe area btw
-        local safeArea = g.getHUD():getSafeArea()
-        local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(x, y)
-        if helper.isInsideRect(uix, uiy, safeArea:get()) then
-            local mx, my = self.camera:toWorld(x, y)
-            local wtz = consts.WORLD_TILE_SIZE
-            local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
-            self:_tryConnectWire(tx, ty)
-        end
-
         self.candidateWirePos = nil
     end
 end
