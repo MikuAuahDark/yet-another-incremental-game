@@ -269,7 +269,7 @@ function HUD:draw(show)
                 maxjobs = helper.round(g.stats.MaxJobQueue),
             })
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-            ui.printRichInRegion(jobQueueText, jobQueueF, jobTextR, true)
+            ui.printRichInRegion(jobQueueText, jobQueueF, jobTextR, true, "left", "top")
 
             local jobCardHeight = getJobCardHeight()
             local iterCount = math.min(#world.jobQueue, math.floor(jobQR.h / (jobCardHeight + 4)))

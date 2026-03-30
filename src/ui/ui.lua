@@ -436,22 +436,37 @@ end
 
 
 
+---@param ch number
+---@param ah number
+---@param voff "top"|"center"|"bottom"
+local function queryOffset(ch, ah, voff)
+	if voff == "center" then
+		return (ch - ah) / 2
+	elseif voff == "bottom" then
+		return ch - ah
+	else
+		return 0
+	end
+end
+
 ---@param txt string|richtext.ParsedText
 ---@param font love.Font
 ---@param reg kirigami.Region
 ---@param wrap boolean?
 ---@param align love.AlignMode? (ignored if wrap is false)
-function ui.printRichInRegion(txt, font, reg, wrap, align)
+---@param valign? "top"|"center"|"bottom"
+function ui.printRichInRegion(txt, font, reg, wrap, align, valign)
 	local x, y, w, h = reg:get()
 	align = align or "left"
+	valign = valign or "center"
 
 	if wrap then
 		local lines = select(2, richtext.getWrap(txt, font, w))
 		local fh = font:getHeight()
-		local oy = (fh * lines - h) / 2
+		local oy = queryOffset(h, fh * lines, valign)
 		richtext.printRich(txt, font, x, y + oy, w, align)
 	else
-		local oy = (font:getHeight() - h) / 2
+		local oy = queryOffset(h, font:getHeight(), valign)
 		richtext.printRich(txt, font, x, y + oy, 16777216, "left")
 	end
 end
