@@ -57,7 +57,7 @@ end
 local function getJobCardHeight()
     local titleF = g.getMainFont(16)
     local catF = g.getMainFont(10)
-    return 4 + titleF:getHeight() + catF:getHeight() * 2 + 4
+    return 4 + titleF:getHeight() + catF:getHeight() * 2 + 6
 end
 
 ---@param r kirigami.Region

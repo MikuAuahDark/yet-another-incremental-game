@@ -235,6 +235,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     end
     -- Draw job info
     if jobData then
+        local job = assert(serverData.currentJob)
         --[[
         TODO: Modify how tooltip is rendered.
         For sake of moving fast, let's just do rectangle for now.
@@ -258,17 +259,23 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
         ui.printRichInRegion(jobData.outdataText, attrF, dataR, true, "center")
         ui.printRichInRegion(jobData.earnText, attrF, moneyR, true, "center")
         height = height + attrFH
-        -- Final CPS
+        -- Final CPS and DPS side-by-side
         local cps = g.formatNumber(serverData.finalCPS).." {dns}/s"
         if serverData.finalCPS < serverData.computePerSecond then
             cps = helper.wrapRichtextColor(g.COLORS.UI.WARNING, cps)
         end
-        richtext.printRich(cps, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        local dpsVal = serverData.computePerSecond * job.outputData / job.computePower
+        local dps = g.formatNumber(dpsVal).." {database}/s"
+        if not serverData.activeOutput then
+            dps = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, dps)
+        end
+        local cpsR, dpsR = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, attrFH):splitHorizontal(1, 1)
+        ui.printRichInRegion(cps, descF, cpsR, true, "center")
+        ui.printRichInRegion(dps, descF, dpsR, true, "center")
         height = height + descFH
         -- Progress percentage
-        local job = assert(serverData.currentJob)
         local p = serverData.jobProgress / job.computePower
-        love.graphics.printf(helper.round(p * 100, 1).."%", descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
+        love.graphics.printf(math.abs(helper.round(p * 100, 1)).."%", descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
         height = height + descFH
         -- Progress bar
         love.graphics.rectangle("fill", tcntR.x, tcntR.y + height, tcntR.w * p, PROGRESS_BAR_HEIGHT)
@@ -319,6 +326,7 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
         at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)})
         at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireLength})
         at[#at+1] = TEXT.WIRE_COUNT({s = #dpData.connectsServers})
+        at[#at+1] = TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)})
 
         attributesText = table.concat(at, "\n")
         local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
@@ -651,6 +659,8 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
         at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpInfo.dataPerSecond)})
         -- Wire Range
         at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireLength})
+        -- Wire DPS
+        at[#at+1] = TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)})
 
         attributesText = table.concat(at, "\n")
         local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
