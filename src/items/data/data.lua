@@ -1,4 +1,4 @@
-g.defineDataProcessor("basic_data", "Basic Data Processor", {
+g.defineDataOutput("basic_data", "Basic Data Output", {
     price = 0,
     load = 1,
     dataPerSecond = 10,
@@ -23,7 +23,7 @@ g.defineDataProcessor("basic_data", "Basic Data Processor", {
     end,
 })
 
-g.defineDataProcessor("normal_data", "Data Processor", {
+g.defineDataOutput("normal_data", "Data Output", {
     price = 7,
     load = 2,
     dataPerSecond = 100,
@@ -48,7 +48,7 @@ g.defineDataProcessor("normal_data", "Data Processor", {
     end,
 })
 
-g.defineDataProcessor("advanced_data", "Advanced Data Processor", {
+g.defineDataOutput("advanced_data", "Advanced Data Output", {
     price = 25,
     load = 10,
     dataPerSecond = 500,
@@ -73,7 +73,7 @@ g.defineDataProcessor("advanced_data", "Advanced Data Processor", {
     end,
 })
 
-g.defineDataProcessor("he_data", "High-End Data Processor", {
+g.defineDataOutput("he_data", "High-End Data Output", {
     price = 1000,
     load = 30,
     dataPerSecond = 10000,

@@ -60,7 +60,7 @@ local function description(upgrade, tree, x, y, safeArea)
                 max_heat = itemInfo.heatTolerance[2]
             })
         elseif category == "data" then
-            ---@cast itemInfo g.DataInfo
+            ---@cast itemInfo g.DataOutInfo
             at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(itemInfo.dataPerSecond)})
             at[#at+1] = TEXT.WIRE_RANGE({range = itemInfo.wireLength})
             if itemInfo.wireCount then

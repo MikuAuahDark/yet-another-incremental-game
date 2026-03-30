@@ -1439,7 +1439,7 @@ do
 ---@field public description string?
 
 
----@alias g.ItemCategory "server"|"data"|"booster"
+---@alias g.ItemCategory "server"|"data"|"indata"|"booster"
 
 ---@class g.ItemDefinition: g._MixinHasNameDefinition
 ---@field public category g.ItemCategory
@@ -1481,8 +1481,8 @@ do
 ---@field public wireLength integer
 ---@field public wireCount integer|nil
 
----@class g.DataInfo: g.ItemInfo, g._DataInfoCommon
----@class g.DataDefinition: g.ItemDefinition, g._DataInfoCommon
+---@class g.DataOutInfo: g.ItemInfo, g._DataInfoCommon
+---@class g.DataOutDefinition: g.ItemDefinition, g._DataInfoCommon
 
 
 ---@class g.BoosterInfo: g.ItemInfo
@@ -1512,7 +1512,7 @@ local function return1() return 1 end
 local function dummy() end
 
 ---@param id string
----@param def g.ServerDefinition | g.DataDefinition | g.BoosterDefinition
+---@param def g.ServerDefinition | g.DataOutDefinition | g.BoosterDefinition
 function g.defineItem(id, def)
     if itemList[id] then
         error("Redefined item: "..id)
@@ -1529,7 +1529,7 @@ function g.defineItem(id, def)
         def.description = loc(def.description, nil, {context = def.descriptionContext})
     end
 
-    ---@cast def g.ServerInfo | g.DataInfo | g.BoosterInfo
+    ---@cast def g.ServerInfo | g.DataOutInfo | g.BoosterInfo
     assert(def.price, "invalid price")
     assert(def.load, "invalid load")
 
@@ -1548,7 +1548,7 @@ function g.defineItem(id, def)
             g.getJobCategoryName(jobCategory) -- just for assertion purpose
         end
     elseif def.category == "data" then
-        ---@cast def g.DataInfo
+        ---@cast def g.DataOutInfo
         assert(def.dataPerSecond, "invalid dps")
         assert(def.wireLength and def.wireLength > 0, "invalid wire length")
         if def.wireCount then
@@ -1571,7 +1571,7 @@ end
 ---@param assertCategory string?
 ---@return g.ItemInfo, g.ItemCategory
 ---@overload fun(itemid: string, assertCategory: "server"):(g.ServerInfo, "server")
----@overload fun(itemid: string, assertCategory: "data"):(g.DataInfo, "data")
+---@overload fun(itemid: string, assertCategory: "data"):(g.DataOutInfo, "data")
 ---@overload fun(itemid: string, assertCategory: "booster"):(g.BoosterInfo, "booster")
 function g.getItemInfo(itemid, assertCategory)
     local itemInfo = itemList[itemid]
@@ -1691,7 +1691,7 @@ end
 ---@param id string
 ---@param name string
 ---@param def g._DataDef
-function g.defineDataProcessor(id, name, def)
+function g.defineDataOutput(id, name, def)
     g.defineUpgrade(id, name, {
         description = def.description,
         descriptionContext = def.descriptionContext,
@@ -2027,7 +2027,7 @@ function g.getItemProblems(itemData)
         end
     elseif category == "data" then
         ---@cast itemData g.World.DataProcessorData
-        ---@cast itemInfo g.DataInfo
+        ---@cast itemInfo g.DataOutInfo
         if #itemData.connectsServers == 0 then
             result[#result+1] = "no_connection"
         end

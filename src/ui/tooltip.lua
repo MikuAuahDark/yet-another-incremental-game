@@ -611,7 +611,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     end
 end
 
----@param dpInfo g.DataInfo
+---@param dpInfo g.DataOutInfo
 ---@param x number
 ---@param y number
 function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
@@ -780,7 +780,7 @@ function ItemTooltip.DrawHUDTooltip(itemInfo, x, y)
         ---@cast itemInfo g.ServerInfo
         ItemTooltip.ServerTooltipHUD(itemInfo, x, y)
     elseif itemInfo.category == "data" then
-        ---@cast itemInfo g.DataInfo
+        ---@cast itemInfo g.DataOutInfo
         ItemTooltip.DPTooltipHUD(itemInfo, x, y)
     elseif itemInfo.category == "booster" then
         ---@cast itemInfo g.BoosterInfo

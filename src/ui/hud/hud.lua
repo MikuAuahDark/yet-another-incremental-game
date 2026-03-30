@@ -143,7 +143,6 @@ function HUD:init()
     self.leftR = Kirigami(0, 0, 1, 1)
     -- Used for building list
     self.botR = Kirigami(0, 0, 1, 1)
-    ---@type g.ItemCategory
     self.activeTab = "server"
     ---@type [number,g.ItemInfo,number]? when dragging from item list to world.
     self.activeDragging = nil -- [1] = duration, [2] = item info, [3] = has mouse ever on tiles (-1 = no, >=0 = yes)
@@ -213,6 +212,21 @@ local function drawStats(r, title, desc, left, right, col)
         col3:pop()
     end
 end
+
+
+---@param cat g.ItemCategory
+local function filterServer(cat)
+    return cat == "server"
+end
+---@param cat g.ItemCategory
+local function filterData(cat)
+    return cat == "data" or cat == "indata"
+end
+---@param cat g.ItemCategory
+local function filterBooster(cat)
+    return cat == "booster"
+end
+
 
 ---@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?}?
 function HUD:draw(show)
@@ -325,11 +339,11 @@ function HUD:draw(show)
                 tabF:getWidth(TEXT.CATEGORY_BOOSTER) + 2 * (TRAPEZOID_PADDING + 1),
                 0
             )
-            ---@type table<g.ItemCategory, [kirigami.Region, string]>
+            ---@type table<string, [(fun(cat:g.ItemCategory):boolean), kirigami.Region, string]>
             local tabs = {
-                server = {serversTabR, TEXT.CATEGORY_SERVER},
-                data = {dataTabR, TEXT.CATEGORY_DATA},
-                booster = {boostersTabR, TEXT.CATEGORY_BOOSTER}
+                server = {filterServer, serversTabR, TEXT.CATEGORY_SERVER},
+                data = {filterData, dataTabR, TEXT.CATEGORY_DATA},
+                booster = {filterBooster, boostersTabR, TEXT.CATEGORY_BOOSTER}
             }
 
             -- Draw the tab rects
@@ -337,7 +351,7 @@ function HUD:draw(show)
             love.graphics.rectangle("fill", listR:get())
             for k, v in pairs(tabs) do
                 -- Input test
-                if iml.wasJustClicked(v[1]:get()) then
+                if iml.wasJustClicked(v[2]:get()) then
                     self.activeTab = k
                 end
                 -- Distinct active tab with inactive tabs
@@ -348,7 +362,7 @@ function HUD:draw(show)
                 end
                 -- Draw trapezoid using the padding
                 do
-                    local x, y, w, h = v[1]:get()
+                    local x, y, w, h = v[2]:get()
                     love.graphics.polygon("fill", {
                         x + TRAPEZOID_PADDING, y,
                         x + w - TRAPEZOID_PADDING, y,
@@ -358,7 +372,7 @@ function HUD:draw(show)
                 end
                 -- Draw tab name
                 love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-                ui.printRichInRegion(v[2], tabF, v[1], true, "center")
+                ui.printRichInRegion(v[3], tabF, v[2], true, "center")
             end
 
             -- Get item list to be drawn
@@ -367,7 +381,7 @@ function HUD:draw(show)
             for _, v in ipairs(g.ITEMS) do
                 if g.isItemUnlocked(v) then
                     local itemInfo, cat = g.getItemInfo(v)
-                    if cat == self.activeTab then
+                    if tabs[self.activeTab][1](cat) then
                         items[#items+1] = itemInfo
                     end
                 end
