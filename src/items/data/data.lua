@@ -3,7 +3,6 @@ g.defineDataOutput("basic_data", "Basic Data Output", {
     load = 1,
     dataPerSecond = 10,
     wireLength = 2,
-    wireCount = 4,
     color = objects.Color("#ebc965"),
     draw = function(r)
         -- Draw decor
@@ -28,7 +27,6 @@ g.defineDataOutput("normal_data", "Data Output", {
     load = 2,
     dataPerSecond = 100,
     wireLength = 2,
-    wireCount = 4,
     color = objects.Color("FFBAEB65"),
     draw = function(r)
         -- Draw decor
@@ -53,7 +51,6 @@ g.defineDataOutput("advanced_data", "Advanced Data Output", {
     load = 10,
     dataPerSecond = 500,
     wireLength = 4,
-    wireCount = 8,
     color = objects.Color("#95c9c7"),
     draw = function(r)
         -- Draw decor

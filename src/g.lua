@@ -1681,7 +1681,6 @@ end
 ---@field package load number
 ---@field package dataPerSecond number
 ---@field package wireLength integer
----@field package wireCount integer|nil
 ---@field package draw fun(r:kirigami.Region,itemData:g.World.DataOutputData?)
 
 ---@param id string
