@@ -266,7 +266,7 @@ function HUD:draw(show)
             -- Draw job queue text
             local jobQueueText = TEXT.JOB_QUEUE_NUMBER({
                 njobs = #world.jobQueue,
-                maxjobs = helper.round(g.stats.MaxJobQueue),
+                maxjobs = world.maxJobs,
             })
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
             ui.printRichInRegion(jobQueueText, jobQueueF, jobTextR, true, "left", "top")

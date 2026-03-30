@@ -2,7 +2,7 @@ g.defineDataInput("basic_indata", "Basic Data Input", {
     price = 0,
     load = 1,
     queuesJob = "general",
-    maxJobQueue = 10,
+    maxJobQueue = 1,
     wireLength = 2,
     color = objects.Color("#b0b0b0"), -- Black/Grey for input
     draw = function(r)
@@ -27,7 +27,7 @@ g.defineDataInput("video_indata", "Video Data Input", {
     price = 50,
     load = 5,
     queuesJob = "video",
-    maxJobQueue = 20,
+    maxJobQueue = 5,
     wireLength = 3,
     color = objects.Color("#6fb3e8"),
     draw = function(r)
@@ -51,7 +51,7 @@ g.defineDataInput("ai_indata", "AI Data Input", {
     price = 500,
     load = 20,
     queuesJob = "ai",
-    maxJobQueue = 50,
+    maxJobQueue = 5,
     wireLength = 5,
     color = objects.Color("#e37036"),
     draw = function(r)

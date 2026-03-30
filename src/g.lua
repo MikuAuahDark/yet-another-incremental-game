@@ -644,7 +644,6 @@ g.stats = {}
 -- (if you ever want to quickly search the name of stats, search "sstats")
 -- g.defineQuestion("getJobFrequencyModifier", reducers.ADD, 0) -- arguments: g.JobCategory
 g.stats.MaxLoad = g.defineStat("MaxLoad", 10, "Max Load")
-g.stats.MaxJobQueue = g.defineStat("MaxJobQueue", 1, "Max Job Queue")
 g.stats.JobFrequency = g.defineStat("JobFrequency", 0, "Job Spawn Frequency")
 -- World stat
 g.stats.WorldTileSize = g.defineStat("WorldTileSize", 3, "World Size") -- maxed at floor(World.TILE_SIZE / 2)
@@ -1408,7 +1407,7 @@ end
 function g.queueJob(job)
     local world = g.getMainWorld()
 
-    if #world.jobQueue >= helper.round(g.stats.MaxJobQueue) then
+    if #world.jobQueue >= world.maxJobs then
         return false
     end
 

@@ -108,7 +108,8 @@ function World:init()
     self.seconds = 0 -- how many seconds have elapsed (perSecondUpdate)
     self.analyticsSendTime = 0
     self.loadPercentage = 1
-    self.currentLoad = 0 -- Updated every frame
+    self.currentLoad = 0 -- (read-only) Updated every frame
+    self.maxJobs = 0 -- (read-only) Updated every frame
     zeroTileHeat(self.heat)
 
     self.cpsCollector = DataCollector(60)
@@ -204,6 +205,7 @@ function World:_update(dt)
 
     -- Update electricity load
     local loads = 0
+    local maxJobs = 0
     table.clear(self.boosters)
     table.clear(self.boostersInTiles)
     table.clear(self.dataProcessors)
@@ -235,7 +237,9 @@ function World:_update(dt)
                 self.dataProcessors[index] = item
             elseif category == "indata" then
                 ---@cast item g.World.DataInputData
+                ---@cast itemInfo g.DataInInfo
                 self.dataInputs[index] = item
+                maxJobs = maxJobs + itemInfo.maxJobQueue
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
@@ -248,6 +252,7 @@ function World:_update(dt)
     end)
     self.currentLoad = loads
     self.loadPercentage = math.min(1, g.stats.MaxLoad / loads)
+    self.maxJobs = maxJobs
 
     -- Update tile heat
     zeroTileHeat(self.heat)
@@ -490,7 +495,6 @@ function World:_update(dt)
     self.cpsCollector:insert(dt, cps)
 
     -- Run job poll
-    local maxJobs = helper.round(g.stats.MaxJobQueue)
     for k, ji in pairs(g.VALID_JOBS) do
         if not self.jobPoller[k] then
             self.jobPoller[k] = {0, 0}

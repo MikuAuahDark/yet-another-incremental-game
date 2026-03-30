@@ -529,6 +529,8 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
         at[#at+1] = TEXT.CATEGORY_LIST({
             categories = g.getJobCategoryName(diInfo.queuesJob)
         })
+        -- Added Job Queue
+        at[#at+1] = TEXT.JOB_QUEUE({job = diInfo.maxJobQueue})
         -- Wire Range
         at[#at+1] = TEXT.WIRE_RANGE({range = diInfo.wireLength})
         -- Connections
@@ -846,6 +848,8 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
         at[#at+1] = TEXT.CATEGORY_LIST({
             categories = g.getJobCategoryName(diInfo.queuesJob)
         })
+        -- Added Job Queue
+        at[#at+1] = TEXT.JOB_QUEUE({job = diInfo.maxJobQueue})
         -- Wire Range
         at[#at+1] = TEXT.WIRE_RANGE({range = diInfo.wireLength})
 

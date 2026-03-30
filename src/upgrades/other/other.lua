@@ -27,29 +27,6 @@ end
 
 
 
-----------------
--- Max Job Queue
-----------------
-
-g.defineUpgrade("max_job", "Job Queue+", {
-    kind = "MISC",
-    description = "Increase max job queue by %{1}.",
-    image = "add_to_queue",
-    maxLevel = 10,
-    getValues = helper.valueGetter(1, 1),
-    getMaxJobQueueModifier = getWorldSizeModifier
-})
-
-g.defineUpgrade("max_job_mul", "Job Queue++", {
-    kind = "MISC",
-    description = "Increase max job queue multiplier by %{1}.",
-    image = "add_to_queue",
-    maxLevel = 10,
-    getValues = helper.percentageGetter(1, 2),
-    getMaxJobQueueMultiplier = getWorldSizeModifier
-})
-
-
 -----------
 -- Max Load
 -----------
