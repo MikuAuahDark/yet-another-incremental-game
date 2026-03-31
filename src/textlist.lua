@@ -52,5 +52,7 @@ local text = {
         context = "Denotes the heat tolerance range of a machine."}),
     LOAD_TOOLTIP = interp("Load: %{load}{bolt}", {
         context = "How many load this item uses?"}),
+    PROVIDE_LOAD_TOOLTIP = interp("Generates: %{load}{bolt}", {
+        context = "How many load this item generates/provides?"}),
 }
 return text

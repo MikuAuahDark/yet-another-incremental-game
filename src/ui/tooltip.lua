@@ -531,6 +531,63 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
     builder:render()
 end
 
+---@param powerGenInfo g.PowerGenInfo
+---@param x number
+---@param y number
+function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y)
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
+    local titleFH = titleF:getHeight()
+    local descFH = descF:getHeight()
+
+    local builder = ui.TooltipBuilder("hud", x, y)
+
+    -- Title
+    builder:addText(powerGenInfo.name, titleF, "center", titleFH)
+
+    -- Description
+    if powerGenInfo.description then
+        builder:addPadding(descFH)
+        builder:addText(powerGenInfo.description, descF, "center")
+        builder:addPadding(descFH)
+    end
+
+    -- Attributes
+    builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerGenInfo.power}), attrF, "left")
+        :addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
+
+    builder:render()
+end
+
+---@param powerRelayInfo g.PowerRelayInfo
+---@param x number
+---@param y number
+function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y)
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
+    local titleFH = titleF:getHeight()
+    local descFH = descF:getHeight()
+
+    local builder = ui.TooltipBuilder("hud", x, y)
+
+    -- Title
+    builder:addText(powerRelayInfo.name, titleF, "center", titleFH)
+
+    -- Description
+    if powerRelayInfo.description then
+        builder:addPadding(descFH)
+        builder:addText(powerRelayInfo.description, descF, "center")
+        builder:addPadding(descFH)
+    end
+
+    -- Attributes
+    builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
+
+    builder:render()
+end
+
 ---@param itemInfo g.ItemInfo
 ---@param x number
 ---@param y number
@@ -548,6 +605,12 @@ function ItemTooltip.DrawHUDTooltip(itemInfo, x, y)
     elseif itemInfo.category == "booster" then
         ---@cast itemInfo g.BoosterInfo
         ItemTooltip.BoosterTooltipHUD(itemInfo, x, y)
+    elseif itemInfo.category == "powergen" then
+        ---@cast itemInfo g.PowerGenInfo
+        ItemTooltip.PowerGenTooltipHUD(itemInfo, x, y)
+    elseif itemInfo.category == "powerrelay" then
+        ---@cast itemInfo g.PowerRelayInfo
+        ItemTooltip.PowerRelayTooltipHUD(itemInfo, x, y)
     else
         error("unreachable category")
     end
