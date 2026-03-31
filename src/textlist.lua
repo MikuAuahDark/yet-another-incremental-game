@@ -29,6 +29,8 @@ local text = {
         context = "Denotes the category of data input or data output buildings"}),
     CATEGORY_BOOSTER = loc("Boosters", nil, {
         context = "Denotes the category of booster buildings used to boost server performance"}),
+    CATEGORY_POWER = loc("Power", nil, {
+        context = "Denotes the category of power buildings used to provide power to other buildings"}),
 
     CPS_NUMBER = interp("%{cps} {dns}/second", {
         context = "CPS (Compute Per Second) is a measurement how fast server can process computation. {dns} reflects \"Compute\" icon in-game."}),

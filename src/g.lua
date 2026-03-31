@@ -1635,7 +1635,7 @@ function g.getItemInfo(itemid, assertCategory)
     return itemInfo, itemInfo.category
 end
 
-local PREUNLOCKED = objects.Set({"basic_server", "basic_data", "basic_indata"})
+g.PREUNLOCKED_ITEMS = objects.Set()
 
 ---@param itemid string
 function g.isItemUnlocked(itemid)
@@ -1643,7 +1643,7 @@ function g.isItemUnlocked(itemid)
         error("unknown item id '"..itemid.."'")
     end
 
-    return g.ask("isItemUnlocked", itemid) or PREUNLOCKED:contains(itemid)
+    return g.ask("isItemUnlocked", itemid) or g.PREUNLOCKED_ITEMS:contains(itemid)
 end
 
 ---@param itemid string

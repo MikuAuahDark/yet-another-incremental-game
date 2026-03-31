@@ -22,6 +22,7 @@ g.defineDataInput("basic_indata", "Basic Data Input", {
         col:pop()
     end,
 })
+g.PREUNLOCKED_ITEMS:add("basic_indata")
 
 g.defineDataInput("video_indata", "Video Data Input", {
     price = 50,

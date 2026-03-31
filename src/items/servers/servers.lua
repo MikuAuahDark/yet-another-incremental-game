@@ -18,6 +18,7 @@ g.defineServer("basic_server", "Basic Server", {
         col:pop()
     end,
 })
+g.PREUNLOCKED_ITEMS:add("basic_server")
 
 g.defineServer("normal_server", "Normal Server", {
     price = 10,

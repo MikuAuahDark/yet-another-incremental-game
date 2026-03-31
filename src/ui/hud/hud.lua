@@ -226,6 +226,10 @@ end
 local function filterBooster(cat)
     return cat == "booster"
 end
+---@param cat g.ItemCategory
+local function filterPower(cat)
+    return cat == "powergen" or cat == "powerrelay"
+end
 
 
 ---@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?}?
@@ -332,18 +336,20 @@ function HUD:draw(show)
             -- Draw item list
             local TRAPEZOID_PADDING = 10
             local tabR, listR, scrollR = helper.splitRegionByExactSizes(self.botR:padUnit(1), "vertical", tabF:getHeight(), 0, 10)
-            local serversTabR, dataTabR, boostersTabR = helper.splitRegionByExactSizes(
+            local serversTabR, dataTabR, boostersTabR, powerTabR = helper.splitRegionByExactSizes(
                 tabR, "horizontal",
                 tabF:getWidth(TEXT.CATEGORY_SERVER) + 2 * (TRAPEZOID_PADDING + 1),
                 tabF:getWidth(TEXT.CATEGORY_DATA) + 2 * (TRAPEZOID_PADDING + 1),
                 tabF:getWidth(TEXT.CATEGORY_BOOSTER) + 2 * (TRAPEZOID_PADDING + 1),
+                tabF:getWidth(TEXT.CATEGORY_POWER) + 2 * (TRAPEZOID_PADDING + 1),
                 0
             )
             ---@type table<string, [(fun(cat:g.ItemCategory):boolean), kirigami.Region, string]>
             local tabs = {
                 server = {filterServer, serversTabR, TEXT.CATEGORY_SERVER},
                 data = {filterData, dataTabR, TEXT.CATEGORY_DATA},
-                booster = {filterBooster, boostersTabR, TEXT.CATEGORY_BOOSTER}
+                booster = {filterBooster, boostersTabR, TEXT.CATEGORY_BOOSTER},
+                power = {filterPower, powerTabR, TEXT.CATEGORY_POWER}
             }
 
             -- Draw the tab rects
