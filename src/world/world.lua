@@ -24,6 +24,7 @@ end
 ---@field tileX integer (readonly; updated every frame)
 ---@field tileY integer (readonly; updated every frame)
 ---@field load integer (readonly; updated every frame)
+---@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
 ---@field removed boolean
 
 ---@class g.World.ServerData: g.World.ItemData
@@ -41,6 +42,16 @@ end
 ---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
 ---@field dataPerSecond number (readonly; updated every frame)
 ---@field wireDPS number (readonly; updated every frame)
+
+---@class g.World.PowerData: g.World.ItemData
+---@field power number (readonly; updated every frame)
+---@field connectsTo g.World.ItemData[] (readwrite; connected power consumers)
+
+---@class g.World.PowerNetwork
+---@field generators g.World.PowerData[]
+---@field relays g.World.PowerData[]
+---@field consumers g.World.ItemData[]
+
 
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")
@@ -103,6 +114,12 @@ function World:init()
     self.dataInputs = {}
     ---@type table<integer, g.World.ServerData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.servers = {}
+    ---@type table<integer, g.World.PowerData>
+    self.powerGens = {}
+    ---@type table<integer, g.World.PowerData>
+    self.powerRelays = {}
+    ---@type g.World.PowerNetwork[]
+    self.powerNetworks = {}
     self.particles = ParticleService()
     self.timer = 0 -- For per second update
     self.seconds = 0 -- how many seconds have elapsed (perSecondUpdate)
@@ -211,13 +228,19 @@ function World:_update(dt)
     table.clear(self.dataProcessors)
     table.clear(self.dataInputs)
     table.clear(self.servers)
+    table.clear(self.powerGens)
+    table.clear(self.powerRelays)
+    table.clear(self.powerNetworks)
     ---@param item g.World.ItemData?
     self.items:foreach(function(item, x, y)
         if item then
             local itemInfo, category = g.getItemInfo(item.type)
             item.load = self:computeLoadModifier(itemInfo)
+            item.powerNetwork = nil
+
             loads = loads + item.load
             local index = self.items:coordsToIndex(x, y)
+
             if category == "booster" then
                 self.boosters[index] = item
                 ---@cast itemInfo g.BoosterInfo
@@ -243,6 +266,12 @@ function World:_update(dt)
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
+            elseif category == "powergen" then
+                ---@cast item g.World.PowerData
+                self.powerGens[index] = item
+            elseif category == "powerrelay" then
+                ---@cast item g.World.PowerData
+                self.powerRelays[index] = item
             end
 
             -- Update tile positions
@@ -379,6 +408,89 @@ function World:_update(dt)
     for _, diData in pairs(self.dataInputs) do
         for _, serverData in ipairs(diData.connectsServers) do
             serverData.connectedInputs[#serverData.connectedInputs+1] = diData
+        end
+    end
+
+    -- Run power network update
+    ---@type g.World.PowerData[]
+    local allPowerNodes = {}
+    for _, node in pairs(self.powerGens) do
+        allPowerNodes[#allPowerNodes+1] = node
+    end
+    for _, node in pairs(self.powerRelays) do
+        allPowerNodes[#allPowerNodes+1] = node
+    end
+
+    ---@type table<g.World.PowerData, boolean?>
+    local visited = {}
+    for _, startNode in ipairs(allPowerNodes) do
+        if not visited[startNode] then
+            ---@type g.World.PowerNetwork
+            local network = {
+                generators = {},
+                relays = {},
+                consumers = {}
+            }
+            ---@type table<g.World.ItemData, boolean?>
+            local consumerSet = {} -- To avoid duplicates in network.consumers
+
+            -- BFS to find connected power nodes
+            local queue = {startNode}
+            visited[startNode] = true
+            local head = 1
+            while head <= #queue do
+                local node = queue[head]
+                head = head + 1
+
+                local nodeInfo = g.getItemInfo(node.type)
+                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
+                if nodeInfo.category == "powergen" then
+                    network.generators[#network.generators+1] = node
+                else
+                    network.relays[#network.relays+1] = node
+                end
+
+                -- Find connected power nodes
+                for _, other in ipairs(allPowerNodes) do
+                    if not visited[other] then
+                        local otherInfo = g.getItemInfo(other.type)
+                        ---@cast otherInfo g.PowerGenInfo | g.PowerRelayInfo
+                        local dist = worldutil.getDistance("chessboard", node.tileX - other.tileX, node.tileY - other.tileY)
+                        if dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength) then
+                            visited[other] = true
+                            queue[#queue+1] = other
+                        end
+                    end
+                end
+            end
+
+            -- Find consumers for this network
+            for _, node in ipairs(queue) do
+                node.powerNetwork = network
+                local nodeInfo = g.getItemInfo(node.type)
+                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
+                table.clear(node.connectsTo)
+
+                local range = nodeInfo.wireLength
+                for dx = -range, range do
+                    for dy = -range, range do
+                        local tx, ty = node.tileX + dx, node.tileY + dy
+                        local item = self.items:get(tx, ty) --[[@as g.World.ItemData]]
+                        if item and not item.removed and item.load > 0 then
+                            -- Only add unique consumers to network
+                            if not consumerSet[item] then
+                                item.powerNetwork = network
+                                network.consumers[#network.consumers+1] = item
+                                consumerSet[item] = true
+                            end
+                            -- Keep track of what this node is specifically powering
+                            node.connectsTo[#node.connectsTo+1] = item
+                        end
+                    end
+                end
+            end
+
+            self.powerNetworks[#self.powerNetworks+1] = network
         end
     end
 
@@ -818,6 +930,17 @@ function World:putItem(itemId, tx, ty)
             removed = false,
             load = itemInfo.load,
             connectsServers = {},
+        }
+    elseif category == "powergen" or category == "powerrelay" then
+        ---@type g.World.PowerData
+        itemData = {
+            type = itemId,
+            tileX = tx,
+            tileY = ty,
+            removed = false,
+            load = itemInfo.load,
+            power = 0,
+            connectsTo = {},
         }
     else
         error("fixme category "..category)

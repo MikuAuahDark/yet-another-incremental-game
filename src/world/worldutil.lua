@@ -306,6 +306,70 @@ function worldutil.drawBoosterShape(r, col)
     return r2
 end
 
+---@param r kirigami.Region
+---@param col objects.Color
+---@param indent number
+---@param thickness number
+local function drawPGShape(r, col, indent, thickness)
+
+    local x, y, w, h = r:get()
+    local cx, cy = x + w / 2, y + h / 2
+    local hw, hh = w / 2, h / 2
+    local thw = hw * thickness
+    local thh = hh * thickness
+    local ix = hw - (hw - thw) * indent
+    local iy = hh - (hh - thh) * indent
+    local polygons = {
+        cx - ix,  cy - iy, -- this is technically bottom left but love.graphics.polygon is triangle fan.
+        -- Top-left
+        cx - thw, y,
+        cx + thw, y,
+        cx + ix,  cy - iy,
+        -- Top-right
+        x + w,    cy - thh,
+        x + w,    cy + thh,
+        cx + ix,  cy + iy,
+        -- Bottom-right
+        cx + thw, y + h,
+        cx - thw, y + h,
+        cx - ix,  cy + iy,
+        -- Bottom-left
+        x,        cy + thh,
+        x,        cy - thh,
+    }
+    local c = gsman.mulColor(col)
+    love.graphics.polygon("fill", polygons)
+    c:pop()
+end
+
+---@param r kirigami.Region
+---@param col objects.Color
+function worldutil.drawPowerGenShape(r, col)
+    r = r:shrinkToAspectRatio(1, 1):center(r)
+    local MOVE_DIST = 0.1
+    local h, s, v = col:getHSV()
+    local r1 = r:moveRatio(0, MOVE_DIST)
+    local r2 = r:moveRatio(0, -MOVE_DIST)
+    drawPGShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)), 0.67, 0.2)
+    drawPGShape(r2, col, 0.67, 0.2)
+    return r2
+end
+
+
+
+---@param r kirigami.Region
+---@param col objects.Color
+function worldutil.drawPowerRelayShape(r, col)
+    r = r:shrinkToAspectRatio(1, 1):center(r)
+    local MOVE_DIST = 0.1
+    local h, s, v = col:getHSV()
+    local r1 = r:moveRatio(0, MOVE_DIST)
+    local r2 = r:moveRatio(0, -MOVE_DIST)
+    drawPGShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)), 0.8, 0.6)
+    drawPGShape(r2, col, 0.8, 0.6)
+    return r2
+end
+
 
 
 return worldutil

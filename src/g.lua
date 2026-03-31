@@ -1438,7 +1438,7 @@ do
 ---@field public description string?
 
 
----@alias g.ItemCategory "server"|"data"|"indata"|"booster"
+---@alias g.ItemCategory "server"|"data"|"indata"|"booster"|"powergen"|"powerrelay"
 
 ---@class g.ItemDefinition: g._MixinHasNameDefinition
 ---@field public category g.ItemCategory
@@ -1511,6 +1511,27 @@ do
 ---@field public getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
 
 
+---@class g.PowerGenInfo: g.ItemInfo
+---@field public category "powergen"
+---@field public power number
+---@field public wireLength integer
+
+---@class g.PowerGenDefinition: g.ItemDefinition
+---@field public load? integer (forced to 0)
+---@field public category "powergen"
+---@field public power number
+---@field public wireLength integer? (defaults to 1)
+
+
+---@class g.PowerRelayInfo: g.ItemInfo
+---@field public category "powerrelay"
+---@field public wireLength integer
+
+---@class g.PowerRelayDefinition: g.ItemDefinition
+---@field public load? integer (forced to 0)
+---@field public category "powerrelay"
+---@field public wireLength integer? (defaults to 1)
+
 ---@type string[]
 g.ITEMS = {}
 ---@type table<string, g.ItemInfo>
@@ -1521,7 +1542,7 @@ local function return1() return 1 end
 local function dummy() end
 
 ---@param id string
----@param def g.ServerDefinition | g.DataInDefinition | g.DataOutDefinition | g.BoosterDefinition
+---@param def g.ServerDefinition | g.DataInDefinition | g.DataOutDefinition | g.BoosterDefinition | g.PowerGenDefinition
 function g.defineItem(id, def)
     if itemList[id] then
         error("Redefined item: "..id)
@@ -1538,9 +1559,13 @@ function g.defineItem(id, def)
         def.description = loc(def.description, nil, {context = def.descriptionContext})
     end
 
-    ---@cast def g.ServerInfo | g.DataInInfo | g.DataOutInfo | g.BoosterInfo
+    ---@cast def g.ItemInfo
     assert(def.price, "invalid price")
-    assert(def.load, "invalid load")
+    if def.category == "powergen" or def.category == "powerrelay" then
+        def.load = 0
+    else
+        assert(def.load, "invalid load")
+    end
 
     if def.category == "server" then
         ---@cast def g.ServerInfo
@@ -1573,6 +1598,15 @@ function g.defineItem(id, def)
         def.getTileHeat = def.getTileHeat or return0
         def.getPerformanceModifier = def.getPerformanceModifier or return0
         def.getPerformanceMultiplier = def.getPerformanceMultiplier or return1
+    elseif def.category == "powergen" then
+        ---@cast def g.PowerGenInfo
+        assert(def.power and def.power > 0, "invalid power")
+        def.wireLength = math.floor(def.wireLength or 1)
+        assert(def.wireLength > 0, "invalid wireLength")
+    elseif def.category == "powerrelay" then
+        ---@cast def g.PowerRelayInfo
+        def.wireLength = math.floor(def.wireLength or 1)
+        assert(def.wireLength > 0, "invalid wireLength")
     end
 
     itemList[id] = def
@@ -1586,6 +1620,8 @@ end
 ---@overload fun(itemid: string, assertCategory: "data"):(g.DataOutInfo, "data")
 ---@overload fun(itemid: string, assertCategory: "indata"):(g.DataInInfo, "indata")
 ---@overload fun(itemid: string, assertCategory: "booster"):(g.BoosterInfo, "booster")
+---@overload fun(itemid: string, assertCategory: "powergen"):(g.PowerGenInfo, "powergen")
+---@overload fun(itemid: string, assertCategory: "powerrelay"):(g.PowerRelayInfo, "powerrelay")
 function g.getItemInfo(itemid, assertCategory)
     local itemInfo = itemList[itemid]
     if not itemInfo then
@@ -1880,6 +1916,126 @@ function g.defineBooster(id, name, def)
         end,
         drawItem = function(r)
             local r2 = worldutil.drawDPShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+---@class g._PowerGenDef
+---@field package nameContext string?
+---@field package rawDescription string?
+---@field package description string?
+---@field package descriptionContext string?
+---@field package color objects.Color
+---@field package price number
+---@field package power number
+---@field package wireLength integer
+---@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
+
+---@param id string
+---@param name string
+---@param def g._PowerGenDef
+function g.definePowerGenerator(id, name, def)
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "UNLOCKS",
+        targetItem = id,
+        maxLevel = 1,
+        drawUI = function(uinfo, level, r)
+            -- Draw power generator
+            local r2 = worldutil.drawPowerGenShape(r:padRatio(0.125), def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+            drawLockOpen(uinfo, level, r)
+        end,
+        isItemUnlocked = function(uinfo, level, iid)
+            return iid == id
+        end
+    })
+    return g.defineItem(id, {
+        category = "powergen",
+        name = name,
+        nameContext = def.nameContext,
+        rawDescription = def.rawDescription,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        price = def.price,
+        load = 0,
+        power = def.power,
+        wireLength = def.wireLength,
+        draw = function(itemData)
+            ---@cast itemData g.World.ItemData
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawPowerGenShape(r, def.color)
+            if def.draw then
+                def.draw(r2, itemData)
+            end
+        end,
+        drawItem = function(r)
+            local r2 = worldutil.drawPowerGenShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+---@class g._PowerRelayDef
+---@field package nameContext string?
+---@field package rawDescription string?
+---@field package description string?
+---@field package descriptionContext string?
+---@field package color objects.Color
+---@field package price number
+---@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
+
+---@param id string
+---@param name string
+---@param def g._PowerRelayDef
+function g.definePowerRelay(id, name, def)
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "UNLOCKS",
+        targetItem = id,
+        maxLevel = 1,
+        drawUI = function(uinfo, level, r)
+            -- Draw power relay
+            local r2 = worldutil.drawPowerRelayShape(r:padRatio(0.125), def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+            drawLockOpen(uinfo, level, r)
+        end,
+        isItemUnlocked = function(uinfo, level, iid)
+            return iid == id
+        end
+    })
+    return g.defineItem(id, {
+        category = "powerrelay",
+        name = name,
+        nameContext = def.nameContext,
+        rawDescription = def.rawDescription,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        price = def.price,
+        load = 0,
+        draw = function(itemData)
+            ---@cast itemData g.World.ItemData
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawPowerRelayShape(r, def.color)
+            if def.draw then
+                def.draw(r2, itemData)
+            end
+        end,
+        drawItem = function(r)
+            local r2 = worldutil.drawPowerRelayShape(r, def.color)
             if def.draw then
                 def.draw(r2)
             end
