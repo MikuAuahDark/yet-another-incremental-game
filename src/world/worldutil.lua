@@ -350,8 +350,8 @@ function worldutil.drawPowerGenShape(r, col)
     local h, s, v = col:getHSV()
     local r1 = r:moveRatio(0, MOVE_DIST)
     local r2 = r:moveRatio(0, -MOVE_DIST)
-    drawPGShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)), 0.67, 0.2)
-    drawPGShape(r2, col, 0.67, 0.2)
+    drawPGShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)), 0.8, 0.6)
+    drawPGShape(r2, col, 0.8, 0.6)
     return r2
 end
 
@@ -365,8 +365,8 @@ function worldutil.drawPowerRelayShape(r, col)
     local h, s, v = col:getHSV()
     local r1 = r:moveRatio(0, MOVE_DIST)
     local r2 = r:moveRatio(0, -MOVE_DIST)
-    drawPGShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)), 0.8, 0.6)
-    drawPGShape(r2, col, 0.8, 0.6)
+    drawPGShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)), 0.67, 0.2)
+    drawPGShape(r2, col, 0.67, 0.2)
     return r2
 end
 

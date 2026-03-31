@@ -7,5 +7,5 @@ Here's the idea:
 * Data Input is hexagon (flat top)
 * Data Output is hexagon (pointy top).
 * Booster is circle.
-* Power Generator is plus-like sign.
-* Power Relay is same as power generator with thicker plus sign.
+* Power Relay is plus-like sign.
+* Power Generator is same as power relay with thicker plus sign.
