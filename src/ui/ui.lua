@@ -396,7 +396,7 @@ function ui.getTooltipRegion(x, y, cw, ch, clampR)
 end
 
 ---Draw tooltip base layout
----@param tooltipR kirigami.Region Tooltip region
+---@param tooltipR kirigami.Region Tooltip drawable region (1st return value of `ui.getTooltipRegion`)
 ---@param bgColor objects.Color Background color
 ---@param lineColor objects.Color Line color
 function ui.Tooltip(tooltipR, bgColor, lineColor)
@@ -430,6 +430,7 @@ function ui.Tooltip(tooltipR, bgColor, lineColor)
 	lw:pop()
 end
 
+ui.TooltipBuilder = require("src.ui.tooltip_builder")
 ui.ItemTooltip = require(".tooltip")
 
 end

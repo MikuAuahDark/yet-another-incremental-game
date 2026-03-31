@@ -63,224 +63,127 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 120, 0
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(serverInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(serverInfo.name, titleF, "center", titleFH)
 
     -- Category
-    local categoryText, categoryHeight
-    do
-        local computeNames = {}
-        for _, jcname in ipairs(serverInfo.computePreference) do
-            computeNames[#computeNames+1] = g.getJobCategoryName(jcname)
-        end
-        categoryText = TEXT.CATEGORY_LIST({
-            categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
-        })
-        local w, l = richtext.getWrap(categoryText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        categoryHeight = l * titleFH
-        height = height + categoryHeight
+    local computeNames = {}
+    for _, jcname in ipairs(serverInfo.computePreference) do
+        computeNames[#computeNames+1] = g.getJobCategoryName(jcname)
     end
+    local categoryText = TEXT.CATEGORY_LIST({
+        categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
+    })
+    builder:addText(categoryText, descF, "center", titleFH)
 
     -- Description
-    local descriptionHeight = 0
-    local descriptionText = nil
     if serverInfo.description then
-        -- Description is padded with 2 empty lines
-        descriptionText = "\n"..serverInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(serverInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesHeight = 0
-    local attributesText
+    builder:addText(getItemLoadText(serverInfo, serverData), attrF, "left")
+
+    -- CPS
+    local actualCPS = serverData.computePerSecond
+    local baseCPS = serverInfo.computePerSecond
+    local cpsText = TEXT.CPS_NUMBER({cps = g.formatNumber(actualCPS)})
+    if actualCPS > baseCPS then
+        local p = (actualCPS - baseCPS) / baseCPS
+        cpsText = cpsText .. " " .. helper.wrapRichtextColor(g.COLORS.UI.BUFF, "(+" .. helper.round(p * 100, 2) .. "%)")
+    elseif actualCPS < baseCPS then
+        local p = (baseCPS - actualCPS) / baseCPS
+        cpsText = cpsText .. " " .. helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "(-" .. helper.round(p * 100, 2) .. "%)")
+    end
+    builder:addText(cpsText, attrF, "left")
+
+    -- Heat
     local heat = g.getTileHeat(serverData.tileX, serverData.tileY)
-    do
-        local at = {}
-        -- Load
-        at[#at+1] = getItemLoadText(serverInfo, serverData)
-        -- CPS
-        local actualCPS = serverData.computePerSecond
-        local baseCPS = serverInfo.computePerSecond
-        local cpsText = TEXT.CPS_NUMBER({cps = g.formatNumber(actualCPS)})
-        if actualCPS > baseCPS then
-            local p = (actualCPS - baseCPS) / baseCPS
-            cpsText = cpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "(+"..helper.round(p * 100, 2).."%)")
-        elseif actualCPS < baseCPS then
-            local p = (baseCPS - actualCPS) / baseCPS
-            cpsText = cpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "(-"..helper.round(p * 100, 2).."%)")
-        end
-        at[#at+1] = cpsText
-        -- Heat
-        local heatText = TEXT.SERVER_HEAT_NUMBER({
-            heat = g.formatNumber(heat),
-            max_heat = g.formatNumber(serverInfo.heatTolerance[2])
-        })
-        if heat > serverInfo.heatTolerance[2] then
-            heatText = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, heatText.." {emergency_heat}")
-        elseif heat < serverInfo.heatTolerance[1] then
-            heatText = helper.wrapRichtextColor(g.COLORS.UI.OVERCLOCKED, heatText.." {snowflake}")
-        end
-        at[#at+1] = heatText
-        at[#at+1] = "" -- padding
-
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
+    local heatText = TEXT.SERVER_HEAT_NUMBER({
+        heat = g.formatNumber(heat),
+        max_heat = g.formatNumber(serverInfo.heatTolerance[2])
+    })
+    if heat > serverInfo.heatTolerance[2] then
+        heatText = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, heatText .. " {emergency_heat}")
+    elseif heat < serverInfo.heatTolerance[1] then
+        heatText = helper.wrapRichtextColor(g.COLORS.UI.OVERCLOCKED, heatText .. " {snowflake}")
     end
+    builder:addText(heatText, attrF, "left")
 
-    -- Log message
-    local logText, logHeight = nil, 0
-    do
-        local l = getLogMessages(serverData)
-
-        if #l > 0 then
-            logText = table.concat(l, "\n")
-            local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)
-            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-            logHeight = lines * attrFH
-            height = height + logHeight
+    -- Log
+    local l = getLogMessages(serverData)
+    if #l > 0 then
+        builder:addPadding(descFH)
+        for _, logmsg in ipairs(l) do
+            builder:addText(logmsg, attrF, "center")
         end
     end
 
-    -- Job info
-    local jobData, jobHeight = nil, 0
-    local PROGRESS_BAR_HEIGHT = 6
+    -- Job
     if serverData.currentJob then
         local job = assert(serverData.currentJob)
-        jobData = {
+        local jobData = {
             name = serverData.currentJob.name,
-            nameHeight = 0,
-            computeText = g.formatNumber(job.computePower).." {dns}",
-            outdataText = g.formatNumber(job.outputData).." {database}",
-            earnText = "{money}"..g.formatNumber(assert(job.resource.money)),
+            computeText = g.formatNumber(job.computePower) .. " {dns}",
+            outdataText = g.formatNumber(job.outputData) .. " {database}",
+            earnText = "{money}" .. g.formatNumber(assert(job.resource.money)),
         }
 
-        -- Job name
-        do
-            local w, l = richtext.getWrap(jobData.name, attrF, MAX_TOOLTIP_WIDTH)
-            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-            jobData.nameHeight = l * attrFH
-        end
-        -- Adjust width to fit data info
-        do
-            -- +8 for padding
-            local w = math.max(
-                richtext.getWidth(jobData.computeText, attrF) + 8,
-                richtext.getWidth(jobData.outdataText, attrF) + 8,
-                richtext.getWidth(jobData.earnText, attrF) + 8
-            )
-            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        end
+        local _, lines = richtext.getWrap(jobData.name, attrF, 200)
+        local nameHeight = lines * attrFH
+        local PROGRESS_BAR_HEIGHT = 6
+        local jobHeight = descFH * 2 + nameHeight + attrFH + PROGRESS_BAR_HEIGHT + descFH
 
-        -- Added heights:
-        -- padding (descF height)
-        -- Job name (attrF height * line)
-        -- Job data info (attrF height)
-        -- Final CPS (descF height)
-        -- Percentage value (descF height)
-        -- progress bar height (PROGRESS_BAR_HEIGHT)
-        jobHeight = descFH * 2
-            + jobData.nameHeight
-            + attrFH
-            + PROGRESS_BAR_HEIGHT
-        height = height + jobHeight + descFH
+        -- Ensure width fits job data
+        local maxDataW = math.max(
+            richtext.getWidth(jobData.computeText, attrF) + 8,
+            richtext.getWidth(jobData.outdataText, attrF) + 8,
+            richtext.getWidth(jobData.earnText, attrF) + 8
+        )
+        builder:ensureWidth(maxDataW)
+
+        builder:addCustom(jobHeight, function(x, y, w)
+            local OUTER_PAD = 2
+            local curY = y + descFH
+            love.graphics.rectangle("line", x - OUTER_PAD, curY - OUTER_PAD, w + OUTER_PAD * 2, (jobHeight - descFH) + OUTER_PAD * 2)
+
+            richtext.printRich(jobData.name, attrF, x, curY, w, "center")
+            curY = curY + nameHeight
+
+            local computeR, dataR, moneyR = Kirigami(x, curY, w, attrFH):splitHorizontal(1, 1, 1)
+            ui.printRichInRegion(jobData.computeText, attrF, computeR, true, "center")
+            ui.printRichInRegion(jobData.outdataText, attrF, dataR, true, "center")
+            ui.printRichInRegion(jobData.earnText, attrF, moneyR, true, "center")
+            curY = curY + attrFH
+
+            local cps = g.formatNumber(serverData.computePerSecond) .. " {dns}/s"
+            if serverData.computePerSecond < serverInfo.computePerSecond then
+                cps = helper.wrapRichtextColor(g.COLORS.UI.WARNING, cps)
+            end
+            local dpsVal = serverData.computePerSecond * job.outputData / job.computePower
+            local dps = g.formatNumber(dpsVal) .. " {database}/s"
+            if not serverData.activeOutput then
+                dps = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, dps)
+            end
+            local cpsR, dpsR = Kirigami(x, curY, w, attrFH):splitHorizontal(1, 1)
+            ui.printRichInRegion(cps, descF, cpsR, true, "center")
+            ui.printRichInRegion(dps, descF, dpsR, true, "center")
+            curY = curY + descFH
+
+            local p = serverData.jobProgress / job.computePower
+            love.graphics.printf(math.abs(helper.round(p * 100, 1)) .. "%", descF, x, curY, w, "center")
+            curY = curY + descFH
+
+            love.graphics.rectangle("fill", x, curY, w * p, PROGRESS_BAR_HEIGHT)
+        end)
     end
 
-    -- Generate region now
-    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    do
-        richtext.printRich(serverInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw category
-    do
-        richtext.printRich(categoryText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + categoryHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
-    -- Draw log message
-    if logText then
-        local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, logHeight)
-        ui.printRichInRegion(logText, attrF, r, true, "center")
-        height = height + logHeight
-    end
-    -- Draw job info
-    if jobData then
-        local job = assert(serverData.currentJob)
-        --[[
-        TODO: Modify how tooltip is rendered.
-        For sake of moving fast, let's just do rectangle for now.
-
-        Oli suggestion:
-        * Make it fixed-width
-        * Make the job info "glued"
-
-        My suggestion: Text size probably needs adjustment.
-        ]]
-        local OUTER_PAD = 2
-        height = height + descFH -- padding
-        love.graphics.rectangle("line", tcntR.x - OUTER_PAD, tcntR.y + height - OUTER_PAD, tcntR.w + OUTER_PAD * 2, jobHeight + OUTER_PAD * 2)
-
-        -- Job name
-        richtext.printRich(jobData.name, attrF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + jobData.nameHeight
-        -- Job info
-        local computeR, dataR, moneyR = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, attrFH):splitHorizontal(1, 1, 1)
-        ui.printRichInRegion(jobData.computeText, attrF, computeR, true, "center")
-        ui.printRichInRegion(jobData.outdataText, attrF, dataR, true, "center")
-        ui.printRichInRegion(jobData.earnText, attrF, moneyR, true, "center")
-        height = height + attrFH
-        -- Final CPS and DPS side-by-side
-        local cps = g.formatNumber(serverData.computePerSecond).." {dns}/s"
-        if serverData.computePerSecond < serverInfo.computePerSecond then
-            cps = helper.wrapRichtextColor(g.COLORS.UI.WARNING, cps)
-        end
-        local dpsVal = serverData.computePerSecond * job.outputData / job.computePower
-        local dps = g.formatNumber(dpsVal).." {database}/s"
-        if not serverData.activeOutput then
-            dps = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, dps)
-        end
-        local cpsR, dpsR = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, attrFH):splitHorizontal(1, 1)
-        ui.printRichInRegion(cps, descF, cpsR, true, "center")
-        ui.printRichInRegion(dps, descF, dpsR, true, "center")
-        height = height + descFH
-        -- Progress percentage
-        local p = serverData.jobProgress / job.computePower
-        love.graphics.printf(math.abs(helper.round(p * 100, 1)).."%", descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descFH
-        -- Progress bar
-        love.graphics.rectangle("fill", tcntR.x, tcntR.y + height, tcntR.w * p, PROGRESS_BAR_HEIGHT)
-        height = height + descFH
-    end
+    builder:render()
 end
 
 ---@param dpData g.World.DataOutputData
@@ -293,89 +196,40 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 120, 0
+    local attrFH = attrF:getHeight()
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(dpInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(dpInfo.name, titleF, "center", titleFH)
 
     -- Description
-    local descriptionText, descriptionHeight
     if dpInfo.description then
-        descriptionText = "\n"..dpInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(dpInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesText, attributesHeight
-    do
-        local at = {}
-        at[#at+1] = getItemLoadText(dpInfo, dpData)
-        at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)})
-        at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireLength})
-        at[#at+1] = TEXT.WIRE_COUNT({s = #dpData.connectsServers})
-        at[#at+1] = TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)})
-
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
-    end
+    builder
+        :addText(getItemLoadText(dpInfo, dpData), attrF, "left")
+        :addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)}), attrF, "left")
+        :addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
+        :addText(TEXT.WIRE_COUNT({s = #dpData.connectsServers}), attrF, "left")
+        :addText(TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)}), attrF, "left")
 
     -- Log message
-    local logText, logHeight = nil, 0
-    do
-        local l = getLogMessages(dpData)
+    local l = getLogMessages(dpData)
+    if #l > 0 then
+        builder:addPadding(descFH)
 
-        if #l > 0 then
-            logText = table.concat(l, "\n")
-            local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)
-            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-            logHeight = lines * attrFH
-            height = height + logHeight
+        for _, logmsg in ipairs(l) do
+            builder:addText(logmsg, attrF, "center")
         end
     end
 
-    -- Generate region now
-    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    -- Draw name
-    do
-        richtext.printRich(dpInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
-    -- Draw log message
-    if logText then
-        local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, logHeight)
-        ui.printRichInRegion(logText, attrF, r, true, "center")
-        height = height + logHeight
-    end
+    builder:render()
 end
 
 ---@param boosterData g.World.ItemData
@@ -389,97 +243,46 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 120, 0
+    local attrFH = attrF:getHeight()
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(boosterInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(boosterInfo.name, titleF, "center", titleFH)
 
     -- Description
-    local descriptionText, descriptionHeight
     if boosterInfo.description then
-        descriptionText = "\n"..boosterInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(boosterInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesText, attributesHeight
-    do
-        local at = {}
-        -- Load
-        at[#at+1] = getItemLoadText(boosterInfo, boosterData)
-        -- Effectivity
-        local effectivity = TEXT.EFFECTIVITY({effectivity = helper.round(world.loadPercentage * 100, 2)})
-        if world.loadPercentage < 1 then
-            effectivity = effectivity.." {bolt}"
-            if world.loadPercentage < 0.75 then
-                effectivity = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, effectivity)
-            elseif world.loadPercentage < 1 then
-                effectivity = helper.wrapRichtextColor(g.COLORS.UI.WARNING, effectivity)
-            end
+    builder:addText(getItemLoadText(boosterInfo, boosterData), attrF, "left")
+    -- Effectivity
+    local effectivity = TEXT.EFFECTIVITY({effectivity = helper.round(world.loadPercentage * 100, 2)})
+    if world.loadPercentage < 1 then
+        effectivity = effectivity.." {bolt}"
+        if world.loadPercentage < 0.75 then
+            effectivity = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, effectivity)
+        elseif world.loadPercentage < 1 then
+            effectivity = helper.wrapRichtextColor(g.COLORS.UI.WARNING, effectivity)
         end
-        at[#at+1] = effectivity
-
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
     end
+    builder:addText(effectivity, attrF, "left")
 
     -- Log message
-    local logText, logHeight = nil, 0
-    do
-        local l = getLogMessages(boosterData)
+    local l = getLogMessages(boosterData)
+    if #l > 0 then
+        builder:addPadding(descFH)
 
-        if #l > 0 then
-            logText = table.concat(l, "\n")
-            local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)
-            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-            logHeight = lines * attrFH
-            height = height + logHeight
+        for _, logmsg in ipairs(l) do
+            builder:addText(logmsg, attrF, "center")
         end
     end
 
-    -- Generate region now
-    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    -- Draw name
-    do
-        richtext.printRich(boosterInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
-    -- Draw log message
-    if logText then
-        local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, logHeight)
-        ui.printRichInRegion(logText, attrF, r, true, "center")
-        height = height + logHeight
-    end
+    builder:render()
 end
 
 ---@param diData g.World.DataInputData
@@ -487,103 +290,46 @@ end
 ---@param my number
 ---@param safeArea kirigami.Region
 function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
-    local world = g.getMainWorld()
     local diInfo = g.getItemInfo(diData.type, "indata")
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 120, 0
+    local attrFH = attrF:getHeight()
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(diInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(diInfo.name, titleF, "center", titleFH)
 
     -- Description
-    local descriptionHeight = 0
-    local descriptionText = nil
     if diInfo.description then
-        descriptionText = "\n"..diInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(diInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesText, attributesHeight
-    do
-        local at = {}
-        -- Load
-        at[#at+1] = getItemLoadText(diInfo, diData)
-        -- Queued Job Category
-        at[#at+1] = TEXT.CATEGORY_LIST({
+    builder:addText(getItemLoadText(diInfo, diData), attrF, "left")
+        :addText(TEXT.CATEGORY_LIST({
             categories = g.getJobCategoryName(diInfo.queuesJob)
-        })
-        -- Added Job Queue
-        at[#at+1] = TEXT.JOB_QUEUE({job = diInfo.maxJobQueue})
-        -- Wire Range
-        at[#at+1] = TEXT.WIRE_RANGE({range = diInfo.wireLength})
-        -- Connections
-        at[#at+1] = TEXT.WIRE_COUNT({s = #diData.connectsServers})
-
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
-    end
+        }), attrF, "left")
+        :addText(TEXT.JOB_QUEUE({job = diInfo.maxJobQueue}), attrF, "left")
+        :addText(TEXT.WIRE_RANGE({range = diInfo.wireLength}), attrF, "left")
+        :addText(TEXT.WIRE_COUNT({s = #diData.connectsServers}), attrF, "left")
 
     -- Log message
-    local logText, logHeight = nil, 0
-    do
-        local l = getLogMessages(diData)
+    local l = getLogMessages(diData)
+    if #l > 0 then
+        builder:addPadding(descFH)
 
-        if #l > 0 then
-            logText = table.concat(l, "\n")
-            local w, lines = richtext.getWrap(logText, attrF, MAX_TOOLTIP_WIDTH)
-            width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-            logHeight = lines * attrFH
-            height = height + logHeight
+        for _, logmsg in ipairs(l) do
+            builder:addText(logmsg, attrF, "center")
         end
     end
 
-    -- Generate region now
-    local tdrawableR, tcntR = ui.getTooltipRegion(mx, my, width, height, safeArea)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    -- Draw name
-    do
-        richtext.printRich(diInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
-    -- Draw log message
-    if logText then
-        local r = Kirigami(tcntR.x, tcntR.y + height, tcntR.w, logHeight)
-        ui.printRichInRegion(logText, attrF, r, true, "center")
-        height = height + logHeight
-    end
+    builder:render()
 end
 
 ---@param itemData g.World.ItemData
@@ -622,99 +368,48 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 0, 0
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(serverInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(serverInfo.name, titleF, "center", titleFH)
 
     -- Category
-    local categoryText, categoryHeight
-    do
-        local computeNames = {}
-        for _, jcname in ipairs(serverInfo.computePreference) do
-            computeNames[#computeNames+1] = g.getJobCategoryName(jcname)
-        end
-        categoryText = TEXT.CATEGORY_LIST({
-            categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
-        })
-        local w, l = richtext.getWrap(categoryText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        categoryHeight = l * titleFH
-        height = height + categoryHeight
+    local computeNames = {}
+    for _, jcname in ipairs(serverInfo.computePreference) do
+        computeNames[#computeNames+1] = g.getJobCategoryName(jcname)
     end
+    local categoryText = TEXT.CATEGORY_LIST({
+        categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
+    })
+    builder:addText(categoryText, descF, "center", titleFH)
 
     -- Description
-    local descriptionText, descriptionHeight = nil, 0
     if serverInfo.description then
-        descriptionText = "\n"..serverInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(serverInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesText, attributesHeight
-    do
-        local at = {}
-        local world = g.getMainWorld()
-        -- Load
-        local load = world:computeLoadModifier(serverInfo)
-        local loadText = TEXT.LOAD_TOOLTIP({load = load})
-        if (world.currentLoad + load) > g.stats.MaxLoad then
-            loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-        end
-        at[#at+1] = loadText
-        -- CPS
-        at[#at+1] = TEXT.CPS_NUMBER({cps = g.formatNumber(serverInfo.computePerSecond)})
-        -- Heat tolerance
-        at[#at+1] = TEXT.HEAT_TOLERANCE({
-            min_heat = g.formatNumber(serverInfo.heatTolerance[1]),
-            max_heat = g.formatNumber(serverInfo.heatTolerance[2])
-        })
+    local world = g.getMainWorld()
+    -- Load
+    local load = world:computeLoadModifier(serverInfo)
+    local loadText = TEXT.LOAD_TOOLTIP({load = load})
+    if (world.currentLoad + load) > g.stats.MaxLoad then
+        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
+    end
+    builder:addText(loadText, attrF, "left")
+    -- CPS
+    builder:addText(TEXT.CPS_NUMBER({cps = g.formatNumber(serverInfo.computePerSecond)}), attrF, "left")
+    -- Heat tolerance
+    builder:addText(TEXT.HEAT_TOLERANCE({
+        min_heat = g.formatNumber(serverInfo.heatTolerance[1]),
+        max_heat = g.formatNumber(serverInfo.heatTolerance[2])
+    }), attrF, "left")
 
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
-    end
-
-    -- Generate region
-    local tdrawableR, tcntR = ui.getTooltipRegion(x - width / 2, y - height, width, height)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    do
-        richtext.printRich(serverInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw category
-    do
-        richtext.printRich(categoryText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + categoryHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
+    builder:render()
 end
 
 ---@param dpInfo g.DataOutInfo
@@ -725,78 +420,37 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 0, 0
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(dpInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(dpInfo.name, titleF, "center", titleFH)
 
     -- Description
-    local descriptionText, descriptionHeight = nil, 0
     if dpInfo.description then
-        descriptionText = "\n"..dpInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(dpInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesText, attributesHeight
-    do
-        local at = {}
-        local world = g.getMainWorld()
-        -- Load
-        local load = world:computeLoadModifier(dpInfo)
-        local loadText = TEXT.LOAD_TOOLTIP({load = load})
-        if (world.currentLoad + load) > g.stats.MaxLoad then
-            loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-        end
-        at[#at+1] = loadText
-        -- DPS
-        at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(dpInfo.dataPerSecond)})
-        -- Wire Range
-        at[#at+1] = TEXT.WIRE_RANGE({range = dpInfo.wireLength})
-        -- Wire DPS
-        at[#at+1] = TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)})
+    local world = g.getMainWorld()
+    -- Load
+    local load = world:computeLoadModifier(dpInfo)
+    local loadText = TEXT.LOAD_TOOLTIP({load = load})
+    if (world.currentLoad + load) > g.stats.MaxLoad then
+        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
+    end
+    builder:addText(loadText, attrF, "left")
+    -- DPS
+    builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpInfo.dataPerSecond)}), attrF, "left")
+    -- Wire Range
+    builder:addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
+    -- Wire DPS
+    builder:addText(TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)}), attrF, "left")
 
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
-    end
-
-    -- Generate region
-    local tdrawableR, tcntR = ui.getTooltipRegion(x - width / 2, y - height, width, height)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    -- Draw name
-    do
-        richtext.printRich(dpInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
+    builder:render()
 end
 
 ---@param diInfo g.DataInInfo
@@ -807,80 +461,39 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 0, 0
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(diInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(diInfo.name, titleF, "center", titleFH)
 
     -- Description
-    local descriptionText, descriptionHeight = nil, 0
     if diInfo.description then
-        descriptionText = "\n"..diInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(diInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesText, attributesHeight
-    do
-        local at = {}
-        local world = g.getMainWorld()
-        -- Load
-        local load = world:computeLoadModifier(diInfo)
-        local loadText = TEXT.LOAD_TOOLTIP({load = load})
-        if (world.currentLoad + load) > g.stats.MaxLoad then
-            loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-        end
-        at[#at+1] = loadText
-        -- Queued Job Category
-        at[#at+1] = TEXT.CATEGORY_LIST({
-            categories = g.getJobCategoryName(diInfo.queuesJob)
-        })
-        -- Added Job Queue
-        at[#at+1] = TEXT.JOB_QUEUE({job = diInfo.maxJobQueue})
-        -- Wire Range
-        at[#at+1] = TEXT.WIRE_RANGE({range = diInfo.wireLength})
+    local world = g.getMainWorld()
+    -- Load
+    local load = world:computeLoadModifier(diInfo)
+    local loadText = TEXT.LOAD_TOOLTIP({load = load})
+    if (world.currentLoad + load) > g.stats.MaxLoad then
+        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
+    end
+    builder:addText(loadText, attrF, "left")
+    -- Queued Job Category
+    builder:addText(TEXT.CATEGORY_LIST({
+        categories = g.getJobCategoryName(diInfo.queuesJob)
+    }), attrF, "left")
+    -- Added Job Queue
+    builder:addText(TEXT.JOB_QUEUE({job = diInfo.maxJobQueue}), attrF, "left")
+    -- Wire Range
+    builder:addText(TEXT.WIRE_RANGE({range = diInfo.wireLength}), attrF, "left")
 
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
-    end
-
-    -- Generate region
-    local tdrawableR, tcntR = ui.getTooltipRegion(x - width / 2, y - height, width, height)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    -- Draw name
-    do
-        richtext.printRich(diInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
+    builder:render()
 end
 
 ---@param boosterInfo g.BoosterInfo
@@ -891,72 +504,31 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
-    local width, height = 0, 0
 
-    -- Pass 1: Compute tooltip sizes
+    local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(boosterInfo.name, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
+    builder:addText(boosterInfo.name, titleF, "center", titleFH)
 
     -- Description
-    local descriptionText, descriptionHeight = nil, 0
     if boosterInfo.description then
-        descriptionText = "\n"..boosterInfo.description.."\n"
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
+        builder:addPadding(descFH)
+        builder:addText(boosterInfo.description, descF, "center")
+        builder:addPadding(descFH)
     end
 
     -- Attributes
-    local attributesText, attributesHeight
-    do
-        local at = {}
-        local world = g.getMainWorld()
-        -- Load
-        local load = world:computeLoadModifier(boosterInfo)
-        local loadText = TEXT.LOAD_TOOLTIP({load = load})
-        if (world.currentLoad + load) > g.stats.MaxLoad then
-            loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-        end
-        at[#at+1] = loadText
+    local world = g.getMainWorld()
+    -- Load
+    local load = world:computeLoadModifier(boosterInfo)
+    local loadText = TEXT.LOAD_TOOLTIP({load = load})
+    if (world.currentLoad + load) > g.stats.MaxLoad then
+        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
+    end
+    builder:addText(loadText, attrF, "left")
 
-        attributesText = table.concat(at, "\n")
-        local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        attributesHeight = l * attrFH
-        height = height + attributesHeight
-    end
-
-    -- Generate region
-    local tdrawableR, tcntR = ui.getTooltipRegion(x - width / 2, y - height, width, height)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    -- Draw name
-    do
-        richtext.printRich(boosterInfo.name, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw description
-    if descriptionText then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
-    -- Draw attributes
-    do
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + height, tcntR.w, "left")
-        height = height + attributesHeight
-    end
+    builder:render()
 end
 
 ---@param itemInfo g.ItemInfo
