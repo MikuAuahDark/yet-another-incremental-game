@@ -46,6 +46,7 @@ end
 ---@class g.World.PowerData: g.World.ItemData
 ---@field power number (readonly; updated every frame)
 ---@field connectsTo g.World.ItemData[] (readwrite; connected power consumers)
+---@field connectsPowerNodes g.World.PowerData[] (readonly; connected power nodes generated dynamically)
 
 ---@class g.World.PowerNetwork
 ---@field generators g.World.PowerData[]
@@ -106,6 +107,21 @@ local function getLoadPercentage(itemData)
         return math.min(itemData.powerNetwork.totalPower / itemData.powerNetwork.totalLoad)
     end
     return 0
+end
+
+
+local function drawPowerLines(pool)
+    local wtz = consts.WORLD_TILE_SIZE
+    for _, node in pairs(pool) do
+        local x1 = (node.tileX + 0.5) * wtz
+        local y1 = (node.tileY + 0.5) * wtz
+        for _, other in ipairs(node.connectsPowerNodes) do
+            love.graphics.line(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz)
+        end
+        for _, consumer in ipairs(node.connectsTo) do
+            love.graphics.line(x1, y1, (consumer.tileX + 0.5) * wtz, (consumer.tileY + 0.5) * wtz)
+        end
+    end
 end
 
 
@@ -294,9 +310,11 @@ function World:_update(dt)
     ---@type g.World.PowerData[]
     local allPowerNodes = {}
     for _, node in pairs(self.powerGens) do
+        table.clear(node.connectsPowerNodes)
         allPowerNodes[#allPowerNodes+1] = node
     end
     for _, node in pairs(self.powerRelays) do
+        table.clear(node.connectsPowerNodes)
         allPowerNodes[#allPowerNodes+1] = node
     end
 
@@ -341,6 +359,7 @@ function World:_update(dt)
                         if dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength) then
                             visited[other] = true
                             queue[#queue+1] = other
+                            node.connectsPowerNodes[#node.connectsPowerNodes+1] = other
                         end
                     end
                 end
@@ -802,6 +821,15 @@ function World:_draw()
     lw:pop()
     prof_pop() -- prof_push("dpcon_draw")
 
+    -- Draw power network connectors
+    prof_push("power_draw")
+    love.graphics.setColor(objects.Color("#83d6d3"))
+    local lw2 = gsman.setLineWidth(4)
+    drawPowerLines(self.powerGens)
+    drawPowerLines(self.powerRelays)
+    lw2:pop()
+    prof_pop() -- prof_push("power_draw")
+
     -- Draw item problems status icons
     prof_push("item_problems_draw")
     love.graphics.setColor(1, 1, 1)
@@ -964,6 +992,7 @@ function World:putItem(itemId, tx, ty)
             load = itemInfo.load,
             power = 0,
             connectsTo = {},
+            connectsPowerNodes = {},
         }
     else
         error("fixme category "..category)
