@@ -51,6 +51,8 @@ end
 ---@field generators g.World.PowerData[]
 ---@field relays g.World.PowerData[]
 ---@field consumers g.World.ItemData[]
+---@field totalPower number (readonly; updated every frame)
+---@field totalLoad number (readonly; updated every frame)
 
 
 ---@class g.World: objects.Class
@@ -97,6 +99,15 @@ local function generateWorldTexture(seed)
     return love.graphics.newMesh(vertices, "triangles", "static")
 end
 
+---@param itemData g.World.ItemData
+local function getLoadPercentage(itemData)
+    if itemData.powerNetwork and itemData.powerNetwork.totalPower > 0 then
+        -- If the totalLoad is 0, it will be 1/0 -> inf -> 1 again
+        return math.min(itemData.powerNetwork.totalPower / itemData.powerNetwork.totalLoad)
+    end
+    return 0
+end
+
 
 function World:init()
     self.entities = objects.BufferedSet()
@@ -124,8 +135,6 @@ function World:init()
     self.timer = 0 -- For per second update
     self.seconds = 0 -- how many seconds have elapsed (perSecondUpdate)
     self.analyticsSendTime = 0
-    self.loadPercentage = 1
-    self.currentLoad = 0 -- (read-only) Updated every frame
     self.maxJobs = 0 -- (read-only) Updated every frame
     zeroTileHeat(self.heat)
 
@@ -279,12 +288,110 @@ function World:_update(dt)
             item.tileY = y
         end
     end)
-    self.currentLoad = loads
-    self.loadPercentage = math.min(1, g.stats.MaxLoad / loads)
     self.maxJobs = maxJobs
+
+    -- Run power network update
+    ---@type g.World.PowerData[]
+    local allPowerNodes = {}
+    for _, node in pairs(self.powerGens) do
+        allPowerNodes[#allPowerNodes+1] = node
+    end
+    for _, node in pairs(self.powerRelays) do
+        allPowerNodes[#allPowerNodes+1] = node
+    end
+
+    ---@type table<g.World.PowerData, boolean?>
+    local visited = {}
+    for _, startNode in ipairs(allPowerNodes) do
+        if not visited[startNode] then
+            ---@type g.World.PowerNetwork
+            local network = {
+                generators = {},
+                relays = {},
+                consumers = {},
+                totalPower = 0,
+                totalLoad = 0,
+            }
+            ---@type table<g.World.ItemData, boolean?>
+            local consumerSet = {} -- To avoid duplicates in network.consumers
+
+            -- BFS to find connected power nodes
+            local queue = {startNode}
+            visited[startNode] = true
+            local head = 1
+            while head <= #queue do
+                local node = queue[head]
+                head = head + 1
+
+                local nodeInfo = g.getItemInfo(node.type)
+                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
+                if nodeInfo.category == "powergen" then
+                    network.generators[#network.generators+1] = node
+                else
+                    network.relays[#network.relays+1] = node
+                end
+                node.powerNetwork = network
+
+                -- Find connected power nodes
+                for _, other in ipairs(allPowerNodes) do
+                    if not visited[other] then
+                        local otherInfo = g.getItemInfo(other.type)
+                        ---@cast otherInfo g.PowerGenInfo | g.PowerRelayInfo
+                        local dist = worldutil.getDistance("chessboard", node.tileX - other.tileX, node.tileY - other.tileY)
+                        if dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength) then
+                            visited[other] = true
+                            queue[#queue+1] = other
+                        end
+                    end
+                end
+            end
+
+            -- Find consumers for this network
+            for _, node in ipairs(queue) do
+                node.powerNetwork = network
+                local nodeInfo = g.getItemInfo(node.type)
+                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
+                table.clear(node.connectsTo)
+
+                local range = nodeInfo.wireLength
+                for dx = -range, range do
+                    for dy = -range, range do
+                        local tx, ty = node.tileX + dx, node.tileY + dy
+                        local item = self.items:get(tx, ty) --[[@as g.World.ItemData]]
+                        if item and not item.removed and item.load > 0 then
+                            -- Only add unique consumers to network
+                            if not consumerSet[item] then
+                                item.powerNetwork = network
+                                network.consumers[#network.consumers+1] = item
+                                consumerSet[item] = true
+                            end
+                            -- Keep track of what this node is specifically powering
+                            node.connectsTo[#node.connectsTo+1] = item
+                        end
+                    end
+                end
+            end
+
+            -- Calculate power usage and total power
+            local totalLoad = 0
+            for _, consumer in ipairs(network.consumers) do
+                totalLoad = totalLoad + consumer.load
+            end
+            network.totalLoad = totalLoad
+
+            local totalPower = 0
+            for _, generator in ipairs(network.generators) do
+                totalPower = totalPower + generator.power
+            end
+            network.totalPower = totalPower
+
+            self.powerNetworks[#self.powerNetworks+1] = network
+        end
+    end
 
     -- Update tile heat
     zeroTileHeat(self.heat)
+    ---@param itemData g.World.ItemData
     self.items:foreach(function(itemData, x, y)
         if itemData then
             local itemInfo, category = g.getItemInfo(itemData.type)
@@ -295,7 +402,7 @@ function World:_update(dt)
                     local tx, ty = x + tile[1], y + tile[2]
 
                     if self.items:contains(tx, ty) then
-                        local heat = itemInfo.getTileHeat(tile[1], tile[2]) * self.loadPercentage
+                        local heat = itemInfo.getTileHeat(tile[1], tile[2]) * getLoadPercentage(itemData)
                         self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
                     end
                 end
@@ -351,7 +458,7 @@ function World:_update(dt)
         end
 
         --- Compute DPS
-        dpData.dataPerSecond = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, self.loadPercentage, dpInfo)
+        dpData.dataPerSecond = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, getLoadPercentage(dpData), dpInfo)
         dpData.wireDPS = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
     end
 
@@ -411,89 +518,6 @@ function World:_update(dt)
         end
     end
 
-    -- Run power network update
-    ---@type g.World.PowerData[]
-    local allPowerNodes = {}
-    for _, node in pairs(self.powerGens) do
-        allPowerNodes[#allPowerNodes+1] = node
-    end
-    for _, node in pairs(self.powerRelays) do
-        allPowerNodes[#allPowerNodes+1] = node
-    end
-
-    ---@type table<g.World.PowerData, boolean?>
-    local visited = {}
-    for _, startNode in ipairs(allPowerNodes) do
-        if not visited[startNode] then
-            ---@type g.World.PowerNetwork
-            local network = {
-                generators = {},
-                relays = {},
-                consumers = {}
-            }
-            ---@type table<g.World.ItemData, boolean?>
-            local consumerSet = {} -- To avoid duplicates in network.consumers
-
-            -- BFS to find connected power nodes
-            local queue = {startNode}
-            visited[startNode] = true
-            local head = 1
-            while head <= #queue do
-                local node = queue[head]
-                head = head + 1
-
-                local nodeInfo = g.getItemInfo(node.type)
-                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
-                if nodeInfo.category == "powergen" then
-                    network.generators[#network.generators+1] = node
-                else
-                    network.relays[#network.relays+1] = node
-                end
-
-                -- Find connected power nodes
-                for _, other in ipairs(allPowerNodes) do
-                    if not visited[other] then
-                        local otherInfo = g.getItemInfo(other.type)
-                        ---@cast otherInfo g.PowerGenInfo | g.PowerRelayInfo
-                        local dist = worldutil.getDistance("chessboard", node.tileX - other.tileX, node.tileY - other.tileY)
-                        if dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength) then
-                            visited[other] = true
-                            queue[#queue+1] = other
-                        end
-                    end
-                end
-            end
-
-            -- Find consumers for this network
-            for _, node in ipairs(queue) do
-                node.powerNetwork = network
-                local nodeInfo = g.getItemInfo(node.type)
-                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
-                table.clear(node.connectsTo)
-
-                local range = nodeInfo.wireLength
-                for dx = -range, range do
-                    for dy = -range, range do
-                        local tx, ty = node.tileX + dx, node.tileY + dy
-                        local item = self.items:get(tx, ty) --[[@as g.World.ItemData]]
-                        if item and not item.removed and item.load > 0 then
-                            -- Only add unique consumers to network
-                            if not consumerSet[item] then
-                                item.powerNetwork = network
-                                network.consumers[#network.consumers+1] = item
-                                consumerSet[item] = true
-                            end
-                            -- Keep track of what this node is specifically powering
-                            node.connectsTo[#node.connectsTo+1] = item
-                        end
-                    end
-                end
-            end
-
-            self.powerNetworks[#self.powerNetworks+1] = network
-        end
-    end
-
     -- Run server update
     -- We need to do the server update in multiple pass: Computing the CPS, then updating the job progress.
     local perfMod = g.ask("getPerformanceModifier") --[[@as number]]
@@ -535,8 +559,6 @@ function World:_update(dt)
             end
         end
 
-        -- Compute CPS
-        serverData.computePerSecond = 0
         -- Compute heat
         local heat = self.heat:get(serverData.tileX, serverData.tileY)
         local heatPerfMul = 1
@@ -565,8 +587,9 @@ function World:_update(dt)
             end
         end
 
+        -- Compute CPS
         local finalMod = serverInfo.computePerSecond + perfMod + boosterMod
-        local finalMul = perfMultiplier * self.loadPercentage * heatPerfMul * boosterMul
+        local finalMul = perfMultiplier * getLoadPercentage(serverData) * heatPerfMul * boosterMul
         serverData.computePerSecond = math.max(finalMod, 0) * finalMul
     end
     -- Pass 2: Data transmit logic (packing)

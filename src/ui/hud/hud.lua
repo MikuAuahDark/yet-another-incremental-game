@@ -456,15 +456,13 @@ function HUD:draw(show)
 
         -- Draw resource and stats (top area)
         if showStats then
-            local _, moneyR, loadR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
+            local _, moneyR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
                 self.topR, "horizontal",
                 8, 144, 144, 144, 0, self.topR.h, 8, self.topR.h, 8
             )
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
             drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", money)
-            local loadColor = world.currentLoad > g.stats.MaxLoad and g.COLORS.UI.WARNING or objects.Color.WHITE
-            drawStats(loadR, TEXT.LOAD, TEXT.LOAD_DESCRIPTION, "{bolt}", world.currentLoad.."/"..g.stats.MaxLoad, loadColor)
             drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
             lw2:pop()
 

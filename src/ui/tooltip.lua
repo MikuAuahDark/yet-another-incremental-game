@@ -261,12 +261,16 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     -- Attributes
     builder:addText(getItemLoadText(boosterInfo, boosterData), attrF, "left")
     -- Effectivity
-    local effectivity = TEXT.EFFECTIVITY({effectivity = helper.round(world.loadPercentage * 100, 2)})
-    if world.loadPercentage < 1 then
+    local loadPercentage = 0
+    if boosterData.powerNetwork and boosterData.powerNetwork.totalPower > 0 then
+        loadPercentage = math.min(boosterData.powerNetwork.totalPower / boosterData.powerNetwork.totalLoad, 1)
+    end
+    local effectivity = TEXT.EFFECTIVITY({effectivity = helper.round(loadPercentage * 100, 2)})
+    if loadPercentage < 1 then
         effectivity = effectivity.." {bolt}"
-        if world.loadPercentage < 0.75 then
+        if loadPercentage < 0.75 then
             effectivity = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, effectivity)
-        elseif world.loadPercentage < 1 then
+        elseif loadPercentage < 1 then
             effectivity = helper.wrapRichtextColor(g.COLORS.UI.WARNING, effectivity)
         end
     end
@@ -396,11 +400,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     local world = g.getMainWorld()
     -- Load
     local load = world:computeLoadModifier(serverInfo)
-    local loadText = TEXT.LOAD_TOOLTIP({load = load})
-    if (world.currentLoad + load) > g.stats.MaxLoad then
-        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-    end
-    builder:addText(loadText, attrF, "left")
+    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
     -- CPS
     builder:addText(TEXT.CPS_NUMBER({cps = g.formatNumber(serverInfo.computePerSecond)}), attrF, "left")
     -- Heat tolerance
@@ -438,11 +438,7 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
     local world = g.getMainWorld()
     -- Load
     local load = world:computeLoadModifier(dpInfo)
-    local loadText = TEXT.LOAD_TOOLTIP({load = load})
-    if (world.currentLoad + load) > g.stats.MaxLoad then
-        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-    end
-    builder:addText(loadText, attrF, "left")
+    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
     -- DPS
     builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpInfo.dataPerSecond)}), attrF, "left")
     -- Wire Range
@@ -479,11 +475,7 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
     local world = g.getMainWorld()
     -- Load
     local load = world:computeLoadModifier(diInfo)
-    local loadText = TEXT.LOAD_TOOLTIP({load = load})
-    if (world.currentLoad + load) > g.stats.MaxLoad then
-        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-    end
-    builder:addText(loadText, attrF, "left")
+    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
     -- Queued Job Category
     builder:addText(TEXT.CATEGORY_LIST({
         categories = g.getJobCategoryName(diInfo.queuesJob)
@@ -522,11 +514,7 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
     local world = g.getMainWorld()
     -- Load
     local load = world:computeLoadModifier(boosterInfo)
-    local loadText = TEXT.LOAD_TOOLTIP({load = load})
-    if (world.currentLoad + load) > g.stats.MaxLoad then
-        loadText = helper.wrapRichtextColor(g.COLORS.UI.WARNING, loadText)
-    end
-    builder:addText(loadText, attrF, "left")
+    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
 
     builder:render()
 end

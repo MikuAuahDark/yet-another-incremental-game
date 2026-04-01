@@ -2182,6 +2182,8 @@ do
 ---| "not_connected"
 ---Datacenter load is too high.
 ---| "overloaded"
+---Not connected to power network
+---| "no_power"
 ---Server is too hot
 ---| "overheat"
 ---Data output is not connected to any server.
@@ -2206,8 +2208,14 @@ local ITEM_PROBLEMS = {
     overloaded = {
         error = false,
         icon = "bolt",
-        text = loc("Datacenter load is too high!", nil, {
+        text = loc("Power network load is too high!", nil, {
             context = "Think of \"load\" as the \"electricity load\""}),
+    },
+    no_power = {
+        error = true,
+        icon = "bolt",
+        text = loc("Server is not connected to power network!", nil, {
+            context = "Think of it as connection between the machine and the power grid."}),
     },
     overheat = {
         error = false,
@@ -2226,12 +2234,6 @@ local ITEM_PROBLEMS = {
         icon = "warning",
         text = loc("Booster does not affecting any servers!", nil, {
             context = "Booster is an item that boosts stats of other machines."})
-    },
-    data_bottleneck = {
-        error = false,
-        icon = "database",
-        text = loc("Server is sending too much data to the data output!", nil, {
-            context = "The server performance is bottlenecked by the data lines"}),
     },
     no_suitable_output = {
         error = true,
@@ -2257,6 +2259,13 @@ local ITEM_PROBLEMS = {
 function g.getItemProblems(itemData)
     ---@type g.ItemProblems[]
     local result = {}
+
+    if not itemData.powerNetwork then
+        result[#result+1] = "no_power"
+    elseif itemData.powerNetwork.totalLoad > itemData.powerNetwork.totalPower then
+        result[#result+1] = "overloaded"
+    end
+
     local itemInfo, category = g.getItemInfo(itemData.type)
 
     if category == "server" then
@@ -2287,10 +2296,6 @@ function g.getItemProblems(itemData)
         if #itemData.connectsServers == 0 then
             result[#result+1] = "input_not_connected"
         end
-    end
-
-    if g.getMainWorld().loadPercentage < 1 then
-        result[#result+1] = "overloaded"
     end
 
     return result
