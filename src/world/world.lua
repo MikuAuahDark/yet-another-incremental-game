@@ -100,15 +100,6 @@ local function generateWorldTexture(seed)
     return love.graphics.newMesh(vertices, "triangles", "static")
 end
 
----@param itemData g.World.ItemData
-local function getLoadPercentage(itemData)
-    if itemData.powerNetwork and itemData.powerNetwork.totalPower > 0 then
-        -- If the totalLoad is 0, it will be 1/0 -> inf -> 1 again
-        return math.min(itemData.powerNetwork.totalPower / itemData.powerNetwork.totalLoad)
-    end
-    return 0
-end
-
 
 local function drawPowerLines(pool)
     local wtz = consts.WORLD_TILE_SIZE
@@ -427,7 +418,7 @@ function World:_update(dt)
                     local tx, ty = x + tile[1], y + tile[2]
 
                     if self.items:contains(tx, ty) then
-                        local heat = itemInfo.getTileHeat(tile[1], tile[2]) * getLoadPercentage(itemData)
+                        local heat = itemInfo.getTileHeat(tile[1], tile[2]) * worldutil.getLoadPercentage(itemData)
                         self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
                     end
                 end
@@ -483,7 +474,7 @@ function World:_update(dt)
         end
 
         --- Compute DPS
-        dpData.dataPerSecond = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, getLoadPercentage(dpData), dpInfo)
+        dpData.dataPerSecond = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, worldutil.getLoadPercentage(dpData), dpInfo)
         dpData.wireDPS = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
     end
 
@@ -614,7 +605,7 @@ function World:_update(dt)
 
         -- Compute CPS
         local finalMod = serverInfo.computePerSecond + perfMod + boosterMod
-        local finalMul = perfMultiplier * getLoadPercentage(serverData) * heatPerfMul * boosterMul
+        local finalMul = perfMultiplier * worldutil.getLoadPercentage(serverData) * heatPerfMul * boosterMul
         serverData.computePerSecond = math.max(finalMod, 0) * finalMul
     end
     -- Pass 2: Data transmit logic (packing)

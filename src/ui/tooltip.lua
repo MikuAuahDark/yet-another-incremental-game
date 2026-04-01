@@ -48,7 +48,7 @@ end
 local function getPowerNetworkText(powerNetwork)
     local load = powerNetwork.totalLoad
     local power = powerNetwork.totalPower
-    local s = g.formatNumber(load).."{bolt}/"..g.formatNumber(power).."{bolt}"
+    local s = g.formatNumber(load).."/"..g.formatNumber(power).."{bolt}"
 
     if power == 0 then
         s = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, s)
@@ -281,10 +281,7 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
         builder:addText(getPowerNetworkText(boosterData.powerNetwork), attrF, "left")
     end
     -- Effectivity
-    local loadPercentage = 0
-    if boosterData.powerNetwork and boosterData.powerNetwork.totalPower > 0 then
-        loadPercentage = math.min(boosterData.powerNetwork.totalPower / boosterData.powerNetwork.totalLoad, 1)
-    end
+    local loadPercentage = worldutil.getLoadPercentage(boosterData)
     local effectivity = TEXT.EFFECTIVITY({effectivity = helper.round(loadPercentage * 100, 2)})
     if loadPercentage < 1 then
         effectivity = effectivity.." {bolt}"
@@ -370,7 +367,7 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
     local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder("world", x, y, safeArea)
 
     -- Title
     builder:addText(powerGenInfo.name, titleF, "center", titleFH)
@@ -406,7 +403,7 @@ function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
     local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder("world", x, y, safeArea)
 
     -- Title
     builder:addText(powerRelayInfo.name, titleF, "center", titleFH)
