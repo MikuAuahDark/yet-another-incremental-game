@@ -1992,6 +1992,7 @@ end
 ---@field package descriptionContext string?
 ---@field package color objects.Color
 ---@field package price number
+---@field package wireLength integer
 ---@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
 ---@param id string
@@ -2025,6 +2026,7 @@ function g.definePowerRelay(id, name, def)
         descriptionContext = def.descriptionContext,
         price = def.price,
         load = 0,
+        wireLength = def.wireLength,
         draw = function(itemData)
             ---@cast itemData g.World.ItemData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
