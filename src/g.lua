@@ -266,6 +266,9 @@ function g.ask(q, arg1, ...)
     return tree:askUpgrades(q, val, arg1, ...)
 end
 
+---Define 2 questions:
+---* `<qname>Modifier` with ADD reducer and default value of `initmodval` (defaults to 0)
+---* `<qname>Multiplier` with MULTIPLY reducer and default value of `initmulval` (defaults to 1)
 ---@param qname string
 ---@param initmodval number?
 ---@param initmulval number?
@@ -381,6 +384,10 @@ do
 local mainFontCache = {}
 local mainFontScaling = 0
 
+-- Tip: For large font file size, it's more memory efficient to load it as `FileData` once and pass it to
+-- `love.graphics.newFont` (this is observed when developing Live Simulator: 2 with large font files)
+local mainFontFileData = love.filesystem.newFileData("assets/fonts/Tektur-Regular.ttf")
+
 ---@param size integer
 function g.getMainFont(size)
     local scaling = love.graphics.getDPIScale() * math.max(ui.getUIScaling(), 1)
@@ -390,7 +397,7 @@ function g.getMainFont(size)
     end
 
     if not mainFontCache[size] then
-        local f = love.graphics.newFont("assets/fonts/Tektur-Regular.ttf", size, "normal", scaling)
+        local f = love.graphics.newFont(mainFontFileData, size, "normal", scaling)
         -- TODO: fallbacks
         mainFontCache[size] = f
     end
@@ -1042,49 +1049,6 @@ end
 
 
 --------------------------------------------------
--- Categories
---------------------------------------------------
-
----@alias g.Category
----| "grass"
----| "berry"
----| "mushroom"
----| "chest"
----| "slime"
----| "fish"
-
----@type table<g.Category, true|nil>
-g.CATEGORIES = {
-    grass = true,
-    berry = true,
-    mushroom = true,
-    chest = true,
-    slime = true,
-    fish = true,
-}
-
--- g.getTokensDestroyedInCategory
-do
----@param tokCategory string
----@return number
-function g.getTokensDestroyedInCategory(tokCategory)
-    assert(g.CATEGORIES[tokCategory], "?")
-    local name = "totalCategoryHarvested_"..tokCategory
-    return g.getMetric(name) or 0
-end
-
-for tokCategory,_ in pairs(g.CATEGORIES)do
-    local name = "totalCategoryHarvested_"..tokCategory
-    g.defineMetric(name)
-end
-end
-
-g.defineMetric("totalTokensHarvested")
-
-
-
-
---------------------------------------------------
 -- Upgrades.
 --- 
 -- g.getUpgradeInfo(upgradeId)
@@ -1439,6 +1403,15 @@ do
 
 
 ---@alias g.ItemCategory "server"|"data"|"indata"|"booster"|"powergen"|"powerrelay"
+---@type table<g.ItemCategory, boolean?>
+g.CATEGORIES = {
+    server = true,
+    data = true,
+    indata = true,
+    booster = true,
+    powergen = true,
+    powerrelay = true
+}
 
 ---@class g.ItemDefinition: g._MixinHasNameDefinition
 ---@field public category g.ItemCategory
@@ -1498,17 +1471,21 @@ do
 ---@field public category "booster"
 ---@field public radiate integer
 ---@field public radiateAlgorithm g.RadiateAlgorithm
+---@field public connectable {max:integer,target:g.ItemCategory}?
 ---@field public getTileHeat fun(reltx:integer,relty:integer):number
 ---@field public getPerformanceModifier fun(reltx:integer,relty:integer):number
 ---@field public getPerformanceMultiplier fun(reltx:integer,relty:integer):number
+---@field public getLoadMultiplier fun(reltx:integer,relty:integer):number
 
 ---@class g.BoosterDefinition: g.ItemDefinition
 ---@field public category "booster"
 ---@field public radiate integer? 1 is default
 ---@field public radiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
+---@field public connectable {max:integer,target:g.ItemCategory}? If exist, booster connects instead of radiate. Exceeding this connection reduces its effectiveness.
 ---@field public getTileHeat (fun(reltx:integer,relty:integer):number)?
 ---@field public getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
 ---@field public getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
+---@field public getLoadMultiplier (fun(reltx:integer,relty:integer):number)?
 
 
 ---@class g.PowerGenInfo: g.ItemInfo
@@ -1541,8 +1518,16 @@ local function return0() return 0 end
 local function return1() return 1 end
 local function dummy() end
 
+---@alias _ItemDef
+---| g.ServerDefinition
+---| g.DataInDefinition
+---| g.DataOutDefinition
+---| g.BoosterDefinition
+---| g.PowerGenDefinition
+---| g.PowerRelayDefinition
+
 ---@param id string
----@param def g.ServerDefinition | g.DataInDefinition | g.DataOutDefinition | g.BoosterDefinition | g.PowerGenDefinition
+---@param def _ItemDef
 function g.defineItem(id, def)
     if itemList[id] then
         error("Redefined item: "..id)
@@ -1598,6 +1583,11 @@ function g.defineItem(id, def)
         def.getTileHeat = def.getTileHeat or return0
         def.getPerformanceModifier = def.getPerformanceModifier or return0
         def.getPerformanceMultiplier = def.getPerformanceMultiplier or return1
+        def.getLoadMultiplier = def.getLoadMultiplier or return1
+        if def.connectable then
+            assert(def.connectable.max and def.connectable.max > 0, "invalid max connections")
+            assert(g.CATEGORIES[def.connectable.target], "invalid connect target")
+        end
     elseif def.category == "powergen" then
         ---@cast def g.PowerGenInfo
         assert(def.power and def.power > 0, "invalid power")
@@ -1864,10 +1854,12 @@ end
 ---@field package load number
 ---@field package radiate integer
 ---@field package radiateAlgorithm g.RadiateAlgorithm
+---@field package connectable {max:integer,target:g.ItemCategory}?
 ---@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)
 ---@field package getTileHeat (fun(reltx:integer,relty:integer):number)?
 ---@field package getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
 ---@field package getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
+---@field package getLoadMultiplier (fun(reltx:integer,relty:integer):number)?
 
 ---@param id string
 ---@param name string
@@ -1902,9 +1894,12 @@ function g.defineBooster(id, name, def)
         load = def.load,
         radiate = def.radiate,
         radiateAlgorithm = def.radiateAlgorithm,
+        connectable = def.connectable,
         getTileHeat = def.getTileHeat,
         getPerformanceModifier = def.getPerformanceModifier,
         getPerformanceMultiplier = def.getPerformanceMultiplier,
+        getLoadMultiplier = def.getLoadMultiplier,
+
         draw = function(itemData)
             ---@cast itemData g.World.ItemData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
