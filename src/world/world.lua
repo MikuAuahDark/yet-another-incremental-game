@@ -26,6 +26,7 @@ end
 ---@field load integer (readonly; updated every frame)
 ---@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
 ---@field removed boolean
+---@field removable boolean
 
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
@@ -926,9 +927,14 @@ end
 ---@param itemId string
 ---@param tx integer
 ---@param ty integer
-function World:putItem(itemId, tx, ty)
+---@param removable boolean?
+function World:putItem(itemId, tx, ty, removable)
     if not self:canPutItem(tx, ty) then
         error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
+    end
+
+    if removable == nil then
+        removable = true
     end
 
     local itemInfo, category = g.getItemInfo(itemId)
@@ -947,6 +953,7 @@ function World:putItem(itemId, tx, ty)
             connectedInputs = {},
             activeOutput = nil,
             computePerSecond = 0,
+            removable = removable,
         }
     elseif category == "data" then
         ---@type g.World.DataOutputData
@@ -959,6 +966,7 @@ function World:putItem(itemId, tx, ty)
             connectsServers = {},
             dataPerSecond = 0,
             wireDPS = 0,
+            removable = removable,
         }
     elseif category == "booster" then
         ---@type g.World.ItemData
@@ -968,6 +976,7 @@ function World:putItem(itemId, tx, ty)
             tileY = ty,
             removed = false,
             load = itemInfo.load,
+            removable = removable,
         }
     elseif category == "indata" then
         ---@type g.World.DataInputData
@@ -978,6 +987,7 @@ function World:putItem(itemId, tx, ty)
             removed = false,
             load = itemInfo.load,
             connectsServers = {},
+            removable = removable,
         }
     elseif category == "powergen" or category == "powerrelay" then
         ---@type g.World.PowerData
@@ -990,6 +1000,7 @@ function World:putItem(itemId, tx, ty)
             power = 0,
             connectsTo = {},
             connectsPowerNodes = {},
+            removable = removable,
         }
     else
         error("fixme category "..category)

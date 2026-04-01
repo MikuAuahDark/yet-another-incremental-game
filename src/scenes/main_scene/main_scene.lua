@@ -105,14 +105,18 @@ function MainScene:draw()
 
         if item then
             local x, y = item.tileX * wtz, item.tileY * wtz
-            local drag = iml.consumeDrag(item, x, y, wtz, wtz, 1)
+            local drag = item.removable ~= false and iml.consumeDrag(item, x, y, wtz, wtz, 1) or false
             if drag or iml.isClicked(x, y, wtz, wtz, 1, item) then
                 if not drag then
                     self.pinItemInfo = item
                 end
 
-                if self.targetDrag and self.targetDrag[2] ~= item or not self.targetDrag then
-                    self.targetDrag = {0, item}
+                if item.removable ~= false then
+                    if self.targetDrag and self.targetDrag[2] ~= item or not self.targetDrag then
+                        self.targetDrag = {0, item}
+                    end
+                else
+                    self.targetDrag = nil
                 end
             else
                 self.targetDrag = nil

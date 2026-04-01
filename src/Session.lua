@@ -161,21 +161,23 @@ function Session.deserialize(data)
 
     -- World
     if data.world then
+        ---@type table<integer, boolean>
+        local persistenceLookup = {}
+        if data.world.persistence then
+            for _,z in ipairs(data.world.persistence) do
+                persistenceLookup[z] = true
+            end
+        end
+
         -- Spawn objects
-        ---@type g.World.DataOutputData[]
-        local dp = {}
         if data.world.items then
             for k,v in pairs(data.world.items) do
                 ---@cast k string
                 ---@cast v string
                 if g.isValidItem(v) then
-                    local x, y = Z.decode(assert(tonumber(k)))
-                    local itemData = sess.mainWorld:putItem(v, x, y)
-                    local _, cat = g.getItemInfo(v)
-                    if cat == "data" then
-                        ---@cast itemData g.World.DataOutputData
-                        dp[#dp+1] = itemData
-                    end
+                    local z = assert(tonumber(k))
+                    local x, y = Z.decode(z)
+                    sess.mainWorld:putItem(v, x, y, not persistenceLookup[z])
                 else
                     log.warn("got invalid item '"..v.."'")
                 end
@@ -194,17 +196,16 @@ function Session:serialize()
     end
 
     -- Save world
-    ---@type g.World.DataOutputData[]
-    local dp = {}
     local items = {}
+    ---@type integer[]
+    local persistence = {}
     ---@param item g.World.ItemData?
     self.mainWorld.items:foreach(function(item, x, y)
         if item then
-            items[tostring(Z.encode(x, y))] = item.type
-            local _, cat = g.getItemInfo(item.type)
-            if cat == "data" then
-                ---@cast item g.World.DataOutputData
-                dp[#dp+1] = item
+            local z = Z.encode(x, y)
+            items[tostring(z)] = item.type
+            if not item.removable then
+                persistence[#persistence+1] = z
             end
         end
     end)
@@ -221,6 +222,7 @@ function Session:serialize()
         showTutorials = helper.shallowCopy(self.showTutorials),
         world = {
             items = items,
+            persistence = persistence
         }
     }
 end
