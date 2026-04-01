@@ -458,7 +458,7 @@ function HUD:draw(show)
         if showStats then
             local _, moneyR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
                 self.topR, "horizontal",
-                8, 144, 144, 144, 0, self.topR.h, 8, self.topR.h, 8
+                8, 144, 144, 0, self.topR.h, 8, self.topR.h, 8
             )
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))

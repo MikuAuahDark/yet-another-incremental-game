@@ -300,7 +300,6 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
-    local attrFH = attrF:getHeight()
 
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
@@ -336,6 +335,70 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
     builder:render()
 end
 
+---@param powerData g.World.PowerData
+---@param x number relative to bottom center
+---@param y number relative to bottom center
+---@param safeArea kirigami.Region
+function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
+    local powerGenInfo = g.getItemInfo(powerData.type, "powergen")
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
+    local titleFH = titleF:getHeight()
+    local descFH = descF:getHeight()
+
+    local builder = ui.TooltipBuilder("hud", x, y)
+
+    -- Title
+    builder:addText(powerGenInfo.name, titleF, "center", titleFH)
+
+    -- Description
+    if powerGenInfo.description then
+        builder:addPadding(descFH)
+        builder:addText(powerGenInfo.description, descF, "center")
+        builder:addPadding(descFH)
+    end
+
+    -- Attributes
+    builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerGenInfo.power}), attrF, "left")
+        :addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
+        :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
+
+    builder:render()
+end
+
+
+---@param powerData g.World.PowerData
+---@param x number relative to bottom center
+---@param y number relative to bottom center
+---@param safeArea kirigami.Region
+function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
+    local powerRelayInfo = g.getItemInfo(powerData.type, "powerrelay")
+    local titleF = ItemTooltip.getTitleFont()
+    local attrF = ItemTooltip.getAttrFont()
+    local descF = ItemTooltip.getDescFont()
+    local titleFH = titleF:getHeight()
+    local descFH = descF:getHeight()
+
+    local builder = ui.TooltipBuilder("hud", x, y)
+
+    -- Title
+    builder:addText(powerRelayInfo.name, titleF, "center", titleFH)
+
+    -- Description
+    if powerRelayInfo.description then
+        builder:addPadding(descFH)
+        builder:addText(powerRelayInfo.description, descF, "center")
+        builder:addPadding(descFH)
+    end
+
+    -- Attributes
+    builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
+        :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
+
+    builder:render()
+end
+
 ---@param itemData g.World.ItemData
 ---@param x number relative to bottom center
 ---@param y number relative to bottom center
@@ -354,6 +417,12 @@ function ItemTooltip.DrawWorldTooltip(itemData, x, y, safeArea)
         ItemTooltip.DITooltipWorld(itemData, x, y, safeArea)
     elseif cat == "booster" then
         ItemTooltip.BoosterTooltipWorld(itemData, x, y, safeArea)
+    elseif cat == "powergen" then
+        ---@cast itemData g.World.PowerData
+        ItemTooltip.DrawPowerGenTooltip(itemData, x, y, safeArea)
+    elseif cat == "powerrelay" then
+        ---@cast itemData g.World.PowerData
+        ItemTooltip.DrawPowerRelayTooltip(itemData, x, y, safeArea)
     else
         error("unreachable category")
     end

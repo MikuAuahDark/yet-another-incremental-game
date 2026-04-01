@@ -1614,7 +1614,7 @@ function g.defineItem(id, def)
 end
 
 ---@param itemid string
----@param assertCategory string?
+---@param assertCategory g.ItemCategory?
 ---@return g.ItemInfo, g.ItemCategory
 ---@overload fun(itemid: string, assertCategory: "server"):(g.ServerInfo, "server")
 ---@overload fun(itemid: string, assertCategory: "data"):(g.DataOutInfo, "data")
