@@ -44,6 +44,21 @@ local function getLogMessages(itemData)
     return logMessages
 end
 
+---@param powerNetwork g.World.PowerNetwork
+local function getPowerNetworkText(powerNetwork)
+    local load = powerNetwork.totalLoad
+    local power = powerNetwork.totalPower
+    local s = g.formatNumber(load).."{bolt}/"..g.formatNumber(power).."{bolt}"
+
+    if power == 0 then
+        s = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, s)
+    elseif load > power then
+        s = helper.wrapRichtextColor(g.COLORS.UI.WARNING, s)
+    end
+
+    return TEXT.TOTAL_LOAD_TOOLTIP({s = s})
+end
+
 -- Putting this here so font sizes can be changed in one place
 function ItemTooltip.getTitleFont() return g.getMainFont(16) end
 function ItemTooltip.getAttrFont() return g.getMainFont(13) end
@@ -88,6 +103,9 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
 
     -- Attributes
     builder:addText(getItemLoadText(serverInfo, serverData), attrF, "left")
+    if serverData.powerNetwork then
+        builder:addText(getPowerNetworkText(serverData.powerNetwork), attrF, "left")
+    end
 
     -- CPS
     local actualCPS = serverData.computePerSecond
@@ -197,7 +215,6 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
-    local attrFH = attrF:getHeight()
 
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
@@ -212,9 +229,11 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     end
 
     -- Attributes
-    builder
-        :addText(getItemLoadText(dpInfo, dpData), attrF, "left")
-        :addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)}), attrF, "left")
+    builder:addText(getItemLoadText(dpInfo, dpData), attrF, "left")
+    if dpData.powerNetwork then
+        builder:addText(getPowerNetworkText(dpData.powerNetwork), attrF, "left")
+    end
+    builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)}), attrF, "left")
         :addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
         :addText(TEXT.WIRE_COUNT({s = #dpData.connectsServers}), attrF, "left")
         :addText(TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)}), attrF, "left")
@@ -237,14 +256,12 @@ end
 ---@param my number
 ---@param safeArea kirigami.Region
 function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
-    local world = g.getMainWorld()
     local boosterInfo = g.getItemInfo(boosterData.type, "booster")
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
-    local attrFH = attrF:getHeight()
 
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
@@ -260,6 +277,9 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
 
     -- Attributes
     builder:addText(getItemLoadText(boosterInfo, boosterData), attrF, "left")
+    if boosterData.powerNetwork then
+        builder:addText(getPowerNetworkText(boosterData.powerNetwork), attrF, "left")
+    end
     -- Effectivity
     local loadPercentage = 0
     if boosterData.powerNetwork and boosterData.powerNetwork.totalPower > 0 then
@@ -315,7 +335,10 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
 
     -- Attributes
     builder:addText(getItemLoadText(diInfo, diData), attrF, "left")
-        :addText(TEXT.CATEGORY_LIST({
+    if diData.powerNetwork then
+        builder:addText(getPowerNetworkText(diData.powerNetwork), attrF, "left")
+    end
+    builder:addText(TEXT.CATEGORY_LIST({
             categories = g.getJobCategoryName(diInfo.queuesJob)
         }), attrF, "left")
         :addText(TEXT.JOB_QUEUE({job = diInfo.maxJobQueue}), attrF, "left")
@@ -361,7 +384,10 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
 
     -- Attributes
     builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerGenInfo.power}), attrF, "left")
-        :addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
+    if powerData.powerNetwork then
+        builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
+    end
+    builder:addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
         :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
 
     builder:render()
@@ -393,6 +419,9 @@ function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
     end
 
     -- Attributes
+    if powerData.powerNetwork then
+        builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
+    end
     builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
         :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
 

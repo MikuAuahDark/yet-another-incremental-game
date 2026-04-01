@@ -54,5 +54,7 @@ local text = {
         context = "How many load this item uses?"}),
     PROVIDE_LOAD_TOOLTIP = interp("Generates: %{load}{bolt}", {
         context = "How many load this item generates/provides?"}),
+    TOTAL_LOAD_TOOLTIP = interp("Power Network: %{s}", {
+        context = "How many load is used and power available across the whole power network? %{s} will be replaced by `load/total`."}),
 }
 return text

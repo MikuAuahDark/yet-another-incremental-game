@@ -306,6 +306,12 @@ function World:_update(dt)
     end)
     self.maxJobs = maxJobs
 
+    -- Update power generator power
+    for _, powerGen in pairs(self.powerGens) do
+        local powerGenInfo = g.getItemInfo(powerGen.type, "powergen")
+        powerGen.power = g.getProperty("getGeneratorLoad", powerGenInfo.power, 1, powerGen)
+    end
+
     -- Run power network update
     ---@type g.World.PowerData[]
     local allPowerNodes = {}
