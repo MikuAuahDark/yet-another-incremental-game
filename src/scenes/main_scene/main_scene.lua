@@ -248,6 +248,8 @@ function MainScene:draw()
         self.pinItemInfo = nil
     end
 
+    self:renderPause()
+
     ui.endUI()
 end
 
@@ -336,6 +338,9 @@ end
 function MainScene:keyreleased(k)
     if k == "tab" then
         g.gotoScene("upgrade_scene")
+    elseif k == "escape" then
+        local s = g.getSn()
+        s.paused = not s.paused
     end
 end
 
