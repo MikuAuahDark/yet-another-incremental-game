@@ -1,8 +1,6 @@
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local World = require("src.world.world")
 
-local DOUBLE_CLICK_TIMEOUT = 0.5
-
 ---@class MainScene: FreeCameraScene
 local MainScene = FreeCameraScene()
 

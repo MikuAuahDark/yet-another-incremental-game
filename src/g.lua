@@ -23,8 +23,14 @@ local g = {}
 
 
 
+------------------------
+-- Session Management --
+------------------------
+do
 ---@type g.Session
 local currentSession
+
+local FILENAME = "saves/save1.json"
 
 ---@return g.Session
 function g.newSession()
@@ -32,9 +38,13 @@ function g.newSession()
     return currentSession
 end
 
----@param path string
+function g.hasSavedSession()
+    return not not love.filesystem.getInfo(FILENAME, "file")
+end
+
+---@param path string?
 function g.loadSession(path)
-    local contents = assert(love.filesystem.read(path))
+    local contents = assert(love.filesystem.read(path or FILENAME))
     local jsondata = json.decode(contents)
     currentSession = Session.deserialize(jsondata)
 end
@@ -128,7 +138,7 @@ function g.delSession(delfile)
     currentSession = nil
 
     if delfile then
-        love.filesystem.remove("saves/save1.json")
+        love.filesystem.remove(FILENAME)
     end
 end
 
@@ -138,7 +148,7 @@ function g.saveSession()
         log.trace(debug.traceback("Saving session."))
         local data = g.getSn():serialize()
         local contents = json.encode(data)
-        assert(love.filesystem.write("saves/save1.json", contents))
+        assert(love.filesystem.write(FILENAME, contents))
     end
 end
 
@@ -148,6 +158,8 @@ function g.saveAndInvalidateSession()
 
     g.saveSession()
     return g.delSession()
+end
+
 end
 
 
@@ -828,8 +840,7 @@ end
 ---@param resId string
 function g.isResourceUnlocked(resId)
     assertValidResource(resId)
-    local sn = currentSession
-    return sn.resourceUnlocks[resId]
+    return g.getSn().resourceUnlocks[resId]
 end
 
 ---@param resId string
@@ -964,14 +975,14 @@ end
 
 ---@return g.Resources
 function g.getResources()
-    return currentSession.resources
+    return g.getSn().resources
 end
 
 ---@param resId g.ResourceType
 ---@return number
 function g.getResource(resId)
     assertValidResource(resId)
-    return currentSession.resources[resId]
+    return g.getSn().resources[resId]
 end
 
 ---@param resId g.ResourceType
@@ -987,7 +998,7 @@ end
 ---@param resId g.ResourceType
 function g.addResource(resId, amount)
     assertValidResource(resId)
-    local r = currentSession.resources
+    local r = g.getSn().resources
     r[resId] = math.min(math.max(r[resId] + amount, 0), g.getResourceLimit(resId))
 end
 
@@ -1019,7 +1030,7 @@ end
 ---@param resourcePool g.Bundle?
 ---@return boolean
 function g.canAfford(price, resourcePool)
-    local r = resourcePool or currentSession.resources
+    local r = resourcePool or g.getSn().resources
     for resId, amount in pairs(price) do
         assertValidResource(resId)
         if amount > (r[resId] or 0) then
@@ -1035,7 +1046,7 @@ end
 ---@param price g.Bundle
 ---@return boolean
 function g.trySubtractResources(price)
-    local r = currentSession.resources
+    local r = g.getSn().resources
     if not g.canAfford(price) then
         return false
     end
@@ -2559,7 +2570,7 @@ end
 ---@param amount integer?
 function g.spawnParticle(particleName, x, y, amount)
     if g.isBeingSimulated() then return end
-    return currentSession.mainWorld.particles:spawnParticles(particleName, x, y, amount)
+    return g.getMainWorld().particles:spawnParticles(particleName, x, y, amount)
 end
 
 

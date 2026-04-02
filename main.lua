@@ -256,8 +256,8 @@ function love.load(arg)
         end
 
         analytics.init(nil)
-        if love.filesystem.getInfo("saves/save1.json", "file") and realLoad() then
-            g.loadSession("saves/save1.json")
+        if g.hasSavedSession() and realLoad() then
+            g.loadSession()
         else
             g.newSession().tree = g.loadTree("mvp")
         end
