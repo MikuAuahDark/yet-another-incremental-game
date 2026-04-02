@@ -56,5 +56,14 @@ local text = {
         context = "How many load this item generates/provides?"}),
     TOTAL_LOAD_TOOLTIP = interp("Power Network: %{s}", {
         context = "How many load is used and power available across the whole power network? %{s} will be replaced by `load/total`."}),
+
+    MENU_CONTINUE = loc("Continue", nil, {
+        context = "A button to continue the game from title screen"}),
+    MENU_NEW_GAME = loc("New Game", nil, {
+        context = "A button to start a new game from title screen"}),
+    MENU_SETTINGS = loc("Settings", nil, {
+        context = "A button to open game settings, either from title screen or from pause menu"}),
+    MENU_QUIT_GAME = loc("Quit", nil, {
+        context = "A button to quit/exit the game"}),
 }
 return text

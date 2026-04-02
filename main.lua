@@ -256,12 +256,7 @@ function love.load(arg)
         end
 
         analytics.init(nil)
-        if g.hasSavedSession() and realLoad() then
-            g.loadSession()
-        else
-            g.newSession().tree = g.loadTree("mvp")
-        end
-        sceneManager.gotoScene("main_scene")
+        sceneManager.gotoScene("title_scene")
     end
 
     if consts.TEST then

@@ -13,6 +13,37 @@ ui.upgradeDescriptionUI = require(".upgrade_description")
 
 do
 
+---@param col objects.Color
+function ui.hoveredColor(col)
+	local h, s, v = col:getHSV()
+	if v > 0.75 then
+		v = v - 0.2
+	else
+		v = v + 0.15
+	end
+
+	local r, g, b = objects.Color.HSVtoRGB(h, s, helper.clamp(v, 0, 1))
+	return objects.Color(r, g, b, col.a)
+end
+
+---@param col objects.Color
+function ui.clickedColor(col)
+	local h, s, v = col:getHSV()
+	if v > 0.75 then
+		v = v - 0.3
+	else
+		v = v - 0.15
+	end
+
+	local r, g, b = objects.Color.HSVtoRGB(h, s, helper.clamp(v, 0, 1))
+	return objects.Color(r, g, b, col.a)
+end
+
+end
+
+
+do
+
 
 ---@param richTxt string
 ---@param col1 number[]|objects.ColorObject
@@ -24,6 +55,25 @@ function ui.Button(richTxt, col1,col2, region)
 		local font = g.getSmallFont(16)
     	richtext.printRichContained(richTxt, font, xx,yy,ww,hh)
 	end, col1,col2, region)
+end
+
+---@param rtxt string
+---@param f love.Font
+---@param col objects.Color
+---@param reg kirigami.Region
+function ui.Button2(rtxt, f, col, reg)
+	local x, y, w, h = reg:get()
+	if iml.isClicked(x, y, w, h) then
+		col = ui.clickedColor(col)
+	elseif iml.isHovered(x, y, w, h) then
+		col = ui.hoveredColor(col)
+	end
+
+	ui.Tooltip(reg, col, objects.Color.WHITE)
+	local cntR = reg:padUnit(ui.TOOLTIP_PADDING - 4)
+	richtext.printRichContained(rtxt, f, cntR:get())
+
+	return iml.wasJustClicked(x, y, w, h)
 end
 
 
@@ -379,6 +429,7 @@ end
 do
 
 local DIAGONAL_PADDING = 6
+local TOOLTIP_OUTLINE_WIDTH = 4
 
 ---Return 2 regions: tooltip drawable region, and tooltip content region
 ---@param x number X position (top left)
@@ -423,18 +474,19 @@ function ui.Tooltip(tooltipR, bgColor, lineColor)
 	col:pop()
 
 	-- Draw outline
-	local lw = gsman.setLineWidth(4)
+	local lw = gsman.setLineWidth(TOOLTIP_OUTLINE_WIDTH)
 	col = gsman.mulColor(lineColor)
 	love.graphics.polygon("line", polygons)
 	col:pop()
 	lw:pop()
 end
+ui.TOOLTIP_PADDING = DIAGONAL_PADDING
+ui.TOOLTIP_OUTLINE_WIDTH = TOOLTIP_OUTLINE_WIDTH
 
 ui.TooltipBuilder = require("src.ui.tooltip_builder")
 ui.ItemTooltip = require(".tooltip")
 
 end
-
 
 
 ---@param ch number
