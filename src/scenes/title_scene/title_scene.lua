@@ -22,7 +22,7 @@ function TitleScene:draw()
     ui.startUI()
 
     local r = ui.getFullScreenRegion()
-    local f = g.getMainFont(18)
+    local f = g.getThickFont(18)
     local topR, bottomR = r:splitVertical(4, 5)
     local logoR = topR:padRatio(0.25)
         :shrinkToAspectRatio(9, 5)

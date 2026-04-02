@@ -399,6 +399,7 @@ local mainFontScaling = 0
 -- Tip: For large font file size, it's more memory efficient to load it as `FileData` once and pass it to
 -- `love.graphics.newFont` (this is observed when developing Live Simulator: 2 with large font files)
 local mainFontFileData = love.filesystem.newFileData("assets/fonts/Tektur-Regular.ttf")
+local boldFontFiledata = love.filesystem.newFileData("assets/fonts/Tektur-Bold.ttf")
 
 ---@param size integer
 function g.getMainFont(size)
@@ -414,6 +415,26 @@ function g.getMainFont(size)
         mainFontCache[size] = f
     end
     return mainFontCache[size]
+end
+
+---@type table<integer, love.Font>
+local thickFontCache = {}
+local thickFontScaling = 0
+
+---@param size integer
+function g.getThickFont(size)
+    local scaling = love.graphics.getDPIScale() * math.max(ui.getUIScaling(), 1)
+    if thickFontScaling ~= scaling then
+        thickFontCache = {}
+        thickFontScaling = scaling
+    end
+
+    if not thickFontCache[size] then
+        local f = love.graphics.newFont(boldFontFiledata, size, "normal", scaling)
+        -- TODO: fallbacks
+        thickFontCache[size] = f
+    end
+    return thickFontCache[size]
 end
 
 ---@deprecated Use `g.getMainFont()` instead
