@@ -61,7 +61,8 @@ end
 ---@param f love.Font
 ---@param col objects.Color
 ---@param reg kirigami.Region
-function ui.Button2(rtxt, f, col, reg)
+---@param linecol objects.Color?
+function ui.Button2(rtxt, f, col, reg, linecol, textcol)
 	local x, y, w, h = reg:get()
 	if iml.isClicked(x, y, w, h) then
 		col = ui.clickedColor(col)
@@ -69,9 +70,11 @@ function ui.Button2(rtxt, f, col, reg)
 		col = ui.hoveredColor(col)
 	end
 
-	ui.Tooltip(reg, col, objects.Color.WHITE)
+	ui.Tooltip(reg, col, linecol or objects.Color.WHITE)
 	local cntR = reg:padUnit(ui.TOOLTIP_PADDING - 4)
+	local gscol = gsman.mulColor(textcol or objects.Color.WHITE)
 	richtext.printRichContained(rtxt, f, cntR:get())
+	gscol:pop()
 
 	return iml.wasJustClicked(x, y, w, h)
 end
@@ -340,28 +343,31 @@ end
 ---@param color objects.Color
 ---@param region kirigami.Region
 ---@param checked boolean
-function ui.Checkbox(color, region, checked)
+---@param checkedColor objects.Color?
+function ui.Checkbox(color, region, checked, checkedColor)
 	local x, y, w, h = region:get()
 
 	if iml.isClicked(x, y, w, h) then
-		color = multiplyHSVValue(color, 0.5)
+		color = ui.clickedColor(color)
 	elseif iml.isHovered(x, y, w, h) then
-		color = multiplyHSVValue(color, 0.75)
+		color = ui.hoveredColor(color)
 	end
 
 
-	love.graphics.setColor(color)
+	local col1 = gsman.mulColor(color)
 	love.graphics.rectangle("fill", x, y, w, h)
+	col1:pop()
 
 	if iml.wasJustClicked(x, y, w, h) then
 		checked = not checked
 	end
 
 	if checked then
-		love.graphics.setColor(0, 0, 0, color[4])
+		local col2 = gsman.mulColor(checkedColor or objects.Color.BLACK)
 		-- Draw cross
 		love.graphics.line(x + 1, y + 1, x + w - 2, y + h - 2)
 		love.graphics.line(x + w - 2, y + 1, x + 1, y + h - 2)
+		col2:pop()
 	end
 
 	return checked

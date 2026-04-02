@@ -65,5 +65,12 @@ local text = {
         context = "A button to open game settings, either from title screen or from pause menu"}),
     MENU_QUIT_GAME = loc("Quit", nil, {
         context = "A button to quit/exit the game"}),
+
+    SETTING_TITLE = loc("Settings", nil, {
+        context = "Title of the settings screen"}),
+    SETTING_GENERAL = loc("General", nil, {
+        context = "Category of settings"}),
+    SETTING_AUDIO = loc("Audio", nil, {
+        context = "Category of settings"}),
 }
 return text

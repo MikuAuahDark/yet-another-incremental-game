@@ -2642,11 +2642,11 @@ g.COLORS = {
             dark = {
                 PRIMARY = objects.Color.BLACK,
                 PRIMARY_INVERT = objects.Color.WHITE,
-                PANEL = objects.Color("FF3E3E3E"),
+                PANEL = objects.Color("FF222222"),
                 CARD = objects.Color("FF101010"),
                 TEXT = objects.Color.WHITE,
                 TAB_INACTIVE = objects.Color("FF404040"),
-                WORLD_BACKGROUND = objects.Color("#444444"),
+                WORLD_BACKGROUND = objects.Color("#333333"),
             },
             light = {
                 PRIMARY = objects.Color.WHITE,

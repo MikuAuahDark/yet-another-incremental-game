@@ -1,411 +1,211 @@
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local sceneManager = require("src.scenes.sceneManager")
 
-local titleBackground = require("src.scenes.titleBackground")
-local sfx = require("src.sound.sfx")
+---@class SettingScene: FreeCameraScene
+local SettingScene = FreeCameraScene()
 
 
-local SLIDER_BACKGROUND = objects.Color.BLACK
-local SLIDER_COLOR = objects.Color.WHITE
 
-local TEXT = {
-    SETTINGS = "{w}{o thickness=2}"..loc("Settings").."{/o}{/w}",
-    EFFECT_VOLUME = loc("Effect Volume", nil, {context = "Slider to adjust the sound effect volume in-game"}),
-    MUSIC_VOLUME = loc("Music Volume", nil, {context = "Slider to adjust the music volume in-game"}),
-    LANGUAGE = loc("Language", nil, {context = "Button to select language for a videogame"}),
-    REQUIRES_RESTART = loc("(requires restart)", nil, {context = "Shown on setting label that requires restart to take effect"}),
-    FULLSCREEN = "{o}"..loc("Fullscreen", nil, {context = "Switching game from windowed to fullscreen,"}).."{/o}",
-    CRT_EFFECT = "{o}"..loc("CRT Effect", nil, {context = "Option to emulate old-school CRT TV effects"}).."{/o}",
-    DONE = loc("Done", nil, {context = "Button to apply changes as in a configuration or settings"})
+---@class _SettingEntry
+---@field package text string
+---@field package type "toggle"|"slider"|"button"
+---@class _BooleanEntry: _SettingEntry
+---@field package type "toggle"
+---@field package getter fun():boolean
+---@field package setter fun(v:boolean)
+---@class _SliderEntry: _SettingEntry
+---@field package type "slider"
+---@field package getter fun():integer
+---@field package setter fun(v:integer)
+---@field package min integer
+---@field package max integer
+---@class _ButtonEntry: _SettingEntry
+---@field package type "button"
+---@field package buttonLabel string
+---@field package action fun()
+
+---@type table<string, (_BooleanEntry|_SliderEntry|_ButtonEntry)[]>
+local SETTINGS = {
+    general = {
+        {
+            text = loc("Fullscreen"),
+            type = "toggle",
+            getter = settings.isFullscreen,
+            setter = settings.setFullscreen
+        },
+        {
+            text = loc("Language"),
+            type = "button",
+            buttonLabel = settings.getLanguage(),
+            action = function()
+                -- TODO
+            end
+        },
+        {
+            text = loc("Credits"),
+            type = "button",
+            buttonLabel = "Show",
+            action = function()
+                -- TODO
+            end
+        }
+    },
+    audio = {
+        {
+            text = loc("Sound Volume"),
+            type = "slider",
+            getter = settings.getBGMVolume,
+            setter = settings.setBGMVolume,
+            min = 0,
+            max = 100
+        },
+        {
+            text = loc("SFX Volume"),
+            type = "slider",
+            getter = settings.getSFXVolume,
+            setter = settings.setSFXVolume,
+            min = 0,
+            max = 100
+        }
+    }
 }
 
-
----@param reg kirigami.Region
----@param ... kirigami.Region
-local function maxRegion(reg, ...)
-    local x1, y1 = reg.x, reg.y
-    local x2, y2 = x1 + reg.w, y1 + reg.h
-
-    for i = 1, select("#", ...) do
-        local r = select(i, ...)
-        x1 = math.min(x1, r.x)
-        y1 = math.min(y1, r.y)
-        x2 = math.max(x2, r.x + r.w)
-        y2 = math.max(y2, r.y + r.h)
-    end
-
-    return Kirigami(x1, y1, x2 - x1, y2 - y1)
+function SettingScene:init()
+    self.allowMousePan = false
+    self.activeTab = "general"
 end
 
----@param dx number
----@param dy number
----@param ... kirigami.Region
-local function moveRegionInplace(dx, dy, ...)
-    for i = 1, select("#", ...) do
-        local r = select(i, ...)
-        r.x = r.x + dx
-        r.y = r.y + dy
-    end
+function SettingScene:update(dt)
 end
 
----@param baseR kirigami.Region
----@param ... kirigami.Region
-local function makeInCenterInplace(baseR, ...)
-    local centerizer = maxRegion(...)
-    local centered = centerizer:center(baseR)
-    moveRegionInplace(centered.x - centerizer.x, centered.y - centerizer.y, ...)
-end
-
-
----@param lang string
----@return string
----@return string|nil
-local function extractLangRegCode(lang)
-    local langcode, regcode = lang:lower():match("(%l%l)[_%-](.+)")
-    if not langcode then
-        return lang, nil
-    end
-
-    return langcode, regcode
-end
-
-
-
----@class SettingScene: FreeCameraScene
-local settingscene = FreeCameraScene()
-
-function settingscene:init()
-    sfx.setVolume(settings.getSFXVolume())
-
-    -- key = language code, value = language name
-    self.languages = getLanguageList()
-    -- Interleaved
-    ---@type [string,string][]
-    self.languageListInterleaved = {}
-    for k, v in pairs(self.languages) do
-        self.languageListInterleaved[#self.languageListInterleaved+1] = {k, v}
-    end
-    self.languageListSlider = 1
-    table.sort(self.languageListInterleaved, function (a, b) return a[1] < b[1] end)
-    self.showLanguagePopup = false
-
-    -- Ensure closest language match is selected
-    do
-        local lang = settings.getLanguage()
-        if not self.languages[lang] then
-            local langcode, regcode = extractLangRegCode(lang)
-            local choice = nil
-            for k in pairs(self.languages) do
-                local lc, rc = extractLangRegCode(k)
-                if lc == langcode then
-                    if rc == regcode then
-                        choice = k
-                        break -- exact match, done
-                    elseif not choice then
-                        choice = k -- bare language fallback
-                    end
-                end
-            end
-            if choice then
-                settings.setLanguage(choice)
-            end
-        end
-    end
-end
-
-function settingscene:leave()
-    settings.save()
-end
-
----@param dt number
-function settingscene:update(dt)
-    -- g.requestBGM(g.BGMID.TITLE)
-    titleBackground.update(dt)
-end
-
----@param value integer
----@param label string
----@param labelR kirigami.Region
----@param sliderR kirigami.Region
-local function drawVolume(value, label, labelR, sliderR)
-    local valueR = Kirigami(0, 0, 100, 16)
-        :centerY(sliderR)
-        :attachToRightOf(sliderR)
-        :padUnit(8, 0)
-
-    love.graphics.setColor(1, 1, 1)
-    richtext.printRich("{o}"..label.."{/o}", g.getSmallFont(32), labelR.x, labelR.y, labelR.w, "center")
-    love.graphics.setColor(SLIDER_BACKGROUND)
-    love.graphics.rectangle("fill", sliderR:get())
-    value = ui.Slider(
-        "setting:"..label,
-        "horizontal",
-        SLIDER_COLOR,
-        value + 1,
-        101, -- 0 to 100 both inclusive is 101
-        0.1,
-        sliderR:padUnit(1)
-    ) - 1
-    love.graphics.setColor(1, 1, 1)
-    richtext.printRich(
-        "{o}"..value.."{/o}",
-        g.getSmallFont(16),
-        valueR.x,
-        valueR.y,
-        valueR.w,
-        "left"
-    )
-    return value
-end
-
-function settingscene:draw()
+function SettingScene:draw()
     ui.startUI()
 
-    titleBackground.draw()
-
-    -- Prep layout
-    local w, h = ui.getScaledUIDimensions()
+    local theme = g.getSystemTheme()
+    local titleF = g.getThickFont(32)
+    local tabF = g.getThickFont(20)
     local r = ui.getScreenRegion()
-    local titleR, contentR, bottomR = r:splitVertical(72, h - 72 - 64, 64)
+    local areaR = r:padRatio(0.1)
 
-    -- Draw title
-    local titleFont = g.getBigFont(48)
-    local titleTextR = Kirigami(0, 0, w, titleFont:getHeight()):center(titleR)
-    love.graphics.setColor(1, 1, 1)
-    richtext.printRich(TEXT.SETTINGS,  titleFont, titleTextR.x, titleTextR.y, w, "center")
+    love.graphics.clear(g.COLORS.UI.MAIN[theme].PRIMARY)
 
-    -- Setup settings layout
-    local font = g.getSmallFont(32)
-    local fontHeight = font:getHeight()
-    local smallFont = g.getSmallFont(16)
-    local smallFontHeight = smallFont:getHeight()
-
-    -- Effects Volume
-    local effectVolumeLabelR = Kirigami(0, 0, 240, fontHeight)
-        :centerX(titleTextR)
-    local effectVolumeSliderBaseR = Kirigami(0, 0, 240, smallFont:getHeight())
-        :attachToBottomOf(effectVolumeLabelR)
-        :centerX(effectVolumeLabelR)
-
-    -- Music Volume
-    local musicVolumeLabelR = Kirigami(0, 0, 240, fontHeight)
-        :centerX(titleTextR)
-        :attachToBottomOf(effectVolumeSliderBaseR)
-        :moveUnit(0, 8)
-    local musicVolumeSliderBaseR = Kirigami(0, 0, 240, smallFont:getHeight())
-        :attachToBottomOf(musicVolumeLabelR)
-        :centerX(musicVolumeLabelR)
-
-    -- CRT toggle
-    local crtTextWidth = richtext.getWidth(TEXT.CRT_EFFECT, font)
-    local crtPlacementR = Kirigami(0, 0, crtTextWidth + fontHeight, fontHeight)
-        :centerX(titleTextR)
-        :attachToBottomOf(musicVolumeSliderBaseR)
-        :moveUnit(0, 8)
-    local crtLabelR, crtBoxR = crtPlacementR:splitHorizontal(crtTextWidth, fontHeight)
-    crtBoxR = crtBoxR:padUnit(6)
-
-    -- Fullscreen toggle
-    local fsTextWidth = richtext.getWidth(TEXT.FULLSCREEN, font)
-    local fsPlacementR = Kirigami(0, 0, fsTextWidth + fontHeight, fontHeight)
-        :centerX(titleTextR)
-        :attachToBottomOf(crtPlacementR)
-        :moveUnit(0, 8)
-    local fsLabelR, fsBoxR = fsPlacementR:splitHorizontal(fsTextWidth, fontHeight)
-    fsBoxR = fsBoxR:padUnit(6)
-
-    -- Language:
-    local languageLabelR = Kirigami(0, 0, 240, font:getHeight() * 1.5)
-        :centerX(titleTextR)
-        :attachToBottomOf(fsPlacementR)
-        :moveUnit(0, 8)
-    local languageIconR = Kirigami(0, 0, 32, 32)
-        :attachToTopOf(languageLabelR)
-        :centerX(languageLabelR)
-        :moveRatio(0, 1)
-        :moveUnit(richtext.getWidth(TEXT.LANGUAGE, font) / 2 + 20, 0)
-    local languageButtonR = Kirigami(0, 0, 144, 32)
-        :attachToBottomOf(languageLabelR)
-        :centerX(languageLabelR)
-
-    -- Centerize layout in place
-    makeInCenterInplace(contentR,
-        effectVolumeLabelR,
-        effectVolumeSliderBaseR,
-        musicVolumeLabelR,
-        musicVolumeSliderBaseR,
-        crtLabelR,
-        crtBoxR,
-        fsLabelR,
-        fsBoxR,
-        languageLabelR,
-        languageIconR,
-        languageButtonR
+    local titleR, _, contentBaseR = helper.splitRegionByExactSizes(areaR, "vertical",
+        titleF:getHeight(),
+        8,
+        0
     )
 
-    -- Draw effect volume
-    local sfxVolume = settings.getSFXVolume()
-    sfxVolume = drawVolume(sfxVolume, TEXT.EFFECT_VOLUME, effectVolumeLabelR, effectVolumeSliderBaseR)
-    settings.setSFXVolume(sfxVolume)
-    sfx.setVolume(sfxVolume)
-
-    -- Draw music volume
-    local bgmVolume = settings.getBGMVolume()
-    bgmVolume = drawVolume(bgmVolume, TEXT.MUSIC_VOLUME, musicVolumeLabelR, musicVolumeSliderBaseR)
-    settings.setBGMVolume(bgmVolume)
-
-    -- Draw CRT
     love.graphics.setColor(1, 1, 1)
-    richtext.printRich(TEXT.CRT_EFFECT, font, crtLabelR.x, crtLabelR.y, crtLabelR.w, "left")
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.rectangle("fill", crtBoxR:padUnit(-2):get())
-    local crtState = ui.Checkbox(objects.Color.WHITE, crtBoxR, settings.isCRTActive())
-    settings.setCRTActive(crtState)
+    ui.printRichInRegion("{o}"..TEXT.SETTING_TITLE.."{/o}", titleF, titleR, true, "center", "center")
 
-    -- Draw Fullscreen
-    love.graphics.setColor(1, 1, 1)
-    richtext.printRich(TEXT.FULLSCREEN, font, fsLabelR.x, fsLabelR.y, fsLabelR.w, "left")
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.rectangle("fill", fsBoxR:padUnit(-2):get())
-    local fsState = ui.Checkbox(objects.Color.WHITE, fsBoxR, settings.isFullscreen())
-    settings.setFullscreen(fsState)
+    local TRAPEZOID_PADDING = 10
+    local tabR, contentR = helper.splitRegionByExactSizes(contentBaseR, "vertical", tabF:getHeight(), 0)
+    local generalTabR, audioTabR = tabR:splitHorizontal(1, 1)
+    local tabs = {
+        general = {generalTabR, TEXT.SETTING_GENERAL},
+        audio = {audioTabR, TEXT.SETTING_AUDIO},
+    }
+    love.graphics.setColor(g.COLORS.UI.MAIN[theme].PANEL)
+    love.graphics.rectangle("fill", contentR:get())
+    for k, v in pairs(tabs) do
+        -- Input test
+        if iml.wasJustClicked(v[1]:get()) then
+            self.activeTab = k
+        end
+        -- Distinct active tab with inactive tabs
+        if self.activeTab == k then
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].PANEL)
+        else
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].TAB_INACTIVE)
+        end
+        -- Draw trapezoid using the padding
+        do
+            local x, y, w, h = v[1]:get()
+            love.graphics.polygon("fill", {
+                x + TRAPEZOID_PADDING, y,
+                x + w - TRAPEZOID_PADDING, y,
+                x + w, y + h,
+                x, y + h,
+            })
+        end
+        -- Draw tab name
+        love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+        ui.printRichInRegion(v[2], tabF, v[1], true, "center")
+    end
 
-    -- Draw language stuff
-    local all = maxRegion(languageButtonR, languageIconR, languageLabelR)
-    lg.setColor(0.4,0.5,0.75)
-    ui.drawSingleColorPanel(all:get())
-    love.graphics.setColor(1, 1, 1)
-    richtext.printRich(
-        "{o}"..TEXT.LANGUAGE.."{/o}",
-        g.getSmallFont(32),
-        languageLabelR.x,
-        languageLabelR.y,
-        languageLabelR.w,
-        "center"
-    )
-    do
-        love.graphics.setColor(0, 0, 0)
-        local lx, ly = languageIconR:getCenter()
-        for dy = -1, 1, 2 do
-            for dx = -1, 1, 2 do
-                g.drawImage("localization_icon", lx + dx, ly + dy, 0, 0.75, 0.75)
+    -- Draw setting for each category
+    local baseSettingR = contentR:padRatio(0.3, 0.1)
+    local leftListR, rightListR = baseSettingR:splitHorizontal(3, 2)
+    local settingF = g.getMainFont(20)
+    local leftList = leftListR:grid(1, math.floor(leftListR.h / (settingF:getHeight() + 8)))
+    local rightList = rightListR:grid(1, math.floor(rightListR.h / (settingF:getHeight() + 8)))
+    for i, s in ipairs(SETTINGS[self.activeTab]) do
+        local leftR = leftList[i]:padUnit(0, 8)
+        local rightR = rightList[i]:padUnit(0, 8)
+        love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+        love.graphics.print(s.text, settingF, leftR.x, leftR.y)
+        love.graphics.setColor(1, 1, 1)
+
+        if s.type == "toggle" then
+            local c = g.COLORS.UI.MAIN[theme].PRIMARY_INVERT
+            local checkboxR = rightR:shrinkToAspectRatio(1, 1):center(rightR)
+            local oldval = s.getter()
+            local newval = ui.Checkbox(g.COLORS.UI.MAIN[theme].CARD, checkboxR, oldval, c)
+            if oldval ~= newval then
+                s.setter(newval)
+            end
+        elseif s.type == "slider" then
+            local valwidth = settingF:getWidth(tostring(s.max)..tostring(s.min))
+            local sliderBaseR, valueR = helper.splitRegionByExactSizes(rightR, "horizontal", 0, valwidth)
+            local sliderR = sliderBaseR:padUnit(2)
+            local oldval = s.getter()
+
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].PRIMARY_INVERT)
+            love.graphics.rectangle("fill", sliderBaseR:get())
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+            local newval = s.min + ui.Slider(
+                s.text..s.type,
+                "horizontal",
+                g.COLORS.UI.MAIN[theme].PRIMARY,
+                oldval - s.min + 1,
+                s.max - s.min + 1,
+                0.15,
+                sliderR
+            ) - 1
+            if oldval ~= newval then
+                s.setter(newval)
+            end
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+            love.graphics.printf(tostring(newval), settingF, valueR.x, valueR.y, valueR.w, "center")
+        elseif s.type == "button" then
+            local c = g.COLORS.UI.MAIN[theme].PRIMARY_INVERT
+            love.graphics.setColor(1, 1, 1)
+            if ui.Button2(s.buttonLabel, settingF, c, rightR, c, g.COLORS.UI.MAIN[theme].PRIMARY) then
+                s.action()
             end
         end
-        love.graphics.setColor(1, 1, 1)
-        g.drawImage("localization_icon", lx, ly, 0, 0.75, 0.75)
-    end
-    richtext.printRich(
-        "{o}"..TEXT.REQUIRES_RESTART.."{/o}",
-        g.getSmallFont(16),
-        languageLabelR.x,
-        languageLabelR.y + 32,
-        languageLabelR.w,
-        "center"
-    )
-    local lang = settings.getLanguage()
-    local langButtonText = self.languages[lang] or lang
-    if ui.DefaultButton("{o}"..langButtonText.."{/o}", languageButtonR) and #self.languageListInterleaved > 0 then
-        self.showLanguagePopup = true
     end
 
-    -- Draw "Done" Button
-    local doneButtonR = Kirigami(0, 0, 144, 40)
-        :center(bottomR)
-
+    -- Draw back button
     love.graphics.setColor(1, 1, 1)
-    if ui.Button(
-        helper.wrapRichtextColor(objects.Color.BLACK, TEXT.DONE),
-        objects.Color.WHITE,
-        objects.Color.GRAY,
-        doneButtonR
-    ) then
+    local backButtonR = Kirigami(0, 0, 40, 40)
+        :attachToLeftOf(r)
+        :attachToTopOf(r)
+        :moveRatio(1, 1)
+        :moveUnit(4, 4)
+    ui.Tooltip(backButtonR, objects.Color.BLACK, objects.Color.WHITE)
+    g.drawImageContained("arrow_back", backButtonR:padUnit(ui.TOOLTIP_PADDING):get())
+    if iml.wasJustClicked(backButtonR:get()) then
         sceneManager.gotoLastScene()
-    end
-
-    if self.showLanguagePopup then
-        self:_drawLanguageSelector()
     end
 
     ui.endUI()
 end
 
-function settingscene:_drawLanguageSelector()
-    local SELECTION_BUTTON_SIZE = 40
-    local r = ui.getScreenRegion()
-    local panelR = r
-        :padRatio(0.1)
-        :shrinkToMultipleOf(SELECTION_BUTTON_SIZE)
-        :center(r)
-
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.rectangle("fill", panelR:get())
-    iml.panel(r:get()) -- Prevent input propagation to bottom
-
-    local gridBaseR, sliderR = panelR:splitHorizontal(panelR.w - 32, 32)
-    local maxItems = math.floor(panelR.h / SELECTION_BUTTON_SIZE)
-    local grid = gridBaseR:grid(1, maxItems)
-
-    love.graphics.setColor(SLIDER_BACKGROUND)
-    love.graphics.rectangle("fill", sliderR:get())
-    self.languageListSlider = ui.Slider(
-        "languageListSlider",
-        "vertical",
-        SLIDER_COLOR,
-        self.languageListSlider,
-        math.max(#self.languageListInterleaved - maxItems, 1),
-        nil,
-        sliderR:padUnit(2)
-    )
-    love.graphics.setColor(1, 1, 1)
-
-    local font = g.getSmallFont(32)
-    for i = 1, maxItems do
-        local lang = self.languageListInterleaved[i + self.languageListSlider - 1]
-        if not lang then
-            break
-        end
-
-        local buttonR = grid[i]:padUnit(4)
-        local textR = buttonR
-            :set(nil, nil, nil, font:getHeight())
-            :centerY(buttonR)
-
-        -- Draw button
-        if iml.wasJustClicked(buttonR:get()) then
-            settings.setLanguage(lang[1])
-            self.showLanguagePopup = false
-            love.event.quit("restart")
-        elseif iml.isHovered(buttonR:get()) then
-            love.graphics.setColor(0, 0, 0, 0.2)
-            love.graphics.rectangle("fill", buttonR:get())
-        end
-
-        -- Add outline for current language selection
-        if lang[1] == settings.getLanguage() then
-            love.graphics.setColor(0, 0, 0)
-            love.graphics.rectangle("line", buttonR:get())
-        end
-
-        -- Button text
-        love.graphics.setColor(1, 1, 1)
-        richtext.printRich("{o}"..lang[2].."{/o}", font, textR.x, textR.y, textR.w, "center")
-    end
-end
-
-
-function settingscene:keyreleased(_k, scancode)
-    if scancode == "escape" then
+function SettingScene:keyreleased(k)
+    if k == "escape" then
         sceneManager.gotoLastScene()
     end
 end
 
-
-function settingscene:wheelmoved(_, dy)
-    if self.showLanguagePopup then
-        local dir = helper.sign(dy)
-        self.languageListSlider = math.max(self.languageListSlider - dir, 1)
-    end
-end
-
-
-return settingscene
+return SettingScene
