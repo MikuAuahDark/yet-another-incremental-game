@@ -66,6 +66,12 @@ local function settings()
 end
 
 local function exit()
+    if not love.keyboard.isDown("lshift", "rshift") then
+        g.saveAndInvalidateSession()
+    else
+        g.delSession(false)
+    end
+
     g.gotoScene("title_scene")
 end
 

@@ -466,9 +466,14 @@ function HUD:draw(show)
             drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world.cpsCollector:getAverage()), "{dns}/s")
             lw2:pop()
 
-            love.graphics.setColor(0, 0, 0)
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
             ui.debugRegion(hideButtonR)
-            ui.debugRegion(pauseButtonR)
+
+            g.drawImageContained("pause", pauseButtonR:padRatio(0.15):get())
+            if iml.wasJustClicked(pauseButtonR:get()) then
+                local sn = g.getSn()
+                sn.paused = not sn.paused
+            end
         end
     end
 
