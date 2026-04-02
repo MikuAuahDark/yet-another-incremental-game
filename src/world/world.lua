@@ -28,6 +28,10 @@ end
 ---@field removed boolean
 ---@field removable boolean
 
+---@class g.World.BoosterData: g.World.ItemData
+---@field connectsTo g.World.ItemData[]
+---@field effectiveness number
+
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
 ---@field jobProgress number
@@ -123,7 +127,7 @@ function World:init()
     self.heat = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
     ---@type g.Job[]
     self.jobQueue = {}
-    ---@type table<integer, g.World.ItemData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
+    ---@type table<integer, g.World.BoosterData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.boosters = {}
     ---@type table<integer, g.World.ItemData[]>
     self.boostersInTiles = {}
@@ -259,19 +263,10 @@ function World:_update(dt)
             local index = self.items:coordsToIndex(x, y)
 
             if category == "booster" then
+                ---@cast item g.World.BoosterData
                 self.boosters[index] = item
-                ---@cast itemInfo g.BoosterInfo
-
-                local affectedTiles = worldutil.getSpreadTiles(itemInfo.radiateAlgorithm, itemInfo.radiate)
-                for _, tile in ipairs(affectedTiles) do
-                    local tx, ty = x + tile[1], y + tile[2]
-                    -- Insert booster tiles
-                    if self.items:contains(tx, ty) then
-                        local tindex = self.items:coordsToIndex(tx, ty)
-                        self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
-                        table.insert(self.boostersInTiles[tindex], item)
-                    end
-                end
+                item.effectiveness = 1
+                table.clear(item.connectsTo)
             elseif category == "data" then
                 ---@cast item g.World.DataOutputData
                 self.dataProcessors[index] = item
@@ -297,6 +292,59 @@ function World:_update(dt)
         end
     end)
     self.maxJobs = maxJobs
+
+    -- Update booster connections and effectiveness
+    for _, booster in pairs(self.boosters) do
+        ---@cast booster g.World.BoosterData
+        local boosterInfo = g.getItemInfo(booster.type, "booster")
+        if boosterInfo.connectable then
+            local range = boosterInfo.radiate -- Use radiate as range
+            for dx = -range, range do
+                for dy = -range, range do
+                    local dist = worldutil.getDistance(boosterInfo.radiateAlgorithm, dx, dy)
+                    if dist <= range then
+                        local tx, ty = booster.tileX + dx, booster.tileY + dy
+                        local targetItem = self.items:get(tx, ty) --[[@as g.World.ItemData?]]
+                        if targetItem and not targetItem.removed then
+                            local _, category = g.getItemInfo(targetItem.type)
+                            if category == boosterInfo.connectable.target then
+                                table.insert(booster.connectsTo, targetItem)
+                            end
+                        end
+                    end
+                end
+            end
+
+            -- Effectiveness scales down if overloaded
+            if #booster.connectsTo > 0 then
+                ---@cast booster g.World.BoosterData
+                booster.effectiveness = math.min(boosterInfo.connectable.max / #booster.connectsTo, 1)
+                for _, target in ipairs(booster.connectsTo) do
+                    local tindex = self.items:coordsToIndex(target.tileX, target.tileY)
+                    self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
+                    table.insert(self.boostersInTiles[tindex], booster)
+                end
+            else
+                booster.effectiveness = 1
+            end
+        else
+            -- Radiating booster
+            local affectedTiles = worldutil.getSpreadTiles(boosterInfo.radiateAlgorithm, boosterInfo.radiate)
+            for _, tile in ipairs(affectedTiles) do
+                local tx, ty = booster.tileX + tile[1], booster.tileY + tile[2]
+                if self.items:contains(tx, ty) then
+                    local tindex = self.items:coordsToIndex(tx, ty)
+                    self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
+                    table.insert(self.boostersInTiles[tindex], booster)
+                end
+            end
+        end
+    end
+
+    -- Apply booster load multipliers
+    for _, machine in pairs(self.servers) do self:_applyBoosterLoad(machine) end
+    for _, machine in pairs(self.dataProcessors) do self:_applyBoosterLoad(machine) end
+    for _, machine in pairs(self.dataInputs) do self:_applyBoosterLoad(machine) end
 
     -- Update power generator power
     for _, powerGen in pairs(self.powerGens) do
@@ -413,14 +461,26 @@ function World:_update(dt)
         if itemData then
             local itemInfo, category = g.getItemInfo(itemData.type)
             if category == "booster" then
+                ---@cast itemData g.World.BoosterData
                 ---@cast itemInfo g.BoosterInfo
-                local affectedTiles = worldutil.getSpreadTiles(itemInfo.radiateAlgorithm, itemInfo.radiate)
-                for _, tile in ipairs(affectedTiles) do
-                    local tx, ty = x + tile[1], y + tile[2]
 
-                    if self.items:contains(tx, ty) then
-                        local heat = itemInfo.getTileHeat(tile[1], tile[2]) * worldutil.getLoadPercentage(itemData)
-                        self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
+                if itemInfo.connectable then
+                    for _, target in ipairs(itemData.connectsTo) do
+                        local reltx = target.tileX - x
+                        local relty = target.tileY - y
+                        ---@cast itemData g.World.BoosterData
+                        local heat = itemInfo.getTileHeat(reltx, relty) * itemData.effectiveness * worldutil.getLoadPercentage(itemData)
+                        self.heat:set(target.tileX, target.tileY, self.heat:get(target.tileX, target.tileY) + heat)
+                    end
+                else
+                    local affectedTiles = worldutil.getSpreadTiles(itemInfo.radiateAlgorithm, itemInfo.radiate)
+                    for _, tile in ipairs(affectedTiles) do
+                        local tx, ty = x + tile[1], y + tile[2]
+
+                        if self.items:contains(tx, ty) then
+                            local heat = itemInfo.getTileHeat(tile[1], tile[2]) * worldutil.getLoadPercentage(itemData)
+                            self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
+                        end
                     end
                 end
             elseif category == "server" then
@@ -474,8 +534,30 @@ function World:_update(dt)
             end
         end
 
+        --- Compute booster
+        local boosterMod = 0
+        local boosterMul = 1
+        local biTiles = self.boostersInTiles[self.items:coordsToIndex(dpData.tileX, dpData.tileY)]
+        if biTiles then
+            for _, booster in ipairs(biTiles) do
+                ---@cast booster g.World.BoosterData
+                local boosterInfo = g.getItemInfo(booster.type, "booster")
+                local reltx = dpData.tileX - booster.tileX
+                local relty = dpData.tileY - booster.tileY
+                local bMod = boosterInfo.getPerformanceModifier(reltx, relty)
+                local bMul = boosterInfo.getPerformanceMultiplier(reltx, relty)
+                boosterMod = boosterMod + bMod * booster.effectiveness
+                boosterMul = boosterMul * (1 + (bMul - 1) * booster.effectiveness)
+            end
+        end
+
         --- Compute DPS
-        dpData.dataPerSecond = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, worldutil.getLoadPercentage(dpData), dpInfo)
+        dpData.dataPerSecond = g.getProperty(
+            "getDataThroughput",
+            dpInfo.dataPerSecond + boosterMod,
+            worldutil.getLoadPercentage(dpData) * boosterMul,
+            dpInfo
+        )
         dpData.wireDPS = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
     end
 
@@ -596,11 +678,14 @@ function World:_update(dt)
         local biTiles = self.boostersInTiles[self.items:coordsToIndex(serverData.tileX, serverData.tileY)]
         if biTiles then
             for _, booster in ipairs(biTiles) do
+                ---@cast booster g.World.BoosterData
                 local boosterInfo = g.getItemInfo(booster.type, "booster")
                 local reltx = serverData.tileX - booster.tileX
                 local relty = serverData.tileY - booster.tileY
-                boosterMod = boosterMod + boosterInfo.getPerformanceModifier(reltx, relty)
-                boosterMul = boosterMul * boosterInfo.getPerformanceMultiplier(reltx, relty)
+                local bMod = boosterInfo.getPerformanceModifier(reltx, relty)
+                local bMul = boosterInfo.getPerformanceMultiplier(reltx, relty)
+                boosterMod = boosterMod + bMod * booster.effectiveness
+                boosterMul = boosterMul * (1 + (bMul - 1) * booster.effectiveness)
             end
         end
 
@@ -828,6 +913,25 @@ function World:_draw()
     lw2:pop()
     prof_pop() -- prof_push("power_draw")
 
+    -- Draw booster connectors
+    prof_push("boostercon_draw")
+    local bc = gsman.setColor(1, 0, 0)
+    local blw = gsman.setLineWidth(4)
+    for _, booster in pairs(self.boosters) do
+        -- TODO: Styling
+        for _, target in ipairs(booster.connectsTo) do
+            love.graphics.line(
+                (booster.tileX + 0.5) * wtz,
+                (booster.tileY + 0.5) * wtz,
+                (target.tileX + 0.5) * wtz,
+                (target.tileY + 0.5) * wtz
+            )
+        end
+    end
+    blw:pop()
+    bc:pop()
+    prof_pop() -- prof_push("boostercon_draw")
+
     -- Draw item problems status icons
     prof_push("item_problems_draw")
     love.graphics.setColor(1, 1, 1)
@@ -881,6 +985,25 @@ function World:_draw()
     self.particles:draw()
 
     prof_pop() -- prof_push("world:_draw")
+end
+
+
+
+---@param itemData g.World.ItemData
+function World:_applyBoosterLoad(itemData)
+    local biTiles = self.boostersInTiles[self.items:coordsToIndex(itemData.tileX, itemData.tileY)]
+    if biTiles then
+        local mul = 1
+        for _, booster in ipairs(biTiles) do
+            ---@cast booster g.World.BoosterData
+            local bInfo = g.getItemInfo(booster.type, "booster")
+            local reltx, relty = itemData.tileX - booster.tileX, itemData.tileY - booster.tileY
+            local bMul = bInfo.getLoadMultiplier(reltx, relty)
+            ---@cast booster g.World.BoosterData
+            mul = mul * (1 + (bMul - 1) * booster.effectiveness)
+        end
+        itemData.load = itemData.load * mul
+    end
 end
 
 
@@ -969,7 +1092,7 @@ function World:putItem(itemId, tx, ty, removable)
             removable = removable,
         }
     elseif category == "booster" then
-        ---@type g.World.ItemData
+        ---@type g.World.BoosterData
         itemData = {
             type = itemId,
             tileX = tx,
@@ -977,6 +1100,8 @@ function World:putItem(itemId, tx, ty, removable)
             removed = false,
             load = itemInfo.load,
             removable = removable,
+            connectsTo = {},
+            effectiveness = 1,
         }
     elseif category == "indata" then
         ---@type g.World.DataInputData

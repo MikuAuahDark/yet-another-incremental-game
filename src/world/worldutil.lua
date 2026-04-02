@@ -376,7 +376,7 @@ end
 function worldutil.getLoadPercentage(itemData)
     if itemData.powerNetwork and itemData.powerNetwork.totalPower > 0 then
         -- If the totalLoad is 0, it will be 1/0 -> inf -> 1 again
-        return math.min(itemData.powerNetwork.totalPower / itemData.powerNetwork.totalLoad)
+        return math.min(itemData.powerNetwork.totalPower / itemData.powerNetwork.totalLoad, 1)
     end
     return 0
 end
