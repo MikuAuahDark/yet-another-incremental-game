@@ -1,52 +1,118 @@
+
+---@param r kirigami.Region
+---@param n integer
+---@param dist number
+---@param len number
+---@param thickness number
+local function drawDataInputDecorator(r, n, dist, len, thickness)
+    -- Data input decoration is "arrow" pointing outwards
+    local centerR = r:padRatio(0.75)
+    local d = dist * math.sqrt(centerR.w * centerR.h)
+    local width = len * math.sqrt(centerR.w * centerR.h)
+    local height = thickness * math.sqrt(centerR.w * centerR.h)
+    local hpx0 = height / 2
+    for i = 1, n do
+        local t = math.sin((love.timer.getTime() + i / 5) * math.pi) ^ 2
+        local hpx = hpx0 + t * 2
+        -- Top Left
+        local baseX = centerR.x - (i - 1) * d
+        local baseY = centerR.y - (i - 1) * d
+        love.graphics.rectangle("fill", baseX - hpx, baseY - hpx, width, height)
+        love.graphics.rectangle("fill", baseX - hpx, baseY - hpx, height, width)
+        -- Top Right
+        baseX = centerR.x + centerR.w + (i - 1) * d
+        baseY = centerR.y - (i - 1) * d
+        love.graphics.rectangle("fill", baseX + hpx, baseY - hpx, -width, height)
+        love.graphics.rectangle("fill", baseX + hpx, baseY - hpx, -height, width)
+        -- Bottom Right
+        baseX = centerR.x + centerR.w + (i - 1) * d
+        baseY = centerR.y + centerR.h + (i - 1) * d
+        love.graphics.rectangle("fill", baseX + hpx, baseY + hpx, -width, -height)
+        love.graphics.rectangle("fill", baseX + hpx, baseY + hpx, -height, -width)
+        -- Bottom Left
+        baseX = centerR.x - (i - 1) * d
+        baseY = centerR.y + centerR.h + (i - 1) * d
+        love.graphics.rectangle("fill", baseX - hpx, baseY + hpx, width, -height)
+        love.graphics.rectangle("fill", baseX - hpx, baseY + hpx, height, -width)
+    end
+
+    return centerR
+end
+
 g.defineDataInput("basic_indata", "Basic Data Input", {
     price = 0,
     load = 1,
     queuesJob = "general",
     maxJobQueue = 1,
     wireLength = 2,
-    color = objects.Color("#b0b0b0"), -- Black/Grey for input
+    color = objects.Color("#ebe8c1"), -- Color-coded
     draw = function(r)
-        -- Draw decor: Inverse of Data Output (pointing inwards)
-        local col = gsman.mulColor(1, 1, 1, 0.4)
-        local cx, cy = r:getCenter()
-        local lw = gsman.setLineWidth(4)
-        for i = 0, 3 do
-            local a = (i * math.pi * 2) / 4
-            local x1 = cx + r.w / 5 * math.cos(a)
-            local y1 = cy + r.h / 5 * math.sin(a)
-            local x2 = cx + r.w / 3 * math.cos(a)
-            local y2 = cy + r.h / 3 * math.sin(a)
-            love.graphics.line(x1, y1, x2, y2)
-        end
-        lw:pop()
+        local col = gsman.mulColor(0, 0, 0)
+        drawDataInputDecorator(r, 1, 0.2, 0.35, 0.06)
         col:pop()
     end,
 })
 g.PREUNLOCKED_ITEMS:add("basic_indata")
 
-g.defineDataInput("video_indata", "Video Data Input", {
-    price = 50,
-    load = 5,
-    queuesJob = "video",
+g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
+    price = 10,
+    load = 7,
+    queuesJob = "general",
     maxJobQueue = 5,
-    wireLength = 3,
-    color = objects.Color("#6fb3e8"),
+    wireLength = 4,
+    color = objects.Color("#ebe883"),
     draw = function(r)
-        local col = gsman.mulColor(1, 1, 1, 0.4)
-        local cx, cy = r:getCenter()
-        local lw = gsman.setLineWidth(4)
-        for i = 0, 3 do
-            local a = (i * math.pi * 2) / 4 + math.pi / 4
-            local x1 = cx + r.w / 6 * math.cos(a)
-            local y1 = cy + r.h / 6 * math.sin(a)
-            local x2 = cx + r.w / 3 * math.cos(a)
-            local y2 = cy + r.h / 3 * math.sin(a)
-            love.graphics.line(x1, y1, x2, y2)
-        end
-        lw:pop()
+        local col = gsman.mulColor(0, 0, 0)
+        drawDataInputDecorator(r, 2, 0.2, 0.4, 0.08)
         col:pop()
     end,
 })
+
+g.defineDataInput("indata_tier2", "General Data Input (Tier 2)", {
+    price = 35,
+    load = 15,
+    queuesJob = "general",
+    maxJobQueue = 7,
+    wireLength = 6,
+    color = objects.Color("#ebe883"),
+    draw = function(r)
+        local col = gsman.mulColor(0, 0, 0)
+        drawDataInputDecorator(r, 3, 0.2, 0.5, 0.08)
+        col:pop()
+    end,
+})
+
+
+
+g.defineDataInput("video_indata", "Video Data Input (Tier 1)", {
+    price = 50,
+    load = 10,
+    queuesJob = "video",
+    maxJobQueue = 5,
+    wireLength = 4,
+    color = objects.Color("#6fb3e8"),
+    draw = function(r)
+        local col = gsman.mulColor(0, 0, 0)
+        g.drawImageContained("movie", drawDataInputDecorator(r, 2, 0.2, 0.4, 0.08):get())
+        col:pop()
+    end,
+})
+
+g.defineDataInput("video_indata_t2", "Video Data Input (Tier 2)", {
+    price = 80,
+    load = 10,
+    queuesJob = "video",
+    maxJobQueue = 8,
+    wireLength = 5,
+    color = objects.Color("#6fb3e8"),
+    draw = function(r)
+        local col = gsman.mulColor(0, 0, 0)
+        g.drawImageContained("movie", drawDataInputDecorator(r, 3, 0.2, 0.5, 0.08):get())
+        col:pop()
+    end,
+})
+
+
 
 g.defineDataInput("ai_indata", "AI Data Input", {
     price = 500,
@@ -56,19 +122,22 @@ g.defineDataInput("ai_indata", "AI Data Input", {
     wireLength = 5,
     color = objects.Color("#e37036"),
     draw = function(r)
-        local col = gsman.mulColor(1, 1, 1, 0.4)
-        local cx, cy = r:getCenter()
-        local lw = gsman.setLineWidth(4)
-        love.graphics.circle("line", cx, cy, r.w / 4)
-        for i = 0, 7 do
-            local a = (i * math.pi * 2) / 8
-            local x1 = cx + r.w / 8 * math.cos(a)
-            local y1 = cy + r.h / 8 * math.sin(a)
-            local x2 = cx + r.w / 4 * math.cos(a)
-            local y2 = cy + r.h / 4 * math.sin(a)
-            love.graphics.line(x1, y1, x2, y2)
-        end
-        lw:pop()
+        local col = gsman.mulColor(0, 0, 0)
+        g.drawImageContained("network_intelligence", drawDataInputDecorator(r, 2, 0.2, 0.4, 0.08):get())
+        col:pop()
+    end,
+})
+
+g.defineDataInput("ai_indata_t2", "AI Data Input (Tier 2)", {
+    price = 800,
+    load = 25,
+    queuesJob = "ai",
+    maxJobQueue = 8,
+    wireLength = 5,
+    color = objects.Color("#e37036"),
+    draw = function(r)
+        local col = gsman.mulColor(0, 0, 0)
+        g.drawImageContained("network_intelligence", drawDataInputDecorator(r, 3, 0.2, 0.5, 0.08):get())
         col:pop()
     end,
 })
