@@ -1,3 +1,44 @@
+---@param r kirigami.Region
+---@param n integer
+---@param dist number
+---@param len number
+---@param thickness number
+local function drawDataOutputDecorator(r, n, dist, len, thickness)
+    -- Data output decoration is "arrow" pointing inwards
+    local centerR = r:padRatio(0.75)
+    local d = dist * math.sqrt(centerR.w * centerR.h)
+    local width = len * math.sqrt(centerR.w * centerR.h)
+    local height = thickness * math.sqrt(centerR.w * centerR.h)
+    local hpx0 = height / 2
+    for i = 1, n do
+        local t = math.sin((love.timer.getTime() + i / 5) * math.pi) ^ 2
+        local hpx = hpx0 + t * 2
+        -- Top Left
+        local baseX = centerR.x - (i - 1) * d
+        local baseY = centerR.y - (i - 1) * d
+        love.graphics.rectangle("fill", baseX + hpx, baseY + hpx, -width, -height)
+        love.graphics.rectangle("fill", baseX + hpx, baseY + hpx, -height, -width)
+        -- Top Right
+        baseX = centerR.x + centerR.w + (i - 1) * d
+        baseY = centerR.y - (i - 1) * d
+        love.graphics.rectangle("fill", baseX - hpx, baseY + hpx, width, -height)
+        love.graphics.rectangle("fill", baseX - hpx, baseY + hpx, height, -width)
+        -- Bottom Right
+        baseX = centerR.x + centerR.w + (i - 1) * d
+        baseY = centerR.y + centerR.h + (i - 1) * d
+        love.graphics.rectangle("fill", baseX - hpx, baseY - hpx, width, height)
+        love.graphics.rectangle("fill", baseX - hpx, baseY - hpx, height, width)
+        -- Bottom Left
+        baseX = centerR.x - (i - 1) * d
+        baseY = centerR.y + centerR.h + (i - 1) * d
+        love.graphics.rectangle("fill", baseX + hpx, baseY - hpx, -width, height)
+        love.graphics.rectangle("fill", baseX + hpx, baseY - hpx, -height, width)
+    end
+
+    return centerR
+end
+
+
 g.defineDataOutput("basic_data", "Basic Data Output", {
     price = 0,
     load = 1,
@@ -6,18 +47,8 @@ g.defineDataOutput("basic_data", "Basic Data Output", {
     color = objects.Color("#ebc965"),
     draw = function(r)
         -- Draw decor
-        local col = gsman.mulColor(1, 1, 1, 0.4)
-        local cx, cy = r:getCenter()
-        local lw = gsman.setLineWidth(4)
-        for i = 0, 3 do
-            local a = (i * math.pi * 2) / 4
-            local x1 = cx + r.w / 10 * math.cos(a)
-            local y1 = cy + r.h / 10 * math.sin(a)
-            local x2 = cx + r.w / 5 * math.cos(a)
-            local y2 = cy + r.h / 5 * math.sin(a)
-            love.graphics.line(x1, y1, x2, y2)
-        end
-        lw:pop()
+        local col = gsman.mulColor(0, 0, 0)
+        drawDataOutputDecorator(r, 2, 0.25, 0.35, 0.05)
         col:pop()
     end,
 })
@@ -31,18 +62,8 @@ g.defineDataOutput("normal_data", "Data Output", {
     color = objects.Color("FFBAEB65"),
     draw = function(r)
         -- Draw decor
-        local col = gsman.mulColor(1, 1, 1, 0.4)
-        local cx, cy = r:getCenter()
-        local lw = gsman.setLineWidth(4)
-        for i = 0, 3 do
-            local a = (i * math.pi * 2) / 4
-            local x1 = cx + r.w / 10 * math.cos(a)
-            local y1 = cy + r.h / 10 * math.sin(a)
-            local x2 = cx + r.w / 5 * math.cos(a)
-            local y2 = cy + r.h / 5 * math.sin(a)
-            love.graphics.line(x1, y1, x2, y2)
-        end
-        lw:pop()
+        local col = gsman.mulColor(0, 0, 0)
+        drawDataOutputDecorator(r, 2, 0.15, 0.4, 0.08)
         col:pop()
     end,
 })
@@ -55,18 +76,8 @@ g.defineDataOutput("advanced_data", "Advanced Data Output", {
     color = objects.Color("#95c9c7"),
     draw = function(r)
         -- Draw decor
-        local col = gsman.mulColor(1, 1, 1, 0.4)
-        local cx, cy = r:getCenter()
-        local lw = gsman.setLineWidth(4)
-        for i = 0, 7 do
-            local a = (i * math.pi * 2) / 8
-            local x1 = cx + r.w / 10 * math.cos(a)
-            local y1 = cy + r.h / 10 * math.sin(a)
-            local x2 = cx + r.w / 5 * math.cos(a)
-            local y2 = cy + r.h / 5 * math.sin(a)
-            love.graphics.line(x1, y1, x2, y2)
-        end
-        lw:pop()
+        local col = gsman.mulColor(0, 0, 0)
+        drawDataOutputDecorator(r, 3, 0.15, 0.4, 0.08)
         col:pop()
     end,
 })
@@ -76,14 +87,27 @@ g.defineDataOutput("he_data", "High-End Data Output", {
     load = 30,
     dataPerSecond = 10000,
     wireLength = 6,
-    color = objects.Color("#e06e92"),
+    color = objects.Color("#E13B49"),
     draw = function(r)
         -- Draw decor
-        local col = gsman.mulColor(1, 1, 1, 0.4)
-        local cx, cy = r:getCenter()
-        local lw = gsman.setLineWidth(4)
-        love.graphics.circle("line", cx, cy, r.w / 5)
-        lw:pop()
+        local col = gsman.mulColor(0, 0, 0)
+        drawDataOutputDecorator(r, 4, 0.15, 0.45, 0.08)
+        col:pop()
+    end,
+})
+
+g.defineDataOutput("quantum_data", "Quantum Data Output", {
+    price = 5000,
+    load = 50,
+    dataPerSecond = 100000,
+    wireLength = 7,
+    color = objects.Color("#DAB5C1"),
+    draw = function(r)
+        -- Draw decor
+        local col = gsman.mulColor(0, 0, 0)
+        local centerR = drawDataOutputDecorator(r, 4, 0.15, 0.45, 0.08)
+        local t = math.sin(love.timer.getTime() * math.pi) ^ 2
+        g.drawImageContained("blur_on", centerR:padRatio(-0.3):padRatio(-0.1 * t):get())
         col:pop()
     end,
 })
