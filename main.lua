@@ -212,18 +212,6 @@ if consts.DEV_MODE then
     emulation.init()
 end
 
-local function realLoad()
-    if love.keyboard.isModifierActive("capslock") then
-        local new = love.window.showMessageBox("Start New Game?", "Start New Game?", {"Yes", "No"}, "warning")
-        print(new)
-        if new == 1 then
-            return false
-        end
-    end
-
-    return true
-end
-
 function love.load(arg)
     log.debug(love.graphics.getRendererInfo())
     assert(love.filesystem.createDirectory("saves"))
@@ -235,6 +223,8 @@ function love.load(arg)
     g.requireFolder("src/scythes")
     sceneManager.loadScenes()
 
+    local itemview = false
+
     if arg[1] == "--simulate" then
         analytics.init(nil) -- Explicitly disable analytics
         local sn = g.newSession()
@@ -244,10 +234,14 @@ function love.load(arg)
         local strategy = assert(arg[2], "missing strategy: [cheapest, random]"):lower()
         local duration = assert(tonumber(arg[3]), "invalid duration")
         simulation.start({duration = duration, buyStrategy = strategy})
+    elseif arg[1] == "--itemview" then
+        itemview = true
     end
 
     if simulation.isSimulating() then
         sceneManager.gotoScene("harvest_scene")
+    elseif itemview then
+        sceneManager.gotoScene("itemview_scene")
     else
         local steamid = nil
         if Steam.init() then
