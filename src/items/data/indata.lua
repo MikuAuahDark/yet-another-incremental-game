@@ -48,7 +48,7 @@ g.defineDataInput("basic_indata", "Basic Data Input", {
     color = objects.Color("#ebe8c1"), -- Color-coded
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
-        drawDataInputDecorator(r, 1, 0.2, 0.35, 0.06)
+        drawDataInputDecorator(r, 2, 0.25, 0.35, 0.05)
         col:pop()
     end,
 })
