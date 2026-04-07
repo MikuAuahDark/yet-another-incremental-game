@@ -187,7 +187,7 @@ g.defineBooster("overclocker", "Overclock", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(1, 1, 1)
-        g.drawImageContained("quick_reorder", r:padRatio(0.25):get())
+        g.drawImageContained("speed", r:padRatio(0.25):get())
         col:pop()
     end,
     getPerformanceMultiplier = function(reltx, relty)
@@ -212,7 +212,7 @@ g.defineBooster("selective_tweaks", "Selective Tweaks", {
     draw = function(r)
         -- Draw decor
         drawConnectableDecor(r, 6)
-        g.drawImageContained("quick_reorder", r:padRatio(0.5):get())
+        g.drawImageContained("speed", r:padRatio(0.5):get())
     end,
     getPerformanceMultiplier = function(reltx, relty)
         return 1.2
