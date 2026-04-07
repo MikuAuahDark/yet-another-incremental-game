@@ -1771,7 +1771,7 @@ function g.defineDataOutput(id, name, def)
         maxLevel = 1,
         drawUI = function(uinfo, level, r)
             -- Draw data output
-            local r2 = worldutil.drawDPShape(r:padRatio(0.125), def.color)
+            local r2 = worldutil.drawDataOutShape(r:padRatio(0.125), def.color)
             if def.draw then
                 def.draw(r2)
             end
@@ -1797,13 +1797,13 @@ function g.defineDataOutput(id, name, def)
             ---@cast itemData g.World.DataOutputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawDPShape(r, def.color)
+            local r2 = worldutil.drawDataOutShape(r, def.color)
             if def.draw then
                 def.draw(r2, itemData)
             end
         end,
         drawItem = function(r)
-            local r2 = worldutil.drawDPShape(r, def.color)
+            local r2 = worldutil.drawDataOutShape(r, def.color)
             if def.draw then
                 def.draw(r2)
             end
@@ -1836,7 +1836,7 @@ function g.defineDataInput(id, name, def)
         maxLevel = 1,
         drawUI = function(uinfo, level, r)
             -- Draw data input (same shape as output for now)
-            local r2 = worldutil.drawDPShape(r:padRatio(0.125), def.color)
+            local r2 = worldutil.drawDataInShape(r:padRatio(0.125), def.color)
             if def.draw then
                 def.draw(r2)
             end
@@ -1862,13 +1862,13 @@ function g.defineDataInput(id, name, def)
             ---@cast itemData g.World.ItemData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawDPShape(r, def.color)
+            local r2 = worldutil.drawDataInShape(r, def.color)
             if def.draw then
                 def.draw(r2, itemData)
             end
         end,
         drawItem = function(r)
-            local r2 = worldutil.drawDPShape(r, def.color)
+            local r2 = worldutil.drawDataInShape(r, def.color)
             if def.draw then
                 def.draw(r2)
             end

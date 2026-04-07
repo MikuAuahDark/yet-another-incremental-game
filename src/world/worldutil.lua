@@ -272,7 +272,7 @@ end
 
 ---@param r kirigami.Region
 ---@param col objects.Color
-function worldutil.drawDPShape(r, col)
+function worldutil.drawDataOutShape(r, col)
     r = r:shrinkToAspectRatio(1, 1):center(r)
     local MOVE_DIST = 0.1
     local h, s, v = col:getHSV()
@@ -280,6 +280,40 @@ function worldutil.drawDPShape(r, col)
     local r2 = r:moveRatio(0, -MOVE_DIST)
     drawDPShape(r1, objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)))
     drawDPShape(r2, col)
+    return r2
+end
+
+---@param r kirigami.Region
+---@param col objects.Color
+---@param half boolean
+local function drawDIShape(r, half)
+    local cx, cy = r:getCenter()
+    local rx = r.w / 2
+    local ry = r.h / 2
+    local polygons = {}
+    for i = 0, half and 3 or 5 do
+        local a = (i * math.pi) / 3
+        polygons[#polygons+1] = cx + rx * math.cos(a)
+        polygons[#polygons+1] = cy + ry * math.sin(a)
+    end
+    love.graphics.polygon("fill", polygons)
+end
+
+---@param r kirigami.Region
+---@param col objects.Color
+function worldutil.drawDataInShape(r, col)
+    r = r:shrinkToAspectRatio(1, 1):center(r)
+    local MOVE_DIST = 0.1
+    local h, s, v = col:getHSV()
+    local r1 = r:moveRatio(0, MOVE_DIST)
+    local r2 = r:moveRatio(0, -MOVE_DIST)
+    local c1 = gsman.mulColor(objects.Color(objects.Color.HSVtoRGB(h, s, v * 0.5)))
+    drawDIShape(r1, true)
+    love.graphics.rectangle("fill", r.x, r2.y + r2.h / 2, r.w, r1.y - r2.y)
+    c1:pop()
+    local c2 = gsman.mulColor(col)
+    drawDIShape(r2, false)
+    c2:pop()
     return r2
 end
 
@@ -310,7 +344,6 @@ end
 ---@param indent number
 ---@param thickness number
 local function drawPGShape(r, col, indent, thickness)
-
     local x, y, w, h = r:get()
     local cx, cy = x + w / 2, y + h / 2
     local hw, hh = w / 2, h / 2
