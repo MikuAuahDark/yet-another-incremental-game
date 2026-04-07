@@ -830,4 +830,11 @@ end
 end
 
 
+---@param r0 kirigami.Region Base region for reference
+---@param rn kirigami.Region Normalized region where all rects are in [0, 1]
+function helper.denormalizeRegion(r0, rn)
+    return rn:set(r0.x + rn.x * r0.w, r0.y + rn.y * r0.h, rn.w * r0.w, rn.h * r0.h)
+end
+
+
 return helper

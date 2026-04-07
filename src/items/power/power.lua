@@ -74,6 +74,93 @@ g.definePowerGenerator("advanced_generator", "Advanced Generator", {
 })
 
 
+---@param n integer
+local function makeDrawDecorForPowerlines(n)
+    local splits = {}
+    for i = 1, 2 * n - 1 do
+        splits[#splits+1] = (i % 2 == 1 and 1 or 3)
+    end
+    table.insert(splits, 1, 5)
+    splits[#splits+1] = 5
+
+    local baseR = Kirigami(0, 0, 1, 1)
+    local top, c1, bottom = baseR:splitVertical(1, 4, 1)
+    local left, c2, right = baseR:splitHorizontal(1, 4, 1)
+
+    local topListBase = {top:splitHorizontal(unpack(splits))}
+    local leftListBase = {left:splitVertical(unpack(splits))}
+    local bottomListBase = {bottom:splitHorizontal(unpack(splits))}
+    local rightListBase = {right:splitVertical(unpack(splits))}
+    ---@type kirigami.Region[]
+    local topList = {}
+    for i = 2, #topListBase, 2 do
+        topList[#topList+1] = topListBase[i]
+    end
+    ---@type kirigami.Region[]
+    local leftList = {}
+    for i = 2, #leftListBase, 2 do
+        leftList[#leftList+1] = leftListBase[i]
+    end
+    ---@type kirigami.Region[]
+    local bottomList = {}
+    for i = 2, #bottomListBase, 2 do
+        bottomList[#bottomList+1] = bottomListBase[i]
+    end
+    ---@type kirigami.Region[]
+    local rightList = {}
+    for i = 2, #rightListBase, 2 do
+        rightList[#rightList+1] = rightListBase[i]
+    end
+
+    local centerR = c1:intersection(c2)
+    local niter = math.min(#topList, #leftList, #bottomList, #rightList)
+
+    ---@param r kirigami.Region
+    return function(r)
+        for i = 1, niter do
+            local tp = helper.denormalizeRegion(r, topList[i])
+            local lf = helper.denormalizeRegion(r, leftList[i])
+            local bt = helper.denormalizeRegion(r, bottomList[i])
+            local ri = helper.denormalizeRegion(r, rightList[i])
+            love.graphics.rectangle("fill", tp:get())
+            love.graphics.rectangle("fill", lf:get())
+            love.graphics.rectangle("fill", bt:get())
+            love.graphics.rectangle("fill", ri:get())
+        end
+
+        return helper.denormalizeRegion(r, centerR)
+    end
+end
+
+local _mainPowerDecor = makeDrawDecorForPowerlines(3)
+g.definePowerGenerator("main_power", "Main Datacenter Power", {
+    color = objects.Color.WHITE,
+    price = 0,
+    power = 100,
+    wireLength = 10,
+    draw = function(r)
+        local col = gsman.mulColor(0, 0, 0)
+        local centerR = _mainPowerDecor(r)
+        g.drawImageContained("bolt", centerR:padRatio(0.25):get())
+        col:pop()
+    end
+})
+
+local _subPowerDecor = makeDrawDecorForPowerlines(2)
+g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
+    color = objects.Color.WHITE,
+    price = 0,
+    power = 30,
+    wireLength = 7,
+    draw = function(r)
+        local col = gsman.mulColor(0, 0, 0)
+        local centerR = _subPowerDecor(r)
+        g.drawImageContained("bolt", centerR:padRatio(0.5):get())
+        col:pop()
+    end
+})
+
+
 
 g.definePowerRelay("basic_relay", "Relay", {
     color = objects.Color.GRAY,
