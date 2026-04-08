@@ -148,6 +148,7 @@ function HUD:init()
     self.activeDragging = nil -- [1] = duration, [2] = item info, [3] = has mouse ever on tiles (-1 = no, >=0 = yes)
     ---@type [number,number,g.ItemInfo]? for tooltip pinning
     self.selectedItem = nil
+    self.scrollPos = 0
 end
 
 if false then
@@ -354,7 +355,6 @@ function HUD:draw(show)
 
             -- Draw the tab rects
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].CARD)
-            love.graphics.rectangle("fill", listR:get())
             for k, v in pairs(tabs) do
                 -- Input test
                 if iml.wasJustClicked(v[2]:get()) then
@@ -397,50 +397,80 @@ function HUD:draw(show)
             local itemListR = listR:padUnit(4)
             local itemListRectSize = math.min(itemListR.w, itemListR.h)
             local itemListGrid, totalWidth = generateItemListRegion(itemListR, #items, itemListRectSize, 4)
-            local scrollSize = math.max(itemListR.w - totalWidth, 0)
+            local scrollSize = math.max(totalWidth - itemListR.w, 0)
             local itemNameF = g.getMainFont(10)
             local showDescriptionOf = nil
             local gotDrag = nil
-            -- TODO: Draw scrollbar
+
+            if totalWidth > itemListR.w then
+                -- Draw scrollbar
+                local actualScrollR = scrollR:padUnit(2)
+                local newScroll = ui.Slider(
+                    "huditemscroll",
+                    "horizontal",
+                    g.COLORS.UI.MAIN[theme].PRIMARY_INVERT,
+                    helper.clamp(self.scrollPos + 1, 1, scrollSize + 1),
+                    scrollSize + 1,
+                    0.2,
+                    actualScrollR
+                ) - 1
+                self.scrollPos = newScroll
+            end
+
+            -- Draw item list area
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].CARD)
+            love.graphics.setStencilMode("draw", 2)
+            love.graphics.setColorMask(true, true, true, true)
+            love.graphics.rectangle("fill", listR:get())
+            love.graphics.setStencilMode("test", 2)
+            love.graphics.setColor(1, 1, 1)
+
+            -- Draw individual items
             for i, itemBaseR in ipairs(itemListGrid) do
-                local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
-                local itemInfo = items[i]
-                local x, y, w, h = itemBaseR:get()
+                -- If itemBaseR is completely invisible, don't bother rendering it
+                itemBaseR = itemBaseR:moveUnit(-self.scrollPos, 0)
+                local clickAreaR = itemListR:intersection(itemBaseR)
+                if clickAreaR:exists() then
+                    local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
+                    local itemInfo = items[i]
+                    local x, y, w, h = clickAreaR:get()
 
-                -- Oli: Check drag first for proper behavior!
-                local drag = iml.consumeDrag(itemInfo, x, y, w, h, 1)
-                if drag or iml.isClicked(x, y, w, h, 1, itemInfo) then
-                    showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
-
-                    if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
-                        self.activeDragging = {0, itemInfo, -1}
-                    end
-                    gotDrag = self.activeDragging
-                else
-                    if iml.isHovered(x, y, w, h, itemInfo) then
-                        love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
-                        love.graphics.rectangle("fill", itemBaseR:get())
+                    -- Oli: Check drag first for proper behavior!
+                    local drag = iml.consumeDrag(itemInfo, x, y, w, h, 1)
+                    if drag or iml.isClicked(x, y, w, h, 1, itemInfo) then
                         showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+
+                        if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
+                            self.activeDragging = {0, itemInfo, -1}
+                        end
+                        gotDrag = self.activeDragging
+                    else
+                        if iml.isHovered(x, y, w, h, itemInfo) then
+                            love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
+                            love.graphics.rectangle("fill", itemBaseR:get())
+                            showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+                        end
                     end
-                end
 
-                -- Draw actual item
-                local col = gsman.setColor(1, 1, 1)
-                local itemR = itemPlacementR:padRatio(0.1):shrinkToAspectRatio(1, 1):center(itemPlacementR)
-                itemInfo.drawItem(itemR)
-                col:pop()
-
-                -- Draw item name
-                do
-                    local _, l = itemNameF:getWrap(itemInfo.name, itemNameR.w)
-                    local oy = (itemNameR.h - itemNameF:getHeight() * #l) / 2
-                    col = gsman.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-                    love.graphics.printf(itemInfo.name, itemNameF, itemNameR.x, itemNameR.y + oy, itemNameR.w, "center")
+                    -- Draw actual item
+                    local col = gsman.setColor(1, 1, 1)
+                    local itemR = itemPlacementR:padRatio(0.1):shrinkToAspectRatio(1, 1):center(itemPlacementR)
+                    itemInfo.drawItem(itemR)
                     col:pop()
+
+                    -- Draw item name
+                    do
+                        local _, l = itemNameF:getWrap(itemInfo.name, itemNameR.w)
+                        local oy = (itemNameR.h - itemNameF:getHeight() * #l) / 2
+                        col = gsman.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+                        love.graphics.printf(itemInfo.name, itemNameF, itemNameR.x, itemNameR.y + oy, itemNameR.w, "center")
+                        col:pop()
+                    end
                 end
             end
 
             self.activeDragging = gotDrag
+            love.graphics.setStencilMode()
             love.graphics.setColor(1, 1, 1)
 
             if showDescriptionOf and (not self.activeDragging or self.activeDragging[1] < consts.DRAG_ITEM_DURATION) then
