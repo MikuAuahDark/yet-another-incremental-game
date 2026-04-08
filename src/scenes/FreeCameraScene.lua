@@ -182,6 +182,22 @@ function FreeCameraScene:defaultWheelmoved(dx,dy)
     return self:setZoom(self._zoomIndex + dy/5)
 end
 
+---@param dx number
+---@param dy number
+function FreeCameraScene:discreteizeWheelMoved(dx, dy)
+    self.wheeldx = self.wheeldx + dx
+    self.wheeldy = self.wheeldy + dy
+    local newdx = helper.round(self.wheeldx)
+    local newdy = helper.round(self.wheeldy)
+    if newdx ~= 0 then
+        self.wheeldx = self.wheeldx - newdx
+    end
+    if newdy ~= 0 then
+        self.wheeldy = self.wheeldy - newdy
+    end
+    return newdx, newdy
+end
+
 
 
 function FreeCameraScene:defaultKeyreleased(k)
@@ -195,6 +211,8 @@ local function newFreeCameraScene()
         _isCamAttached = false,
         _zoomIndex = 0,
         allowMousePan = true,
+        wheeldx = 0,
+        wheeldy = 0,
     }, FreeCameraScene_mt)
     scene.camera:setViewport(0, 0, love.graphics.getDimensions())
 

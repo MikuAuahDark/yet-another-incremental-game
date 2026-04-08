@@ -344,4 +344,15 @@ function MainScene:keyreleased(k)
     end
 end
 
+function MainScene:wheelmoved(dx, dy)
+    -- dy negative = move scrollbar to right
+    -- dx positive = move scrollbar to right
+    dx, dy = self:discreteizeWheelMoved(dx, dy)
+    local dir = dx - dy
+    if dir ~= 0 then
+        local hud = g.getHUD()
+        hud.scrollPos = hud.scrollPos + dir * 10
+    end
+end
+
 return MainScene
