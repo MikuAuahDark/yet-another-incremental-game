@@ -376,34 +376,58 @@ end
 
 
 ---@class ui.TextBox: objects.Class
----@field txt string
+---@field txt string[]
 ---@field isFocused boolean
 local TextBox = objects.Class("ui:TextBox")
 
+---@param txt string
+local function utf8split(txt)
+	---@type string[]
+	local result = {}
+
+	pcall(function()
+		for _, c in utf8.codes(txt) do
+			result[#result+1] = utf8.char(c)
+		end
+	end)
+
+	return result
+end
+
 function TextBox:init(text, isFocused)
-	self.txt = text or ""
+	self.txt = utf8split(text or "")
 	self.isFocused = not not isFocused
 end
 
+function TextBox:get()
+	return table.concat(self.txt)
+end
+
+---@param txt string
+function TextBox:set(txt)
+	self.txt = utf8split(txt)
+end
+
 function TextBox:reset()
-	self.txt = ""
+	self.txt = {}
 end
 
 ---@param reg kirigami.Region
 function TextBox:draw(reg)
 	if self.isFocused then
-		if love.keyboard.isDown("return") then
+		if iml.wasKeyJustReleased("return") then
 			self.isFocused = false
+		elseif iml.wasKeyJustPressed("backspace") then
+			self:eraseLast()
 		else
-			local txt = (iml.consumeText() or "")
-			self.txt = self.txt .. txt
+			local txt = iml.consumeText()
+			if txt and #txt > 0 then
+				self.txt[#self.txt+1] = txt
+			end
 		end
 	end
 	if iml.wasJustClicked(reg:get()) then
 		self.isFocused = not self.isFocused
-		if self.isFocused then
-			self.txt = ""
-		end
 	end
 	if self.isFocused then
 		if math.floor(love.timer.getTime()*2)%2==0 then
@@ -417,10 +441,18 @@ function TextBox:draw(reg)
 	lg.rectangle("fill", reg:get())
 	lg.setColor(0,0,0)
 	lg.rectangle("line", reg:get())
-	local font=g.getSmallFont(16)
+	local font=g.getMainFont(16)
 	lg.setColor(0,0,0)
-	richtext.printRichContained(self.txt,font,reg:get())
+	richtext.printRichContained(self:get(),font,reg:get())
 	lg.setColor(1,1,1)
+end
+
+---@return string?
+function TextBox:eraseLast()
+	if #self.txt > 0 then
+		return table.remove(self.txt)
+	end
+	return nil
 end
 
 ---@return ui.TextBox

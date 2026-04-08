@@ -72,6 +72,7 @@ _G.consts = require("src.consts")
 
 if consts.DEV_MODE then
     love.keyboard.setTextInput(true)
+    love.keyboard.setKeyRepeat(true)
 end
 
 _G.FLAGS = require("src.flags")

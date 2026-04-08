@@ -28,6 +28,8 @@ function upgscene:init()
     self.dev_showUnusedUpgradesInSelect = true
     self.dev_showPrices = false
     self.dev_maxLevelInput = ui.newTextBox()
+    self.dev_startLevelInput = ui.newTextBox()
+    self.dev_cpsInput = ui.newTextBox()
     self.dev_priceInputs = {}
     for _, resId in ipairs(g.RESOURCE_LIST) do
         self.dev_priceInputs[resId] = ui.newTextBox()
@@ -451,6 +453,32 @@ local function dev_fromFormattedNumber(str)
 end
 
 
+---@param value string
+---@return integer?
+local function numberAndFloor(value)
+    local n = tonumber(value)
+    if n then
+        return math.floor(n)
+    end
+    return nil
+end
+
+---@generic T
+---@param textbox ui.TextBox
+---@param value string
+---@param fmt fun(s:string):(T?)
+---@return boolean, T?
+local function maybeUpdateText(textbox, value, fmt)
+    if textbox.isFocused then
+        local parsedVal = fmt(textbox:get())
+        return true, parsedVal
+    else
+        textbox:set(tostring(value))
+        return false, nil
+    end
+end
+
+
 ---@param self UpgradesScene
 ---@param treeUpgrades g.Tree.Upgrade[]
 local function drawDevEditModeUI(self, treeUpgrades)
@@ -648,27 +676,56 @@ local function drawDevEditModeUI(self, treeUpgrades)
             lg.rectangle("fill", leftbar:get())
             lg.setColor(1,1,1)
             richtext.printRichContainedNoWrap("maxLevel", font, leftregs[1]:get())
+            local ok, maxLevelOverride = maybeUpdateText(self.dev_maxLevelInput, tostring(upg.maxLevelOverride or ""), numberAndFloor)
+            if ok then
+                upg.maxLevelOverride = maxLevelOverride
+            end
             self.dev_maxLevelInput:draw(leftregs[2])
+            richtext.printRichContainedNoWrap("startLevel", font, leftregs[3]:get())
+            local ok, startLevel = maybeUpdateText(self.dev_startLevelInput, tostring(upg.startLevel or ""), numberAndFloor)
+            if ok then
+                upg.startLevel = startLevel
+            end
+            self.dev_startLevelInput:draw(leftregs[4])
 
             local bundle = {}
-            local hasPrice = false
-            local idx = 4
+            local hasPrice = 0
+            local idx = 5
             for _, resId in ipairs(g.RESOURCE_LIST) do
                 richtext.printRichContainedNoWrap(resId, font, leftregs[idx]:get())
                 idx = idx + 1
+                local ok, val = maybeUpdateText(
+                    self.dev_priceInputs[resId],
+                    tostring(upg.basePrice[resId] or ""),
+                    dev_fromFormattedNumber
+                )
+                if ok then
+                    if val and val > 0 then
+                        bundle[resId] = val
+                        hasPrice = hasPrice + 1
+                    else
+                        bundle[resId] = nil
+                    end
+                end
                 self.dev_priceInputs[resId]:draw(leftregs[idx])
                 idx = idx + 1
-                local val = dev_fromFormattedNumber(self.dev_priceInputs[resId].txt)
-                if val then
-                    bundle[resId] = val
-                    hasPrice = true
-                end
             end
-            if hasPrice then
+            if hasPrice > 0 then
                 tree:setUpgradeBasePrice(upg, bundle)
             end
 
-            local maxLevel = dev_fromFormattedNumber(self.dev_maxLevelInput.txt)
+            richtext.printRichContainedNoWrap("cps", font, leftregs[idx]:get())
+            local ok, cps = maybeUpdateText(
+                self.dev_cpsInput,
+                tostring(upg.cps or ""),
+                dev_fromFormattedNumber
+            )
+            if ok then
+                upg.cps = cps
+            end
+            self.dev_cpsInput:draw(leftregs[idx+1])
+
+            local maxLevel = dev_fromFormattedNumber(self.dev_maxLevelInput:get())
             if maxLevel then
                 upg.maxLevelOverride = maxLevel
             end

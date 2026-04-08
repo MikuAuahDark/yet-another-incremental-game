@@ -30,7 +30,7 @@ FEATURES WE NEED:
 ---@field x integer
 ---@field y integer
 ---@field isRoot boolean?
----@field maxLevelOverride number?
+---@field maxLevelOverride integer?
 ---@field connections integer[] list of other upgrades this upgrade is connected to
 ---@field isUnbound boolean? "unbound" upgrades exist without a position; (ie relics and stuff)
 ---@field cps number? CPS requirement for this upgrade
