@@ -74,6 +74,8 @@ if consts.DEV_MODE then
     love.keyboard.setTextInput(true)
 end
 
+_G.FLAGS = require("src.flags")
+
 
 -- Profiler zones
 local profilerStackCount = 0
@@ -236,6 +238,9 @@ function love.load(arg)
         simulation.start({duration = duration, buyStrategy = strategy})
     elseif arg[1] == "--itemview" then
         itemview = true
+    elseif arg[1] == "--test" then
+        FLAGS.UNLOCK_ALL_ITEMS = true
+        FLAGS.DO_NOT_SAVE = true
     end
 
     if simulation.isSimulating() then
