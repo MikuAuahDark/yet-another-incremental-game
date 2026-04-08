@@ -6,13 +6,14 @@
 local function drawDataOutputDecorator(r, n, dist, len, thickness)
     -- Data output decoration is "arrow" pointing inwards
     local centerR = r:padRatio(0.75)
-    local d = dist * math.sqrt(centerR.w * centerR.h)
-    local width = len * math.sqrt(centerR.w * centerR.h)
-    local height = thickness * math.sqrt(centerR.w * centerR.h)
+    local sz = math.sqrt(centerR.w * centerR.h)
+    local d = dist * sz
+    local width = len * sz
+    local height = thickness * sz
     local hpx0 = height / 2
     for i = 1, n do
         local t = math.sin((love.timer.getTime() + i / 5) * math.pi) ^ 2
-        local hpx = hpx0 + t * 2
+        local hpx = hpx0 + t * sz / 20
         -- Top Left
         local baseX = centerR.x - (i - 1) * d
         local baseY = centerR.y - (i - 1) * d
