@@ -149,6 +149,9 @@ function HUD:init()
     ---@type [number,number,g.ItemInfo]? for tooltip pinning
     self.selectedItem = nil
     self.scrollPos = 0
+
+    self.wheelX = 0
+    self.wheelY = 0
 end
 
 if false then
@@ -403,6 +406,25 @@ function HUD:draw(show)
             local gotDrag = nil
 
             if totalWidth > itemListR.w then
+                -- Update scrollbar
+                if listR:containsCoords(ui.getMouse()) then
+                    local dx, dy = iml.consumeWheelMove()
+                    if dx and dy then
+                        -- Discreteize
+                        self.wheelX = self.wheelX + dx
+                        self.wheelY = self.wheelY + dy
+                        local newdx = helper.round(self.wheelX)
+                        local newdy = helper.round(self.wheelY)
+                        self.wheelX = self.wheelX - newdx
+                        self.wheelY = self.wheelY - newdy
+
+                        local dir = newdx - newdy
+                        if dir ~= 0 then
+                            self.scrollPos = self.scrollPos + dir * 10
+                        end
+                    end
+                end
+
                 -- Draw scrollbar
                 local actualScrollR = scrollR:padUnit(2)
                 local newScroll = ui.Slider(
@@ -415,6 +437,9 @@ function HUD:draw(show)
                     actualScrollR
                 ) - 1
                 self.scrollPos = newScroll
+            else
+                self.wheelX = 0
+                self.wheelY = 0
             end
 
             -- Draw item list area
