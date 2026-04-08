@@ -867,16 +867,24 @@ function World:_draw()
 
     -- Draw items
     prof_push("item_draw")
-    ---@param itemData g.World.ItemData?
-    self.items:foreach(function(itemData, x, y)
-        if itemData then
-            local itemInfo = g.getItemInfo(itemData.type)
-            local trans = gsman.transform((x + 0.5) * wtz, (y + 0.5) * wtz)
-            love.graphics.setColor(1, 1, 1)
-            itemInfo.draw(itemData)
-            trans:pop()
+    local center = math.floor(World.TILE_SIZE / 2)
+    local worldSize = g.stats.WorldTileSize
+    self.items:foreachInArea(
+        center - worldSize,
+        center - worldSize,
+        center + worldSize,
+        center + worldSize,
+        ---@param itemData g.World.ItemData?
+        function(itemData, x, y)
+            if itemData then
+                local itemInfo = g.getItemInfo(itemData.type)
+                local trans = gsman.transform((x + 0.5) * wtz, (y + 0.5) * wtz)
+                love.graphics.setColor(1, 1, 1)
+                itemInfo.draw(itemData)
+                trans:pop()
+            end
         end
-    end)
+    )
     prof_pop() -- prof_push("item_draw")
 
     -- Draw data output connectors
@@ -1037,8 +1045,6 @@ function World:computeLoadModifier(itemInfo, mod, mul)
     return math.max(math.max(itemInfo.load + v.modifier + (mod or 0), 0) * v.multiplier * (mul or 1), 0)
 end
 
-
-
 ---@param tx integer
 ---@param ty integer
 ---@return boolean
@@ -1158,14 +1164,15 @@ end
 
 
 function World:_setupPlaceables()
-    self:putItem("main_power", 50, 50, false)
+    local center = math.floor(World.TILE_SIZE / 2)
+    self:putItem("main_power", center, center, false)
     local wz = math.floor(World.TILE_SIZE / 2)
 
-    for i = 7, wz, 2 do
-        self:putItem("sub_power", 50+i, 50+i, false)
-        self:putItem("sub_power", 50+i, 50-i, false)
-        self:putItem("sub_power", 50-i, 50+i, false)
-        self:putItem("sub_power", 50-i, 50-i, false)
+    for i = 5, wz, 3 do
+        self:putItem("sub_power", center+i, center+i, false)
+        self:putItem("sub_power", center+i, center-i, false)
+        self:putItem("sub_power", center-i, center+i, false)
+        self:putItem("sub_power", center-i, center-i, false)
     end
 end
 

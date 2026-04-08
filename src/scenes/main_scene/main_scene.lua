@@ -69,7 +69,7 @@ function MainScene:draw()
     local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
     local item = nil
     local beforeActiveDragWorld, currentActiveDragWorld = self.targetDrag, nil
-    if world.items:contains(tx, ty) then
+    if world:isWithinWorldLimit(tx, ty) then
         -- tile indicator
         local t = math.sin(love.timer.getTime() * 4) ^ 2
         if self.candidateWirePos then
