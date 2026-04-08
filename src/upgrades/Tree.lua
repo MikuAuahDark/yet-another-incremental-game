@@ -25,6 +25,7 @@ FEATURES WE NEED:
 ---@class g.Tree.Upgrade
 ---@field id string
 ---@field level integer
+---@field startLevel integer? Starting level (or 0)
 ---@field basePrice g.Bundle
 ---@field x integer
 ---@field y integer
@@ -32,6 +33,7 @@ FEATURES WE NEED:
 ---@field maxLevelOverride number?
 ---@field connections integer[] list of other upgrades this upgrade is connected to
 ---@field isUnbound boolean? "unbound" upgrades exist without a position; (ie relics and stuff)
+---@field cps number? CPS requirement for this upgrade
 local Upgrade = {}
 
 
@@ -308,7 +310,7 @@ function Tree:canAffordUpgrade(upg, level)
     local uinfo = g.getUpgradeInfo(upg.id)
     level = level or upg.level
 
-    if uinfo.customRequirementMet and not uinfo:customRequirementMet(level) then
+    if uinfo.customRequirementMet and not uinfo:customRequirementMet(upg) then
         return false
     end
 
@@ -794,11 +796,38 @@ function Tree.deserialize(data)
 end
 
 
+---Save the tree state, including the current level unlocks.
+---
+---If level state needs to be reset, consider using `Tree:export()` instead.
 function Tree:serialize()
     return {
         upgrades = keysToString(self.upgrades),
         connections = self.connections,
         unboundUpgrades = self.unboundUpgrades
+    }
+end
+
+---Unlike `Tree:serialize()`, this reset the upgrade level to its defaults.
+function Tree:export()
+    local exportedUpgrades = {} --[[@as table<string, g.Tree.Upgrade>]]
+    for k, v in pairs(self.upgrades) do
+        local newUpg = helper.shallowCopy(v)
+        newUpg.level = newUpg.startLevel or 0
+        exportedUpgrades[tostring(k)] = newUpg
+    end
+
+    ---@type g.Tree.Upgrade[]
+    local exportedUnbounded = {}
+    for _, upg in ipairs(self.unboundUpgrades) do
+        local newUpg = helper.shallowCopy(upg)
+        newUpg.level = newUpg.startLevel or 0
+        exportedUnbounded[#exportedUnbounded+1] = newUpg
+    end
+
+    return {
+        upgrades = exportedUpgrades,
+        connections = self.connections,
+        unboundUpgrades = exportedUnbounded
     }
 end
 

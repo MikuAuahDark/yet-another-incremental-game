@@ -103,11 +103,11 @@ local function description(upgrade, tree, x, y, safeArea)
     end
 
     if uinfo.getCustomRequirementText then
-        local reqStr = uinfo.getCustomRequirementText(uinfo, upgrade.level)
+        local reqStr = uinfo.getCustomRequirementText(uinfo, upgrade)
         if reqStr and reqStr ~= "" then
             local isMet = true
             if uinfo.customRequirementMet then
-                isMet = uinfo.customRequirementMet(uinfo, upgrade.level)
+                isMet = uinfo.customRequirementMet(uinfo, upgrade)
             end
             priceStrs[#priceStrs+1] = helper.wrapRichtextColor(
                 isMet and g.COLORS.CAN_AFFORD or g.COLORS.CANT_AFFORD,

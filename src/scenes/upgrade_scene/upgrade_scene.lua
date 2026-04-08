@@ -522,6 +522,23 @@ local function drawDevEditModeUI(self, treeUpgrades)
         end, {filters = {["JavaScript Object Notation (*.json)"] = "json"}})
     end
 
+    if ui.Button("EXPORT TREE", objects.Color.AQUA,objects.Color.BLACK, regs[7]) then
+        local serializedTree = g.getUpgTree():export()
+        love.window.showFileDialog("savefile", function(files, filtername, errorstring)
+            if files and files[1] then
+                local f, err = love.filesystem.openNativeFile(files[1], "w")
+                if f then
+                    f:write(json.encode(serializedTree))
+                    f:close()
+                else
+                    log.error("Failed to export tree: ", err)
+                end
+            elseif errorstring then
+                log.error("Failed to export tree: ", errorstring)
+            end
+        end, {filters = {["JavaScript Object Notation (*.json)"] = "json"}})
+    end
+
     local function calculateGrid(itemCount, regionWidth, regionHeight)
         local aspectRatio = regionWidth / regionHeight
         local cols = math.ceil(math.sqrt(itemCount * aspectRatio))
