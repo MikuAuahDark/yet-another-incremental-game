@@ -239,7 +239,7 @@ function love.load(arg)
         simulation.start({duration = duration, buyStrategy = strategy})
     elseif arg[1] == "--itemview" then
         itemview = true
-    elseif arg[1] == "--test" then
+    elseif arg[1] == "--test" and consts.DEV_MODE then
         FLAGS.UNLOCK_ALL_ITEMS = true
         FLAGS.DO_NOT_SAVE = true
     end
@@ -429,7 +429,7 @@ end
 function love.keypressed(key, scancode, isrep)
     if scancode == "[" then
         -- toggle show-dev-stuff
-        consts.SHOW_DEV_STUFF = consts.DEV_MODE and (not consts.SHOW_DEV_STUFF)
+        FLAGS.SHOW_DEV_STUFF = consts.DEV_MODE and (not FLAGS.SHOW_DEV_STUFF)
     elseif scancode == "return" and love.keyboard.isDown("lalt", "ralt") then
         settings.setFullscreen(not settings.isFullscreen())
     end

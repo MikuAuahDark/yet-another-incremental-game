@@ -4,7 +4,6 @@
 local consts = {
 
     DEV_MODE = not not (love.filesystem.getInfo(".git", "directory") and os.getenv("DISABLE_DEV_MODE") ~= "1"),
-    SHOW_DEV_STUFF = false, -- can be toggled on/off (eg for screenshots)
 
     EMULATE_TOUCH = os.getenv("INCREMENTAL_GAME_EMULATE_TOUCH") == "1", -- Set later
     IS_MOBILE = false, -- Set later
@@ -58,7 +57,6 @@ end
 local os = love.system.getOS()
 consts.EMULATE_TOUCH = consts.DEV_MODE and consts.EMULATE_TOUCH
 consts.IS_MOBILE = os == "Android" or os == "iOS" or consts.EMULATE_TOUCH
-consts.SHOW_DEV_STUFF = consts.DEV_MODE
 
 
 return consts

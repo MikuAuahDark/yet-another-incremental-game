@@ -822,7 +822,7 @@ function upgscene:draw()
         ui.upgradeDescriptionUI(hoveredUpgrade, g.getUpgTree(), mx + 14, my - 3, ui.getFullScreenRegion())
     end
 
-    if consts.SHOW_DEV_STUFF then
+    if FLAGS.SHOW_DEV_STUFF then
         drawDevUI(self)
     end
 
