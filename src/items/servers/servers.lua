@@ -49,7 +49,7 @@ g.defineServer("basic_server", "Basic Server", {
     computePerSecond = 1,
     computePreference = {"general"},
     load = 1,
-    heatTolerance = {40, 450},
+    heatTolerance = {40, 60},
     heat = 40,
     color = objects.Color("#ebe8c1"),
     draw = function(r)

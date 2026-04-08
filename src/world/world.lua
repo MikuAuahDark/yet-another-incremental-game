@@ -815,6 +815,31 @@ local function sortOrder(a, b)
     return indexA < indexB
 end
 
+local NONREMOVABLE_MESH
+do
+local FOOT_LEN = 0.2
+NONREMOVABLE_MESH = love.graphics.newMesh({
+    {0.5, 0.5, 0.5, 0.5},
+    -- Top-left
+    {0, FOOT_LEN, 0, FOOT_LEN},
+    {0, 0, 0, 0},
+    {FOOT_LEN, 0, FOOT_LEN, 0},
+    -- Top-right
+    {1 - FOOT_LEN, 0, 1 - FOOT_LEN, 0},
+    {1, 0, 1, 0},
+    {1, FOOT_LEN, 1, FOOT_LEN},
+    -- Bottom-right
+    {1, 1 - FOOT_LEN, 1, 1 - FOOT_LEN},
+    {1, 1, 1, 1},
+    {1 - FOOT_LEN, 1, 1 - FOOT_LEN, 1},
+    -- Bottom-left
+    {FOOT_LEN, 1, FOOT_LEN, 1},
+    {0, 1, 0, 1},
+    {0, 1 - FOOT_LEN, 0, 1 - FOOT_LEN},
+}, "triangles", "static")
+NONREMOVABLE_MESH:setVertexMap({1, 2, 3, 1, 3, 4, 1, 5, 6, 1, 6, 7, 1, 8, 9, 1, 9, 10, 1, 11, 12, 1, 12, 13})
+end
+
 
 function World:_draw()
     prof_push("world:_draw")
@@ -877,6 +902,11 @@ function World:_draw()
         ---@param itemData g.World.ItemData?
         function(itemData, x, y)
             if itemData then
+                if not itemData.removable then
+                    love.graphics.setColor(0, 0, 0)
+                    love.graphics.draw(NONREMOVABLE_MESH, x * wtz, y * wtz, 0, wtz, wtz)
+                end
+
                 local itemInfo = g.getItemInfo(itemData.type)
                 local trans = gsman.transform((x + 0.5) * wtz, (y + 0.5) * wtz)
                 love.graphics.setColor(1, 1, 1)
@@ -890,7 +920,7 @@ function World:_draw()
     -- Draw data output connectors
     prof_push("dpcon_draw")
     love.graphics.setColor(0, 0, 0)
-    local lw = gsman.setLineWidth(4)
+    local lw = gsman.setLineWidth(2)
     self.items:foreach(function(itemData, x, y)
         if itemData then
             local _, category = g.getItemInfo(itemData.type)
@@ -925,7 +955,7 @@ function World:_draw()
     -- Draw power network connectors
     prof_push("power_draw")
     love.graphics.setColor(objects.Color("#83d6d3"))
-    local lw2 = gsman.setLineWidth(4)
+    local lw2 = gsman.setLineWidth(2)
     drawPowerLines(self.powerGens)
     drawPowerLines(self.powerRelays)
     lw2:pop()
@@ -934,7 +964,7 @@ function World:_draw()
     -- Draw booster connectors
     prof_push("boostercon_draw")
     local bc = gsman.setColor(1, 0, 0)
-    local blw = gsman.setLineWidth(4)
+    local blw = gsman.setLineWidth(2)
     for _, booster in pairs(self.boosters) do
         -- TODO: Styling
         for _, target in ipairs(booster.connectsTo) do
