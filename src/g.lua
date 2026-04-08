@@ -35,6 +35,7 @@ local FILENAME = "saves/save1.json"
 ---@return g.Session
 function g.newSession()
     currentSession = Session()
+    currentSession.mainWorld:_setupPlaceables()
     return currentSession
 end
 

@@ -137,7 +137,7 @@ g.definePowerGenerator("main_power", "Main Datacenter Power", {
     color = objects.Color.WHITE,
     price = 0,
     power = 100,
-    wireLength = 10,
+    wireLength = 5,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         local centerR = _mainPowerDecor(r)
@@ -151,7 +151,7 @@ g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
     color = objects.Color.WHITE,
     price = 0,
     power = 30,
-    wireLength = 7,
+    wireLength = 2,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         local centerR = _subPowerDecor(r)

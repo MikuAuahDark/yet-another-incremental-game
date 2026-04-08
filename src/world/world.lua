@@ -304,11 +304,13 @@ function World:_update(dt)
                     local dist = worldutil.getDistance(boosterInfo.radiateAlgorithm, dx, dy)
                     if dist <= range then
                         local tx, ty = booster.tileX + dx, booster.tileY + dy
-                        local targetItem = self.items:get(tx, ty) --[[@as g.World.ItemData?]]
-                        if targetItem and not targetItem.removed then
-                            local _, category = g.getItemInfo(targetItem.type)
-                            if category == boosterInfo.connectable.target then
-                                table.insert(booster.connectsTo, targetItem)
+                        if self:isWithinWorldLimit(booster.tileX, booster.tileY) and self:isWithinWorldLimit(tx, ty) then
+                            local targetItem = self.items:get(tx, ty) --[[@as g.World.ItemData?]]
+                            if targetItem and not targetItem.removed then
+                                local _, category = g.getItemInfo(targetItem.type)
+                                if category == boosterInfo.connectable.target then
+                                    table.insert(booster.connectsTo, targetItem)
+                                end
                             end
                         end
                     end
@@ -332,7 +334,7 @@ function World:_update(dt)
             local affectedTiles = worldutil.getSpreadTiles(boosterInfo.radiateAlgorithm, boosterInfo.radiate)
             for _, tile in ipairs(affectedTiles) do
                 local tx, ty = booster.tileX + tile[1], booster.tileY + tile[2]
-                if self.items:contains(tx, ty) then
+                if self:isWithinWorldLimit(booster.tileX, booster.tileY) and self:isWithinWorldLimit(tx, ty) then
                     local tindex = self.items:coordsToIndex(tx, ty)
                     self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
                     table.insert(self.boostersInTiles[tindex], booster)
@@ -402,7 +404,7 @@ function World:_update(dt)
                         local otherInfo = g.getItemInfo(other.type)
                         ---@cast otherInfo g.PowerGenInfo | g.PowerRelayInfo
                         local dist = worldutil.getDistance("chessboard", node.tileX - other.tileX, node.tileY - other.tileY)
-                        if dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength) then
+                        if self:isWithinWorldLimit(node.tileX, node.tileY) and self:isWithinWorldLimit(other.tileX, other.tileY) and dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength) then
                             visited[other] = true
                             queue[#queue+1] = other
                             node.connectsPowerNodes[#node.connectsPowerNodes+1] = other
@@ -422,16 +424,18 @@ function World:_update(dt)
                 for dx = -range, range do
                     for dy = -range, range do
                         local tx, ty = node.tileX + dx, node.tileY + dy
-                        local item = self.items:get(tx, ty) --[[@as g.World.ItemData]]
-                        if item and not item.removed and item.load > 0 then
-                            -- Only add unique consumers to network
-                            if not consumerSet[item] then
-                                item.powerNetwork = network
-                                network.consumers[#network.consumers+1] = item
-                                consumerSet[item] = true
+                        if self:isWithinWorldLimit(node.tileX, node.tileY) and self:isWithinWorldLimit(tx, ty) then
+                            local item = self.items:get(tx, ty) --[[@as g.World.ItemData]]
+                            if item and not item.removed and item.load > 0 then
+                                -- Only add unique consumers to network
+                                if not consumerSet[item] then
+                                    item.powerNetwork = network
+                                    network.consumers[#network.consumers+1] = item
+                                    consumerSet[item] = true
+                                end
+                                -- Keep track of what this node is specifically powering
+                                node.connectsTo[#node.connectsTo+1] = item
                             end
-                            -- Keep track of what this node is specifically powering
-                            node.connectsTo[#node.connectsTo+1] = item
                         end
                     end
                 end
@@ -510,7 +514,8 @@ function World:_update(dt)
         for i = #dpData.connectsServers, 1, -1 do
             local serverData = dpData.connectsServers[i]
             local sx, sy = serverData.tileX, serverData.tileY
-            if serverData.removed or worldutil.getDistance("chessboard", sx - dpData.tileX, sy - dpData.tileY) > dpInfo.wireLength then
+            if serverData.removed or worldutil.getDistance("chessboard", sx - dpData.tileX, sy - dpData.tileY) > dpInfo.wireLength
+                or not self:isWithinWorldLimit(dpData.tileX, dpData.tileY) or not self:isWithinWorldLimit(sx, sy) then
                 table.remove(dpData.connectsServers, i)
             end
         end
@@ -520,14 +525,16 @@ function World:_update(dt)
         for dx = -range, range do
             for dy = -range, range do
                 local tx, ty = dpData.tileX + dx, dpData.tileY + dy
-                local item = self.items:get(tx, ty)
-                if item and not item.removed then
-                    local _, category = g.getItemInfo(item.type)
-                    if category == "server" then
-                        ---@cast item g.World.ServerData
-                        -- Check if already in connectsServers
-                        if not helper.index(dpData.connectsServers, item) then
-                            dpData.connectsServers[#dpData.connectsServers+1] = item
+                if self:isWithinWorldLimit(dpData.tileX, dpData.tileY) and self:isWithinWorldLimit(tx, ty) then
+                    local item = self.items:get(tx, ty)
+                    if item and not item.removed then
+                        local _, category = g.getItemInfo(item.type)
+                        if category == "server" then
+                            ---@cast item g.World.ServerData
+                            -- Check if already in connectsServers
+                            if not helper.index(dpData.connectsServers, item) then
+                                dpData.connectsServers[#dpData.connectsServers+1] = item
+                            end
                         end
                     end
                 end
@@ -569,7 +576,8 @@ function World:_update(dt)
         for i = #diData.connectsServers, 1, -1 do
             local serverData = diData.connectsServers[i]
             local sx, sy = serverData.tileX, serverData.tileY
-            if serverData.removed or worldutil.getDistance("chessboard", sx - diData.tileX, sy - diData.tileY) > diInfo.wireLength then
+            if serverData.removed or worldutil.getDistance("chessboard", sx - diData.tileX, sy - diData.tileY) > diInfo.wireLength
+                or not self:isWithinWorldLimit(diData.tileX, diData.tileY) or not self:isWithinWorldLimit(sx, sy) then
                 table.remove(diData.connectsServers, i)
             end
         end
@@ -579,14 +587,16 @@ function World:_update(dt)
         for dx = -range, range do
             for dy = -range, range do
                 local tx, ty = diData.tileX + dx, diData.tileY + dy
-                local item = self.items:get(tx, ty)
-                if item and not item.removed then
-                    local _, category = g.getItemInfo(item.type)
-                    if category == "server" then
-                        ---@cast item g.World.ServerData
-                        -- Check if already in connectsServers
-                        if not helper.index(diData.connectsServers, item) then
-                            diData.connectsServers[#diData.connectsServers+1] = item
+                if self:isWithinWorldLimit(diData.tileX, diData.tileY) and self:isWithinWorldLimit(tx, ty) then
+                    local item = self.items:get(tx, ty)
+                    if item and not item.removed then
+                        local _, category = g.getItemInfo(item.type)
+                        if category == "server" then
+                            ---@cast item g.World.ServerData
+                            -- Check if already in connectsServers
+                            if not helper.index(diData.connectsServers, item) then
+                                diData.connectsServers[#diData.connectsServers+1] = item
+                            end
                         end
                     end
                 end
@@ -1031,16 +1041,25 @@ end
 
 ---@param tx integer
 ---@param ty integer
-function World:canPutItem(tx, ty)
+---@return boolean
+function World:isWithinWorldLimit(tx, ty)
+    local center = math.floor(World.TILE_SIZE / 2)
+    local worldSize = g.stats.WorldTileSize
+    return math.abs(tx - center) <= worldSize and math.abs(ty - center) <= worldSize
+end
+
+
+---@param tx integer
+---@param ty integer
+---@param ignoreworldlimit boolean?
+function World:canPutItem(tx, ty, ignoreworldlimit)
     -- Is coords on grid?
     if not self.items:contains(tx, ty) or self.items:get(tx, ty) then
         return false
     end
 
     -- Check world size constraints
-    local center = math.floor(World.TILE_SIZE / 2)
-    local worldSize = g.stats.WorldTileSize
-    if math.abs(tx - center) > worldSize or math.abs(ty - center) > worldSize then
+    if not (ignoreworldlimit or self:isWithinWorldLimit(tx, ty)) then
         return false
     end
 
@@ -1052,12 +1071,12 @@ end
 ---@param ty integer
 ---@param removable boolean?
 function World:putItem(itemId, tx, ty, removable)
-    if not self:canPutItem(tx, ty) then
-        error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
-    end
-
     if removable == nil then
         removable = true
+    end
+
+    if not self:canPutItem(tx, ty, not removable) then
+        error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
     end
 
     local itemInfo, category = g.getItemInfo(itemId)
@@ -1133,6 +1152,21 @@ function World:putItem(itemId, tx, ty, removable)
 
     self.items:set(tx, ty, itemData)
     return itemData
+end
+
+
+
+
+function World:_setupPlaceables()
+    self:putItem("main_power", 50, 50, false)
+    local wz = math.floor(World.TILE_SIZE / 2)
+
+    for i = 7, wz, 2 do
+        self:putItem("sub_power", 50+i, 50+i, false)
+        self:putItem("sub_power", 50+i, 50-i, false)
+        self:putItem("sub_power", 50-i, 50+i, false)
+        self:putItem("sub_power", 50-i, 50-i, false)
+    end
 end
 
 
