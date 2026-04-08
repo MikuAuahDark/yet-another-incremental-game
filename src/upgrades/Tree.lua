@@ -308,6 +308,10 @@ function Tree:canAffordUpgrade(upg, level)
     local uinfo = g.getUpgradeInfo(upg.id)
     level = level or upg.level
 
+    if uinfo.customRequirementMet and not uinfo:customRequirementMet(level) then
+        return false
+    end
+
     if uinfo.getPriceOverride then
         local price = uinfo:getPriceOverride(level)
         return g.canAfford(price)

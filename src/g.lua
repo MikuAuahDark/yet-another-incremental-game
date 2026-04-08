@@ -144,7 +144,7 @@ end
 
 function g.saveSession()
     local shouldSave = not (consts.DEV_MODE and love.keyboard.isDown("lshift", "rshift"))
-    if shouldSave then
+    if shouldSave and not FLAGS.DO_NOT_SAVE then
         log.trace(debug.traceback("Saving session."))
         local data = g.getSn():serialize()
         local contents = json.encode(data)
@@ -156,7 +156,9 @@ function g.saveAndInvalidateSession()
     if not g.hasSession() or g.isBeingSimulated() then return end
     analytics.send("end")
 
-    g.saveSession()
+    if not (g.isBeingSimulated() or FLAGS.DO_NOT_SAVE) then
+        g.saveSession()
+    end
     return g.delSession()
 end
 
@@ -763,6 +765,8 @@ local g_UpgradeDefinition_ProcGen
 ---@field descriptionContext string?
 ---@field rawDescription string?
 ---@field procGen g.UpgradeDefinition.ProcGen?
+---@field customRequirementMet (fun(uinfo: g.UpgradeInfo, level: integer): boolean)?
+---@field getCustomRequirementText (fun(uinfo: g.UpgradeInfo, level: integer): string)?
 ---@field getPriceOverride (fun(uinfo:g.UpgradeInfo, level:integer): g.Bundle)?
 ---@field isHidden (fun(uinfo: g.UpgradeInfo): boolean)?
 ---@field getValues (fun(uinfo: g.UpgradeInfo, level: integer):number,number?,number?,number?)?
@@ -1123,7 +1127,9 @@ local SPECIAL_FUNCTIONS = {
     getValues = true,
     isHidden = true,
     getPriceOverride = true,
-    drawUI = true
+    drawUI = true,
+    customRequirementMet = true,
+    getCustomRequirementText = true,
 }
 
 
@@ -1665,7 +1671,7 @@ function g.isItemUnlocked(itemid)
         error("unknown item id '"..itemid.."'")
     end
 
-    return g.ask("isItemUnlocked", itemid) or g.PREUNLOCKED_ITEMS:contains(itemid)
+    return g.ask("isItemUnlocked", itemid) or g.PREUNLOCKED_ITEMS:contains(itemid) or FLAGS.UNLOCK_ALL_ITEMS
 end
 
 ---@param itemid string
