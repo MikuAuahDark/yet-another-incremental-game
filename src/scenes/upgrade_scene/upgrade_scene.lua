@@ -988,6 +988,10 @@ function upgscene:keypressed(k)
                 end
             end
         end
+
+        if k == "s" and love.keyboard.isDown("lctrl", "rctrl") then
+            g.saveSession()
+        end
     end
 end
 
