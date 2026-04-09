@@ -69,7 +69,7 @@ function MainScene:draw()
     local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
     local item = nil
     local beforeActiveDragWorld, currentActiveDragWorld = self.targetDrag, nil
-    if world:isWithinWorldLimit(tx, ty) then
+    if world.items:contains(tx, ty) then
         -- tile indicator
         local t = math.sin(love.timer.getTime() * 4) ^ 2
         if self.candidateWirePos then
@@ -170,7 +170,6 @@ function MainScene:draw()
         if currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION then
             local t = helper.clamp(helper.remap(currentActiveDragWorld[1], 0, consts.DRAG_ITEM_DURATION, 0, 1), 0, 1)
             ui.arcLoadingBar(uimx, uimy, t)
-        else
         end
     elseif beforeActiveDragWorld and beforeActiveDragWorld[1] >= consts.DRAG_ITEM_DURATION then
         -- Move or remove?
