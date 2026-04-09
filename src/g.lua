@@ -1454,6 +1454,7 @@ g.CATEGORIES = {
 
 ---@class g.ItemDefinition: g._MixinHasNameDefinition
 ---@field public category g.ItemCategory
+---@field public tags string[]?
 ---@field public price number
 ---@field public load number
 ---@field public drawItem fun(r: kirigami.Region) (not translated)
@@ -1462,6 +1463,7 @@ g.CATEGORIES = {
 ---@class g.ItemInfo: g._MixinHasNameInfo
 ---@field public id string
 ---@field public category g.ItemCategory
+---@field public tags objects.Set<string>
 ---@field public price number
 ---@field public load number
 ---@field public drawItem fun(r: kirigami.Region) (not translated)
@@ -1590,6 +1592,7 @@ function g.defineItem(id, def)
     else
         assert(def.load, "invalid load")
     end
+    def.tags = objects.Set(def.tags or {})
 
     if def.category == "server" then
         ---@cast def g.ServerInfo
@@ -1687,18 +1690,19 @@ end
 local drawLockOpen = helper.genDrawUIIntuition("lock_open", "theme", "theme")
 
 ---@class g._ServerDef
----@field package nameContext string?
----@field package rawDescription string?
----@field package description string?
----@field package descriptionContext string?
----@field package color objects.Color
----@field package price number
----@field package load number
----@field package computePerSecond number
----@field package computePreference string[]
----@field package heatTolerance [number, number]
----@field package heat number
----@field package draw fun(r:kirigami.Region,itemData:g.World.ServerData?)?
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field load number
+---@field computePerSecond number
+---@field computePreference string[]
+---@field heatTolerance [number, number]
+---@field heat number
+---@field draw fun(r:kirigami.Region,itemData:g.World.ServerData?)?
 
 ---@param id string
 ---@param name string
@@ -1729,6 +1733,7 @@ function g.defineServer(id, name, def)
         rawDescription = def.rawDescription,
         description = def.description,
         descriptionContext = def.descriptionContext,
+        tags = def.tags,
         load = def.load,
         price = def.price,
         computePerSecond = def.computePerSecond,
@@ -1754,17 +1759,18 @@ function g.defineServer(id, name, def)
 end
 
 ---@class g._DataDef
----@field package nameContext string?
----@field package rawDescription string?
----@field package description string?
----@field package descriptionContext string?
----@field package color objects.Color
----@field package price number
----@field package load number
----@field package dataPerSecond number
----@field package wireLength integer
----@field package wireDPS number? (defaults to dataPerSecond / 4)
----@field package draw fun(r:kirigami.Region,itemData:g.World.DataOutputData?)
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field load number
+---@field dataPerSecond number
+---@field wireLength integer
+---@field wireDPS number? (defaults to dataPerSecond / 4)
+---@field draw fun(r:kirigami.Region,itemData:g.World.DataOutputData?)
 
 ---@param id string
 ---@param name string
@@ -1795,6 +1801,7 @@ function g.defineDataOutput(id, name, def)
         rawDescription = def.rawDescription,
         description = def.description,
         descriptionContext = def.descriptionContext,
+        tags = def.tags,
         price = def.price,
         load = def.load,
         dataPerSecond = def.dataPerSecond,
@@ -1819,17 +1826,18 @@ function g.defineDataOutput(id, name, def)
 end
 
 ---@class g._DataInDef
----@field package nameContext string?
----@field package rawDescription string?
----@field package description string?
----@field package descriptionContext string?
----@field package color objects.Color
----@field package price number
----@field package load number
----@field package queuesJob g.JobCategory
----@field package maxJobQueue integer
----@field package wireLength integer
----@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field load number
+---@field queuesJob g.JobCategory
+---@field maxJobQueue integer
+---@field wireLength integer
+---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
 ---@param id string
 ---@param name string
@@ -1860,6 +1868,7 @@ function g.defineDataInput(id, name, def)
         rawDescription = def.rawDescription,
         description = def.description,
         descriptionContext = def.descriptionContext,
+        tags = def.tags,
         price = def.price,
         load = def.load,
         queuesJob = def.queuesJob,
@@ -1884,21 +1893,22 @@ function g.defineDataInput(id, name, def)
 end
 
 ---@class g._BoosterDef
----@field package nameContext string?
----@field package rawDescription string?
----@field package description string?
----@field package descriptionContext string?
----@field package color objects.Color
----@field package price number
----@field package load number
----@field package radiate integer
----@field package radiateAlgorithm g.RadiateAlgorithm
----@field package connectable {max:integer,target:g.ItemCategory}?
----@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)
----@field package getTileHeat (fun(reltx:integer,relty:integer):number)?
----@field package getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
----@field package getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
----@field package getLoadMultiplier (fun(reltx:integer,relty:integer):number)?
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field load number
+---@field radiate integer
+---@field radiateAlgorithm g.RadiateAlgorithm
+---@field connectable {max:integer,target:g.ItemCategory}?
+---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)
+---@field getTileHeat (fun(reltx:integer,relty:integer):number)?
+---@field getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
+---@field getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
+---@field getLoadMultiplier (fun(reltx:integer,relty:integer):number)?
 
 ---@param id string
 ---@param name string
@@ -1929,6 +1939,7 @@ function g.defineBooster(id, name, def)
         rawDescription = def.rawDescription,
         description = def.description,
         descriptionContext = def.descriptionContext,
+        tags = def.tags,
         price = def.price,
         load = def.load,
         radiate = def.radiate,
@@ -1958,15 +1969,16 @@ function g.defineBooster(id, name, def)
 end
 
 ---@class g._PowerGenDef
----@field package nameContext string?
----@field package rawDescription string?
----@field package description string?
----@field package descriptionContext string?
----@field package color objects.Color
----@field package price number
----@field package power number
----@field package wireLength integer
----@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field power number
+---@field wireLength integer
+---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
 ---@param id string
 ---@param name string
@@ -1997,6 +2009,7 @@ function g.definePowerGenerator(id, name, def)
         rawDescription = def.rawDescription,
         description = def.description,
         descriptionContext = def.descriptionContext,
+        tags = def.tags,
         price = def.price,
         load = 0,
         power = def.power,
@@ -2020,14 +2033,15 @@ function g.definePowerGenerator(id, name, def)
 end
 
 ---@class g._PowerRelayDef
----@field package nameContext string?
----@field package rawDescription string?
----@field package description string?
----@field package descriptionContext string?
----@field package color objects.Color
----@field package price number
----@field package wireLength integer
----@field package draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field wireLength integer
+---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
 ---@param id string
 ---@param name string
@@ -2058,6 +2072,7 @@ function g.definePowerRelay(id, name, def)
         rawDescription = def.rawDescription,
         description = def.description,
         descriptionContext = def.descriptionContext,
+        tags = def.tags,
         price = def.price,
         load = 0,
         wireLength = def.wireLength,
