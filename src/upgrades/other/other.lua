@@ -31,20 +31,45 @@ end
 -- Max Load
 -----------
 
-g.defineUpgrade("max_load", "Max Load+", {
+
+g.defineUpgrade("max_load_mul", "Max Load+", {
     kind = "MISC",
-    description = "Increase max load by %{1}.",
+    description = "Increase power multiplier of generators to %{1}.",
     image = "bolt",
     maxLevel = 10,
-    getValues = helper.valueGetter(1, 1),
-    getMaxLoadModifier = getWorldSizeModifier
+    getValues = helper.valueGetter(5, 110),
+    valueFormatter = helper.PERCENTAGE_FORMATTER,
+    ---@param uinfo g.UpgradeInfo
+    ---@param level integer
+    ---@param itemdata g.World.PowerData
+    getGeneratorLoadMultiplier = function(uinfo, level, itemdata)
+        local itemInfo, cat = g.getItemInfo(itemdata.type)
+        if cat == "powergen" and not itemInfo.tags:has("datacenter_power") then
+            return uinfo:getValues(level) / 100
+        end
+
+        return 1
+    end
 })
 
-g.defineUpgrade("max_load_mul", "Max Load++", {
+
+g.defineUpgrade("datacenter_load_mul", "Datacenter Load+", {
     kind = "MISC",
-    description = "Increase max load multiplier by %{1}.",
-    image = "bolt",
+    description = "Increase power multiplier of datacenter power to %{1}.",
+    image = "energy",
     maxLevel = 10,
-    getValues = helper.percentageGetter(1, 2),
-    getMaxLoadMultiplier = getWorldSizeModifier
+    getValues = helper.valueGetter(5, 105),
+    valueFormatter = helper.PERCENTAGE_FORMATTER,
+    ---@param uinfo g.UpgradeInfo
+    ---@param level integer
+    ---@param itemdata g.World.PowerData
+    getGeneratorLoadMultiplier = function(uinfo, level, itemdata)
+        local itemInfo, cat = g.getItemInfo(itemdata.type)
+        if cat == "powergen" and itemInfo.tags:has("datacenter_power") then
+            return uinfo:getValues(level) / 100
+        end
+
+        return 1
+    end,
+    drawUI = helper.genDrawUIIntuition("bolt", "theme", "theme")
 })

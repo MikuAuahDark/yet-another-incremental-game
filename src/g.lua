@@ -1385,11 +1385,11 @@ function g.genJob(id)
 
     local t = love.math.random()
     local cp = helper.lerp(ji.compute[1], ji.compute[2], t)
-    cp = (cp + g.ask("getJobComputePowerModifier", id)) * g.ask("getJobComputePowerMultiplier", id)
+    cp = g.getProperty("getJobComputePower", cp, 1, id)
     local od = helper.lerp(ji.data[1], ji.data[2], t)
-    od = (od + g.ask("getJobOutputDataModifier", id)) * g.ask("getJobOutputDataMultiplier", id)
+    od = g.getProperty("getJobOutputData", od, 1, id)
     local mr = helper.lerp(ji.money[1], ji.money[2], t)
-    mr = (mr + g.ask("getJobMoneyRewardModifier", id)) * g.ask("getJobMoneyRewardMultiplier", id)
+    mr = g.getProperty("getJobMoneyReward", mr, 1, id)
 
     ---@type g.Job
     local job = {
@@ -1400,7 +1400,7 @@ function g.genJob(id)
         computePower = helper.round(cp),
         outputData = helper.round(od),
         resource = {money = helper.round(mr)},
-        timeout = g.ask("getJobTimeoutModifier", id) * g.ask("getJobTimeoutMultiplier", id),
+        timeout = g.getProperty("getJobTimeout", 0, 1, id),
     }
     g.call("jobCreated", job)
     return job

@@ -134,6 +134,7 @@ end
 
 local _mainPowerDecor = makeDrawDecorForPowerlines(3)
 g.definePowerGenerator("main_power", "Main Datacenter Power", {
+    tags = {"datacenter_power"},
     color = objects.Color.WHITE,
     price = 0,
     power = 100,
@@ -148,6 +149,7 @@ g.definePowerGenerator("main_power", "Main Datacenter Power", {
 
 local _subPowerDecor = makeDrawDecorForPowerlines(2)
 g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
+    tags = {"datacenter_power"},
     color = objects.Color.WHITE,
     price = 0,
     power = 30,

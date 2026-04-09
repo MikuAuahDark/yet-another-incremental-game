@@ -91,7 +91,7 @@ g.defineDataInput("video_indata", "Video Data Input (Tier 1)", {
     queuesJob = "video",
     maxJobQueue = 5,
     wireLength = 4,
-    color = objects.Color("#6fb3e8"),
+    color = objects.Color("#12aae6"),
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         g.drawImageContained("movie", drawDataInputDecorator(r, 2, 0.2, 0.4, 0.08):get())
@@ -105,7 +105,7 @@ g.defineDataInput("video_indata_t2", "Video Data Input (Tier 2)", {
     queuesJob = "video",
     maxJobQueue = 8,
     wireLength = 5,
-    color = objects.Color("#6fb3e8"),
+    color = objects.Color("#12aae6"),
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         g.drawImageContained("movie", drawDataInputDecorator(r, 3, 0.2, 0.5, 0.08):get())
