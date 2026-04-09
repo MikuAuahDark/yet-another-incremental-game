@@ -493,6 +493,14 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
 
     -- Attributes
     local world = g.getMainWorld()
+    -- Price
+    local priceText = TEXT.PRICE_TOOLTIP({price = g.formatNumber(serverInfo.price)})
+    if not g.canAfford({money = serverInfo.price}) then
+        priceText = helper.wrapRichtextColor(g.COLORS.CANT_AFFORD, priceText)
+    else
+        priceText = helper.wrapRichtextColor(g.COLORS.CAN_AFFORD, priceText)
+    end
+    builder:addText(priceText, attrF, "left")
     -- Load
     local load = world:computeLoadModifier(serverInfo)
     builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")

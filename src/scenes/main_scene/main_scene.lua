@@ -80,7 +80,7 @@ function MainScene:draw()
                 love.graphics.setColor(1, 0, 0, t)
             end
         elseif hud.activeDragging and hud.activeDragging[1] >= consts.DRAG_ITEM_DURATION then
-            if g.canPutItem(tx, ty) then
+            if g.canPutItem(tx, ty) and g.canAfford({money = hud.activeDragging[2].price}) then
                 love.graphics.setColor(0, 1, 0, t)
             else
                 love.graphics.setColor(1, 0, 0, t)
@@ -181,7 +181,9 @@ function MainScene:draw()
             end
         else
             -- Remove
+            local itemInfo = g.getItemInfo(beforeActiveDragWorld[2].type)
             g.removeItem(beforeActiveDragWorld[2])
+            g.addResource("money", itemInfo.price * 0.5)
         end
     end
 
@@ -203,8 +205,8 @@ function MainScene:draw()
         -- Place or put out?
         if helper.isInsideRect(uimx, uimy, safeArea:get()) then
             -- Place
-            -- TODO: Check money
-            if g.canPutItem(tx, ty) then
+            local itemInfo = g.getItemInfo(beforeActiveDragHUD[2].id)
+            if g.canPutItem(tx, ty) and g.canAfford({money = itemInfo.price}) then
                 g.putItem(beforeActiveDragHUD[2].id, tx, ty)
             end
         end
