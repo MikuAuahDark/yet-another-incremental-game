@@ -629,8 +629,6 @@ function World:_update(dt)
 
     -- Run server update
     -- We need to do the server update in multiple pass: Computing the CPS, then updating the job progress.
-    local perfMod = g.ask("getPerformanceModifier") --[[@as number]]
-    local perfMultiplier = g.ask("getPerformanceMultiplier") --[[@as number]]
     local cps = 0
     -- Pass 1: Compute CPS
     for _, serverData in pairs(self.servers) do
@@ -700,6 +698,8 @@ function World:_update(dt)
         end
 
         -- Compute CPS
+        local perfMod = g.ask("getPerformanceModifier", serverInfo) --[[@as number]]
+        local perfMultiplier = g.ask("getPerformanceMultiplier", serverInfo) --[[@as number]]
         local finalMod = serverInfo.computePerSecond + perfMod + boosterMod
         local finalMul = perfMultiplier * worldutil.getLoadPercentage(serverData) * heatPerfMul * boosterMul
         serverData.computePerSecond = math.max(finalMod, 0) * finalMul

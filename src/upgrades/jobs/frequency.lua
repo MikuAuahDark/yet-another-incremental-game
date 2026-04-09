@@ -19,14 +19,11 @@ local function defJobFreqMod(cat, img, startval, incr, maxLevel, suffix)
         image = img,
         maxLevel = maxLevel,
         getValues = helper.valueGetter(startval, incr),
+        drawUI = helper.genDrawUIIntuition("arrow_shape_up", objects.Color.BLACK, objects.Color("#43b4e8")),
         [stat.addQuestion] = getJobFrequency,
     })
 end
 
----@param v number
-local function percentageFormatter(v)
-    return tostring(helper.round(v * 100, 2))
-end
 ---@param uinfo g.UpgradeInfo
 ---@param level integer
 local function getJobFreqMul(uinfo, level)
@@ -43,11 +40,12 @@ local function defJobFreqMul(cat, img, startval, incr, maxLevel, suffix)
     local stat = assert(g.VALID_STATS[catname.."JobFrequency"])
     return g.defineUpgrade(cat.."_mul"..(suffix or ""), "Faster "..catname.." Job Spawn", {
         kind = "JOB",
-        description = "Increase "..catname.." job spawn frequency multiplier by %{1}%.",
+        description = "Increase "..catname.." job spawn frequency multiplier by %{1}.",
         image = img,
         maxLevel = maxLevel,
-        getValues = helper.percentageGetter(startval, incr),
-        valueFormatter = {percentageFormatter},
+        getValues = helper.valueGetter(startval, incr),
+        valueFormatter = helper.PERCENTAGE_FORMATTER,
+        drawUI = helper.genDrawUIIntuition("arrow_shape_up_stack_2", objects.Color.BLACK, objects.Color("#43b4e8")),
         [stat.multQuestion] = getJobFreqMul,
     })
 end

@@ -73,3 +73,20 @@ g.defineUpgrade("datacenter_load_mul", "Datacenter Load+", {
     end,
     drawUI = helper.genDrawUIIntuition("bolt", "theme", "theme")
 })
+
+---------------
+-- Max Money --
+---------------
+
+g.defineUpgrade("money_limit", "Money Limit", {
+    kind = "MISC",
+    description = "Increase money limit.",
+    image = "attach_money",
+    maxLevel = 10,
+    getValues = function(uinfo, level)
+        return 10 ^ level
+    end,
+    getMoneyLimitMultiplier = function(uinfo, level)
+        return uinfo:getValues(level)
+    end
+})

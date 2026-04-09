@@ -151,12 +151,14 @@ local function drawUpgradeBox(mode, upgrade, noframe)
     local bgColor = objects.Color.WHITE
     if not noframe then
         if uinfo.kind == "UNLOCKS" then
+            -- Rounded rectangle
             bgColor = g.COLORS.UPGRADE_KINDS.UNLOCKS
             local col = gsman.mulColor(bgColor)
             local x, y, w, h = frameR:get()
             love.graphics.rectangle(mode, x, y, w, h, 12, 12)
             col:pop()
         elseif uinfo.kind == "EFFICIENCY" then
+            -- Circle
             local x, y, w, h = frameR:get()
             local r = (w + h) / 4
             bgColor = uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK
@@ -164,17 +166,19 @@ local function drawUpgradeBox(mode, upgrade, noframe)
             love.graphics.circle(mode, x + r, y + r, r)
             col:pop()
         elseif uinfo.kind == "JOB" then
+            -- Diamond
             bgColor = g.COLORS.UPGRADE_KINDS.JOB
             local col = gsman.mulColor(bgColor)
             local x, y, w, h = frameR:get()
             love.graphics.polygon(mode,
-                x + w / 2, y,
-                x + w, y + h / 2,
-                x + w / 2, y + h,
-                x, y + h / 2
+                x + w / 2, y - h * 0.07,
+                x + w * 1.07, y + h / 2,
+                x + w / 2, y + h * 1.07,
+                x - w * 0.07, y + h / 2
             )
             col:pop()
         elseif uinfo.kind == "MISC" then
+            -- Hexagon
             local cx, cy = frameR:getCenter()
             local rx = frameR.w / 2
             local ry = frameR.h / 2
