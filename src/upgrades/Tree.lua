@@ -34,6 +34,7 @@ FEATURES WE NEED:
 ---@field connections integer[] list of other upgrades this upgrade is connected to
 ---@field isUnbound boolean? "unbound" upgrades exist without a position; (ie relics and stuff)
 ---@field cps number? CPS requirement for this upgrade
+---@field priceScaling number? Price scaling for this upgrade
 local Upgrade = {}
 
 
@@ -256,8 +257,14 @@ local function floorSignificant(value, nsig)
 	return math.floor(math.floor(value / mulby) * mulby)
 end
 
-local function modifyUpgradePrice(uinfo, val, level)
-    local mult = (uinfo.priceScaling or consts.DEFAULT_UPGRADE_PRICE_SCALING) ^ level
+---@param upg g.Tree.Upgrade
+---@param uinfo g.UpgradeInfo
+---@param val number
+---@param level integer
+local function modifyUpgradePrice(upg, uinfo, val, level)
+    local m1 = upg.priceScaling or 1
+    local m2 = uinfo.priceScaling or consts.DEFAULT_UPGRADE_PRICE_SCALING
+    local mult = (m1 * m2) ^ level
     local mult2 = g.ask("getUpgradePriceMultiplier", uinfo, level)
     val = floorSignificant(val*mult*mult2, 2)
     return val
@@ -281,7 +288,7 @@ function Tree:getUpgradePrice(upg, level)
             truePrice[resId] = val
         end
         for _,res in ipairs(g.RESOURCE_LIST)do
-            truePrice[res] = modifyUpgradePrice(uinfo, truePrice[res] or 0, level)
+            truePrice[res] = modifyUpgradePrice(upg, uinfo, truePrice[res] or 0, level)
         end
     end
 
@@ -320,7 +327,7 @@ function Tree:canAffordUpgrade(upg, level)
     end
 
     for res,p in pairs(upg.basePrice) do
-        local truePrice = modifyUpgradePrice(uinfo, p, level)
+        local truePrice = modifyUpgradePrice(upg, uinfo, p, level)
         if truePrice > g.getResource(res) then
             return false -- cant afford
         end

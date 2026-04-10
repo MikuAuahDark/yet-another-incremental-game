@@ -30,6 +30,7 @@ function upgscene:init()
     self.dev_maxLevelInput = ui.newTextBox()
     self.dev_startLevelInput = ui.newTextBox()
     self.dev_cpsInput = ui.newTextBox()
+    self.dev_priceScalingInput = ui.newTextBox()
     self.dev_priceInputs = {}
     for _, resId in ipairs(g.RESOURCE_LIST) do
         self.dev_priceInputs[resId] = ui.newTextBox()
@@ -411,9 +412,12 @@ local function drawUpgradeBoxes(self)
                         -- select new:
                         self.dev_editModeSelection = {x=gridX,y=gridY}
                         self.dev_maxLevelInput:reset()
+                        self.dev_startLevelInput:reset()
                         for _, resId in ipairs(g.RESOURCE_LIST) do
                             self.dev_priceInputs[resId]:reset()
                         end
+                        self.dev_cpsInput:reset()
+                        self.dev_priceScalingInput:reset()
                     end
                 end
                 if iml.isHovered(xx,yy,ww,hh) then
@@ -508,7 +512,7 @@ local function drawDevEditModeUI(self, treeUpgrades)
     if ui.DefaultButton("Reset levels", regs[3]) then
         -- resets all upgrades to level 0
         for _, upg in ipairs(tree:getAllUpgrades()) do
-            upg.level = 0
+            upg.level = upg.startLevel or 0
         end
         tree.unboundUpgrades = {}
         tree:finalize()
@@ -729,6 +733,17 @@ local function drawDevEditModeUI(self, treeUpgrades)
             end
             self.dev_cpsInput:draw(leftregs[idx+1])
 
+            richtext.printRichContainedNoWrap("priceScaling", font, leftregs[idx+2]:get())
+            local ok, priceScaling = maybeUpdateText(
+                self.dev_priceScalingInput,
+                tostring(upg.priceScaling or ""),
+                dev_fromFormattedNumber
+            )
+            if ok then
+                upg.priceScaling = priceScaling
+            end
+            self.dev_priceScalingInput:draw(leftregs[idx+3])
+
             local maxLevel = dev_fromFormattedNumber(self.dev_maxLevelInput:get())
             if maxLevel then
                 upg.maxLevelOverride = maxLevel
@@ -763,7 +778,7 @@ local function drawDevUI(self)
 
     local treeUpgrades = tree:getUpgradesOnTree()
     local numUpgs = #treeUpgrades
-    richtext.printRichContained("{o}Num Upgrades:" .. tostring(numUpgs) .. "/140", font, header:moveRatio(0.5,0.0):padRatio(0.6):get())
+    richtext.printRichContained("{o}Upgs.:" .. tostring(numUpgs) .. "/140", font, header:moveRatio(0.5,0.0):padRatio(0.6):get())
 
     if self.dev_editMode then
         drawDevEditModeUI(self, treeUpgrades)
