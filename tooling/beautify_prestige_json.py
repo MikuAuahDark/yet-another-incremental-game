@@ -61,7 +61,7 @@ def main():
         data.connections = sorted(data.connections)
 
         with open(json_path, "w", encoding="utf-8", newline="") as f:
-            json.dump(data.model_dump(mode="python"), f, indent="\t")
+            json.dump(data.model_dump(mode="python", exclude_none=True), f, indent="\t")
 
         print(f"Sorted {json_path.name}")
 
