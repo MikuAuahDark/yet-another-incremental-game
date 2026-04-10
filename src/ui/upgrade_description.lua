@@ -1,6 +1,3 @@
-
-local MAX_TOOLTIP_WIDTH = 200
-
 ---@param upgrade g.Tree.Upgrade
 ---@param tree g.Tree
 ---@param x number
@@ -9,84 +6,83 @@ local MAX_TOOLTIP_WIDTH = 200
 local function description(upgrade, tree, x, y, safeArea)
     local uinfo = g.getUpgradeInfo(upgrade.id)
     local titleF = ui.ItemTooltip.getTitleFont()
-    local attrF = ui.ItemTooltip.getAttrFont()
     local descF = ui.ItemTooltip.getDescFont()
-
-    local titleFH = titleF:getHeight()
-    local attrFH = attrF:getHeight()
-    local descFH = descF:getHeight()
-
-    local width, height = 150, 0
+    local priceF = g.getThickFont(16)
+    local builder = ui.TooltipBuilder("hud", x, y, safeArea)
 
     -- Title
-    local titleText = uinfo.name
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(titleText, titleF, MAX_TOOLTIP_WIDTH)
-        width = math.max(width, w)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
-    height = height + descFH -- padding
+    builder:addText(uinfo.name, titleF, "center")
 
     -- Description
     local level = upgrade.level
     local maxLevel = tree:getUpgradeMaxLevel(upgrade)
     local descriptionText = g.getUpgradeDescription(uinfo, math.max(level, 1), level > 0 and level < maxLevel)
-    local descriptionHeight = 0
     if #descriptionText > 0 then
-        local w, l = richtext.getWrap(descriptionText, descF, MAX_TOOLTIP_WIDTH)
-        width = math.max(width, w)
-        descriptionHeight = (l + 1) * descFH
-        height = height + descriptionHeight
+        builder:addText(descriptionText, descF, "center")
     end
 
-    -- Attributes (for UNLOCKS upgrade)
-    local attributesText, attributesHeight = nil, 0
+    -- Attributes (if kind == "UNLOCKS")
     if uinfo.kind == "UNLOCKS" and uinfo.targetItem then
+        local attrF = ui.ItemTooltip.getAttrFont()
         local itemInfo, category = g.getItemInfo(uinfo.targetItem)
-        local at = {}
         local world = g.getMainWorld()
 
         -- Load
         local load = world:computeLoadModifier(itemInfo)
-        at[#at+1] = TEXT.LOAD_TOOLTIP({load = g.formatNumber(load)})
+        if load > 0 then
+            builder:addText(TEXT.LOAD_TOOLTIP({load = g.formatNumber(load)}), attrF, "left")
+        end
 
         if category == "server" then
             ---@cast itemInfo g.ServerInfo
-            at[#at+1] = TEXT.CPS_NUMBER({cps = g.formatNumber(itemInfo.computePerSecond)})
-            at[#at+1] = TEXT.HEAT_TOLERANCE({
+            -- CPS
+            builder:addText(TEXT.CPS_NUMBER({cps = g.formatNumber(itemInfo.computePerSecond)}), attrF, "left")
+            -- Heat Tolerance
+            builder:addText(TEXT.HEAT_TOLERANCE({
                 min_heat = itemInfo.heatTolerance[1],
                 max_heat = itemInfo.heatTolerance[2]
-            })
+            }), attrF, "left")
         elseif category == "data" then
             ---@cast itemInfo g.DataOutInfo
-            at[#at+1] = TEXT.DPS_NUMBER({dps = g.formatNumber(itemInfo.dataPerSecond)})
-            at[#at+1] = TEXT.WIRE_RANGE({range = itemInfo.wireLength})
-        end
-
-        if #at > 0 then
-            attributesText = table.concat(at, "\n")
-            local w, l = richtext.getWrap(attributesText, attrF, MAX_TOOLTIP_WIDTH)
-            width = math.max(width, w)
-            attributesHeight = l * attrFH
-            height = height + attributesHeight
-            height = height + descFH -- padding
+            -- DPS
+            builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(itemInfo.dataPerSecond)}), attrF, "left")
+            -- Wire Range
+            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
+            -- Wire DPS
+            builder:addText(TEXT.WIRE_DPS({dps = g.formatNumber(itemInfo.wireDPS)}), attrF, "left")
+        elseif category == "indata" then
+            ---@cast itemInfo g.DataInInfo
+            -- Queued Job Category
+            builder:addText(TEXT.CATEGORY_LIST({
+                categories = g.getJobCategoryName(itemInfo.queuesJob)
+            }), attrF, "left")
+            -- Added Job Queue
+            builder:addText(TEXT.JOB_QUEUE({job = itemInfo.maxJobQueue}), attrF, "left")
+            -- Wire Range
+            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
+        elseif category == "powergen" then
+            ---@cast itemInfo g.PowerGenInfo
+            -- Power
+            builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({power = g.formatNumber(itemInfo.power)}), attrF, "left")
+            -- Wire Range
+            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
+        elseif category == "powerrelay" then
+            ---@cast itemInfo g.PowerRelayInfo
+            -- Wire Range
+            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
         end
     end
 
-    -- Level Line
-    local maxLevel = g.getUpgTree():getUpgradeMaxLevel(upgrade)
-    local levelText = "Level: "..upgrade.level..(maxLevel > 0 and ("/"..maxLevel) or "")
-    local levelHeight
-    do
-        local w, l = richtext.getWrap(levelText, descF, MAX_TOOLTIP_WIDTH)
-        width = math.max(width, w)
-        levelHeight = l * descFH
-        height = height + levelHeight
-    end
+    -- Padding
+    builder:addPadding(descF:getHeight())
 
-    -- Price (bottommost)
+    -- Level
+    builder:addText(TEXT.LEVEL_TOOLTIP({
+        level = upgrade.level,
+        maxLevel = maxLevel
+    }), descF, "center")
+
+    -- Price
     local price = g.getUpgTree():getUpgradePrice(upgrade)
     ---@type string[]
     local priceStrs = {}
@@ -97,7 +93,7 @@ local function description(upgrade, tree, x, y, safeArea)
             local canAfford = g.getResource(resId) >= val
             priceStrs[#priceStrs+1] = helper.wrapRichtextColor(
                 canAfford and g.COLORS.CAN_AFFORD or g.COLORS.CANT_AFFORD,
-                "{b}{"..resId.."}"..g.formatNumber(val).."{/b}"
+                "{"..resId.."}"..g.formatNumber(val)
             )
         end
     end
@@ -117,44 +113,11 @@ local function description(upgrade, tree, x, y, safeArea)
     end
 
     local priceText = table.concat(priceStrs, " ")
-    local priceHeight = 0
     if #priceStrs > 0 then
-        local w, l = richtext.getWrap(priceText, titleF, MAX_TOOLTIP_WIDTH)
-        width = math.max(width, w)
-        priceHeight = l * titleFH
-        height = height + priceHeight
+        builder:addText(priceText, priceF, "center")
     end
 
-    -- Generate region
-    local tdrawableR, tcntR = ui.getTooltipRegion(x, y, width, height, safeArea)
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Draw
-    local currHeight = 0
-    -- Title
-    richtext.printRich(titleText, titleF, tcntR.x, tcntR.y + currHeight, tcntR.w, "center")
-    currHeight = currHeight + titleHeight + descFH -- (descFH is padding)
-
-    -- Attributes
-    if attributesText then
-        richtext.printRich(attributesText, attrF, tcntR.x, tcntR.y + currHeight, tcntR.w, "left")
-        currHeight = currHeight + attributesHeight + descFH -- (descFH is padding)
-    end
-
-    -- Description
-    if #descriptionText > 0 then
-        richtext.printRich(descriptionText, descF, tcntR.x, tcntR.y + currHeight, tcntR.w, "center")
-        currHeight = currHeight + descriptionHeight
-    end
-
-    -- Level
-    richtext.printRich(levelText, descF, tcntR.x, tcntR.y + currHeight, tcntR.w, "center")
-    currHeight = currHeight + levelHeight
-
-    -- Price
-    if priceHeight > 0 then
-        richtext.printRich(priceText, titleF, tcntR.x, tcntR.y + currHeight, tcntR.w, "center")
-    end
+    builder:render()
 end
 
 return description

@@ -58,6 +58,8 @@ local text = {
         context = "How many load this item generates/provides?"}),
     TOTAL_LOAD_TOOLTIP = interp("Power Network: %{s}", {
         context = "How many load is used and power available across the whole power network? %{s} will be replaced by `load/total`."}),
+    LEVEL_TOOLTIP = interp("Level: %{level}/%{maxLevel}", {
+        context = "Denotes the level of an upgrade."}),
 
     MENU_CONTINUE = loc("Continue", nil, {
         context = "A button to continue the game from title screen"}),
