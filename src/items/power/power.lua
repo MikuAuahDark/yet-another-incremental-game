@@ -166,7 +166,7 @@ g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
 
 g.definePowerRelay("basic_relay", "Relay", {
     color = objects.Color.GRAY,
-    price = 75,
+    price = 150,
     wireLength = 5,
     draw = function(r)
         drawRelay(r, 3, 0.075)
@@ -176,7 +176,7 @@ g.PREUNLOCKED_ITEMS:add("basic_relay")
 
 g.definePowerRelay("advanced_relay", "Advanced Relay", {
     color = objects.Color("#707070"),
-    price = 200,
+    price = 1000,
     wireLength = 7,
     draw = function(r)
         local sz = math.sqrt(r.w * r.h)
@@ -196,7 +196,7 @@ g.definePowerRelay("advanced_relay", "Advanced Relay", {
 
 g.definePowerRelay("he_relay", "High-End Relay", {
     color = objects.Color("#606060"),
-    price = 500,
+    price = 15000,
     wireLength = 9,
     draw = function(r)
         local sz = math.sqrt(r.w * r.h)

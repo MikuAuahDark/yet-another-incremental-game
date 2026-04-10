@@ -63,7 +63,7 @@ local function description(upgrade, tree, x, y, safeArea)
         elseif category == "powergen" then
             ---@cast itemInfo g.PowerGenInfo
             -- Power
-            builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({power = g.formatNumber(itemInfo.power)}), attrF, "left")
+            builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = g.formatNumber(itemInfo.power)}), attrF, "left")
             -- Wire Range
             builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
         elseif category == "powerrelay" then
