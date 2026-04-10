@@ -410,6 +410,7 @@ end
 
 function TextBox:reset()
 	self.txt = {}
+	self.isFocused = false
 end
 
 ---@param reg kirigami.Region

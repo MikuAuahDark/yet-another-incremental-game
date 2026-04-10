@@ -56,8 +56,8 @@ g.defineDataInput("basic_indata", "Basic Data Input", {
 g.PREUNLOCKED_ITEMS:add("basic_indata")
 
 g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
-    price = 10,
-    load = 7,
+    price = 25,
+    load = 5,
     queuesJob = "general",
     maxJobQueue = 5,
     wireLength = 4,
@@ -70,8 +70,8 @@ g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
 })
 
 g.defineDataInput("indata_tier2", "General Data Input (Tier 2)", {
-    price = 35,
-    load = 15,
+    price = 60,
+    load = 10,
     queuesJob = "general",
     maxJobQueue = 7,
     wireLength = 6,

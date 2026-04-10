@@ -63,7 +63,7 @@ g.defineBooster("piped_water_cooler", "Piped Water Cooler", {
 
 g.defineBooster("ice_cooler", "Ice Cooler", {
     description = "Reduces tile heat by 40.",
-    price = 350,
+    price = 450,
     load = 18,
     radiate = 4,
     radiateAlgorithm = "taxicab",
@@ -79,7 +79,7 @@ g.defineBooster("ice_cooler", "Ice Cooler", {
 
 g.defineBooster("piped_ice_cooler", "Piped Ice Cooler", {
     description = "Reduces tile heat by 30.",
-    price = 150,
+    price = 175,
     load = 10,
     radiate = 4,
     radiateAlgorithm = "taxicab",
@@ -106,7 +106,7 @@ g.defineBooster("piped_ice_cooler", "Piped Ice Cooler", {
 
 g.defineBooster("power_efficiency", "Power Efficiency", {
     description = "Reduces server load by 20% but reduces performance by 8%.",
-    price = 200,
+    price = 400,
     load = 1,
     radiate = 3,
     radiateAlgorithm = "taxicab",
@@ -149,7 +149,7 @@ g.defineBooster("pfc", "Power Factor Correction", {
 
 g.defineBooster("wired_pe", "Wired Power Efficiency", {
     description = "Reduces server load by 35% but reduces performance by 13%.",
-    price = 100,
+    price = 150,
     load = 1,
     radiate = 2,
     radiateAlgorithm = "chessboard",
@@ -179,7 +179,7 @@ g.defineBooster("wired_pe", "Wired Power Efficiency", {
 
 g.defineBooster("overclocker", "Overclock", {
     description = "Increase server performance by 25% but increases load by 10%.",
-    price = 10,
+    price = 1250,
     load = 1,
     radiate = 1,
     radiateAlgorithm = "taxicab",
@@ -200,7 +200,7 @@ g.defineBooster("overclocker", "Overclock", {
 
 g.defineBooster("selective_tweaks", "Selective Tweaks", {
     description = "Increase server performance by 20% but increases load by 7%.",
-    price = 10,
+    price = 250,
     load = 1,
     radiate = 2,
     radiateAlgorithm = "chessboard",
