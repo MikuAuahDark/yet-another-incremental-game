@@ -215,7 +215,7 @@ function MainScene:draw()
         if helper.isInsideRect(uimx, uimy, safeArea:get()) then
             -- Place
             local itemInfo = g.getItemInfo(beforeActiveDragHUD[2].id)
-            if g.canPutItem(tx, ty) and g.canAfford({money = itemInfo.price}) then
+            if g.canPutItem(tx, ty) and g.trySubtractResources({money = itemInfo.price}) then
                 g.putItem(beforeActiveDragHUD[2].id, tx, ty)
             end
         end
