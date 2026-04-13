@@ -9,8 +9,6 @@ function MainScene:init()
     local wtz = consts.WORLD_TILE_SIZE
     self.camera:setPos((center + 0.5) * wtz, (center + 0.5) * wtz)
 
-    ---@type [integer,integer]?
-    self.candidateWirePos = nil
     ---@type g.World.ItemData? pinning item description
     self.pinItemInfo = nil
     ---@type [number,g.World.ItemData]?
@@ -19,8 +17,16 @@ function MainScene:init()
     self.dpDoubleClickData = nil
     -- We track our own zoom because our zoom needs to be affected by UI scaling
     self.zoomValue = 0
+
+    self.hideHUD = false
+    self.clearJobMode = false
 end
 MainScene.mousemoved = MainScene.defaultMousemoved
+
+function MainScene:enter()
+    self.hideHUD = false
+    self.clearJobMode = false
+end
 
 ---@param dt number
 function MainScene:update(dt)
@@ -74,14 +80,7 @@ function MainScene:draw()
     if world.items:contains(tx, ty) then
         -- tile indicator
         local t = math.sin(love.timer.getTime() * 4) ^ 2
-        if self.candidateWirePos then
-            local server, dp = self:_getServerAndDP(self.candidateWirePos[1], self.candidateWirePos[2], tx, ty)
-            if server and dp and self:_canConnectOrDisconnect(server, dp) then
-                love.graphics.setColor(0, 1, 0, t)
-            else
-                love.graphics.setColor(1, 0, 0, t)
-            end
-        elseif hud.activeDragging and hud.activeDragging[1] >= consts.DRAG_ITEM_DURATION then
+        if hud.activeDragging and hud.activeDragging[1] >= consts.DRAG_ITEM_DURATION then
             if g.canPutItem(tx, ty) and g.canAfford({money = hud.activeDragging[2].price}) then
                 love.graphics.setColor(0, 1, 0, t)
             else
@@ -125,15 +124,6 @@ function MainScene:draw()
     end
     currentActiveDragWorld = self.targetDrag
 
-    if self.candidateWirePos then
-        love.graphics.line(
-            (tx + 0.5) * wtz,
-            (ty + 0.5) * wtz,
-            (self.candidateWirePos[1] + 0.5) * wtz,
-            (self.candidateWirePos[2] + 0.5) * wtz
-        )
-    end
-
     self:resetCamera()
     ui.startUI()
     local uimx, uimy = ui.getMouse()
@@ -146,18 +136,13 @@ function MainScene:draw()
         end
     end
 
-    love.graphics.setColor(0, 0, 0, 1)
-    if world.heat:contains(tx, ty) then
-        love.graphics.print("("..tx..", "..ty..") H: "..world.heat:get(tx, ty), g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 18)
-    else
-        love.graphics.print("("..tx..", "..ty..")", g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 18)
-    end
-    if self.candidateWirePos then
-        love.graphics.print(
-            "Sel: ("..self.candidateWirePos[1]..", "..self.candidateWirePos[2]..")",
-            g.getMainFont(16),
-            safeArea.x + 4, safeArea.y + safeArea.h - 36
-        )
+    if not self.hideHUD then
+        love.graphics.setColor(0, 0, 0, 1)
+        if world.heat:contains(tx, ty) then
+            love.graphics.print("("..tx..", "..ty..") H: "..world.heat:get(tx, ty), g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 18)
+        else
+            love.graphics.print("("..tx..", "..ty..")", g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 18)
+        end
     end
 
     if (not currentActiveDragWorld or currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION) and (not hud.activeDragging) then
@@ -199,7 +184,14 @@ function MainScene:draw()
     -- Update item dragging (from HUD)
     -- FIXME: Callback-based?
     local beforeActiveDragHUD = hud.activeDragging
-    hud:draw()
+    if self.hideHUD then
+        hud:draw({stats = false, itemList = false, jobQueue = false})
+        if iml.wasJustClicked(ui.getFullScreenRegion():get()) then
+            self.hideHUD = false
+        end
+    else
+        hud:draw()
+    end
     local currentActiveDragHUD = hud.activeDragging
 
     if currentActiveDragHUD then
@@ -230,13 +222,15 @@ function MainScene:draw()
     end
 
     -- Draw scene switch
-    local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
-    love.graphics.setColor(1, 1, 1)
-    ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
-    g.drawImageContained("account_tree", switchImageR:get())
-    if iml.wasJustClicked(switchR:get()) then
-        g.playUISound("ui_click_basic", 1.4,0.8)
-        g.gotoScene("upgrade_scene")
+    if not self.hideHUD then
+        local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
+        love.graphics.setColor(1, 1, 1)
+        ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
+        g.drawImageContained("account_tree", switchImageR:get())
+        if iml.wasJustClicked(switchR:get()) then
+            g.playUISound("ui_click_basic", 1.4,0.8)
+            g.gotoScene("upgrade_scene")
+        end
     end
 
     -- Draw item visual
@@ -257,6 +251,14 @@ function MainScene:draw()
         col:pop()
 
         self.pinItemInfo = nil
+    end
+
+    -- Check if visibility button was pressed
+    if hud.wasVisibilityButtonPressed then
+        self.hideHUD = true
+    end
+    if hud.wasResetCameraButtonPressed then
+        self:_resetCamera()
     end
 
     self:renderPause()
@@ -334,16 +336,11 @@ function MainScene:_canConnectOrDisconnect(server, dp)
 end
 
 
-
-MainScene.keyreleased = MainScene.defaultKeyreleased
-
----@param x number
----@param y number
----@param b integer
-function MainScene:mousereleased(x, y, b)
-    if self.candidateWirePos and b == 1 then
-        self.candidateWirePos = nil
-    end
+function MainScene:_resetCamera()
+    local center = math.floor(World.TILE_SIZE / 2)
+    local wtz = consts.WORLD_TILE_SIZE
+    self.camera:setPos((center + 0.5) * wtz, (center + 0.5) * wtz)
+    self.zoomValue = 0
 end
 
 function MainScene:keyreleased(k)

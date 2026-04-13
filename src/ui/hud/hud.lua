@@ -152,6 +152,10 @@ function HUD:init()
 
     self.wheelX = 0
     self.wheelY = 0
+
+    self.wasVisibilityButtonPressed = false
+    self.wasJobClearButtonPressed = false
+    self.wasResetCameraButtonPressed = false
 end
 
 if false then
@@ -177,6 +181,10 @@ function HUD:update(dt)
             self.activeDragging[3] = self.activeDragging[3] + dt * 2
         end
     end
+
+    self.wasVisibilityButtonPressed = false
+    self.wasJobClearButtonPressed = false
+    self.wasResetCameraButtonPressed = false
 end
 
 ---@param r kirigami.Region
@@ -530,8 +538,13 @@ function HUD:draw(show)
             end
 
             g.drawImageContained("visibility_off", hideButtonR:padRatio(0.15):get())
+            self.wasVisibilityButtonPressed = iml.wasJustClicked(hideButtonR:get())
+
             g.drawImageContained("reset_focus", resetCameraR:padRatio(0.15):get())
+            self.wasResetCameraButtonPressed = iml.wasJustClicked(resetCameraR:get())
+
             g.drawImageContained("contract_delete", clearJobR:padRatio(0.15):get())
+            self.wasJobClearButtonPressed = iml.wasJustClicked(clearJobR:get())
         end
     end
 
