@@ -145,8 +145,8 @@ function MainScene:draw()
         end
     end
 
-    if (not currentActiveDragWorld or currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION) and (not hud.activeDragging) then
-        if self.pinItemInfo then
+    if not self.hideHUD and (not currentActiveDragWorld or currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION) and (not hud.activeDragging) then
+        if self.pinItemInfo and world:isWithinWorldLimit(self.pinItemInfo.tileX, self.pinItemInfo.tileY) then
             -- Draw pinned tooltip
             ---@type number,number
             local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
@@ -154,7 +154,7 @@ function MainScene:draw()
             )
             ui.ItemTooltip.DrawWorldTooltip(self.pinItemInfo, uix, uiy, safeArea)
         end
-        if item and self.pinItemInfo ~= item then
+        if item and self.pinItemInfo ~= item and world:isWithinWorldLimit(item.tileX, item.tileY) then
             -- Draw hovered tooltip
             ui.ItemTooltip.DrawWorldTooltip(item, uimx + 11, uimy + 5, safeArea)
         end

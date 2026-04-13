@@ -827,7 +827,7 @@ function upgscene:draw()
     hud:draw({stats = true, jobQueue = false, itemList = false, mode = "upgrade"})
 
     -- Draw tutorial text if needed
-    if g.getSn().showTutorials.upgrades and (not consts.DEV_MODE) then
+    if g.getSn().showTutorials.upgrades then
         local safeArea = hud:getSafeArea()
         local tutTextR = safeArea:padRatio(0.1)
         local txt = consts.IS_MOBILE and TUTORIAL_UPGRADES_MOBILE or TUTORIAL_UPGRADES
