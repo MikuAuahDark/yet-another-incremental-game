@@ -625,6 +625,7 @@ end
 
 
 
+---If you don't need the leeway, it's better to use `kirigami.Region:containsCoords` instead.
 ---@param x number
 ---@param y number
 ---@param x1 number

@@ -183,7 +183,7 @@ function MainScene:draw()
         end
     elseif beforeActiveDragWorld and beforeActiveDragWorld[1] >= consts.DRAG_ITEM_DURATION then
         -- Move or remove?
-        if helper.isInsideRect(uimx, uimy, safeArea:get()) then
+        if safeArea:containsCoords(uimx, uimy) then
             -- Move if possible
             if g.canPutItem(tx, ty) then
                 g.moveItem(beforeActiveDragWorld[2], tx, ty)

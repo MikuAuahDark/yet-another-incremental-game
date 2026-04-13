@@ -32,7 +32,6 @@ g.definePowerGenerator("basic_generator", "Generator", {
         col:pop()
     end
 })
-g.PREUNLOCKED_ITEMS:add("basic_generator")
 
 g.definePowerGenerator("efficient_generator", "Efficient Generator", {
     color = objects.Color("#909090"),
@@ -172,7 +171,6 @@ g.definePowerRelay("basic_relay", "Relay", {
         drawRelay(r, 3, 0.075)
     end
 })
-g.PREUNLOCKED_ITEMS:add("basic_relay")
 
 g.definePowerRelay("advanced_relay", "Advanced Relay", {
     color = objects.Color("#707070"),

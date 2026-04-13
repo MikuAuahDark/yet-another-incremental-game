@@ -59,6 +59,22 @@ local function getPowerNetworkText(powerNetwork)
     return TEXT.TOTAL_LOAD_TOOLTIP({s = s})
 end
 
+---@param itemInfo g.ItemInfo
+local function getItemPrice(itemInfo)
+    if itemInfo.price <= 0 then
+        return nil
+    end
+
+    local priceText = TEXT.PRICE_TOOLTIP({price = g.formatNumber(itemInfo.price)})
+    if not g.canAfford({money = itemInfo.price}) then
+        priceText = helper.wrapRichtextColor(g.COLORS.CANT_AFFORD, priceText)
+    else
+        priceText = helper.wrapRichtextColor(g.COLORS.CAN_AFFORD, priceText)
+    end
+
+    return priceText
+end
+
 -- Putting this here so font sizes can be changed in one place
 function ItemTooltip.getTitleFont() return g.getMainFont(16) end
 function ItemTooltip.getAttrFont() return g.getMainFont(13) end
@@ -494,13 +510,10 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     -- Attributes
     local world = g.getMainWorld()
     -- Price
-    local priceText = TEXT.PRICE_TOOLTIP({price = g.formatNumber(serverInfo.price)})
-    if not g.canAfford({money = serverInfo.price}) then
-        priceText = helper.wrapRichtextColor(g.COLORS.CANT_AFFORD, priceText)
-    else
-        priceText = helper.wrapRichtextColor(g.COLORS.CAN_AFFORD, priceText)
+    local priceText = getItemPrice(serverInfo)
+    if priceText then
+        builder:addText(priceText, attrF, "left")
     end
-    builder:addText(priceText, attrF, "left")
     -- Load
     local load = world:computeLoadModifier(serverInfo)
     builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
@@ -539,6 +552,11 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
 
     -- Attributes
     local world = g.getMainWorld()
+    -- Price
+    local priceText = getItemPrice(dpInfo)
+    if priceText then
+        builder:addText(priceText, attrF, "left")
+    end
     -- Load
     local load = world:computeLoadModifier(dpInfo)
     builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
@@ -576,6 +594,11 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
 
     -- Attributes
     local world = g.getMainWorld()
+    -- Price
+    local priceText = getItemPrice(diInfo)
+    if priceText then
+        builder:addText(priceText, attrF, "left")
+    end
     -- Load
     local load = world:computeLoadModifier(diInfo)
     builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
@@ -615,6 +638,11 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
 
     -- Attributes
     local world = g.getMainWorld()
+    -- Price
+    local priceText = getItemPrice(boosterInfo)
+    if priceText then
+        builder:addText(priceText, attrF, "left")
+    end
     -- Load
     local load = world:computeLoadModifier(boosterInfo)
     builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
@@ -645,6 +673,12 @@ function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y)
     end
 
     -- Attributes
+    -- Price
+    local priceText = getItemPrice(powerGenInfo)
+    if priceText then
+        builder:addText(priceText, attrF, "left")
+    end
+    -- Load
     builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerGenInfo.power}), attrF, "left")
         :addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
 
@@ -674,6 +708,12 @@ function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y)
     end
 
     -- Attributes
+    -- Price
+    local priceText = getItemPrice(powerRelayInfo)
+    if priceText then
+        builder:addText(priceText, attrF, "left")
+    end
+    -- Range
     builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
 
     builder:render()
