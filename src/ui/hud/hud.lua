@@ -244,13 +244,14 @@ local function filterPower(cat)
 end
 
 
----@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?}?
+---@param show {stats:boolean?,jobQueue:boolean?,itemList:boolean?,mode?:"main"|"upgrade"}?
 function HUD:draw(show)
     prof_push("HUD:draw")
 
     local showStats = nilIsTrue(show and show.stats)
     local showJobQueue = nilIsTrue(show and show.jobQueue)
     local showItemList = nilIsTrue(show and show.itemList)
+    local mode = show and show.mode or "main"
 
     local lineWidth = gsman.setLineWidth(2)
     local theme = g.getSystemTheme()
@@ -537,14 +538,16 @@ function HUD:draw(show)
                 sn.paused = not sn.paused
             end
 
-            g.drawImageContained("visibility_off", hideButtonR:padRatio(0.15):get())
-            self.wasVisibilityButtonPressed = iml.wasJustClicked(hideButtonR:get())
+            if mode == "main" then
+                g.drawImageContained("visibility_off", hideButtonR:padRatio(0.15):get())
+                self.wasVisibilityButtonPressed = iml.wasJustClicked(hideButtonR:get())
 
-            g.drawImageContained("reset_focus", resetCameraR:padRatio(0.15):get())
-            self.wasResetCameraButtonPressed = iml.wasJustClicked(resetCameraR:get())
+                g.drawImageContained("reset_focus", resetCameraR:padRatio(0.15):get())
+                self.wasResetCameraButtonPressed = iml.wasJustClicked(resetCameraR:get())
 
-            g.drawImageContained("contract_delete", clearJobR:padRatio(0.15):get())
-            self.wasJobClearButtonPressed = iml.wasJustClicked(clearJobR:get())
+                g.drawImageContained("contract_delete", clearJobR:padRatio(0.15):get())
+                self.wasJobClearButtonPressed = iml.wasJustClicked(clearJobR:get())
+            end
         end
     end
 

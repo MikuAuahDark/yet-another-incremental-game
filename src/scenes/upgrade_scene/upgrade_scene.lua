@@ -824,7 +824,7 @@ function upgscene:draw()
     ui.startUI()
 
     local hud = g.getHUD()
-    hud:draw({stats = true, jobQueue = false, itemList = false})
+    hud:draw({stats = true, jobQueue = false, itemList = false, mode = "upgrade"})
 
     -- Draw tutorial text if needed
     if g.getSn().showTutorials.upgrades and (not consts.DEV_MODE) then
