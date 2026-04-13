@@ -511,9 +511,9 @@ function HUD:draw(show)
 
         -- Draw resource and stats (top area)
         if showStats then
-            local _, moneyR, cpsR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
+            local _, moneyR, cpsR, _, clearJobR, _, resetCameraR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
                 self.topR, "horizontal",
-                8, 144, 144, 0, self.topR.h, 8, self.topR.h, 8
+                8, 144, 144, 0, self.topR.h, 8, self.topR.h, 8, self.topR.h, 8, self.topR.h, 8
             )
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
@@ -522,13 +522,16 @@ function HUD:draw(show)
             lw2:pop()
 
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-            ui.debugRegion(hideButtonR)
 
             g.drawImageContained("pause", pauseButtonR:padRatio(0.15):get())
             if iml.wasJustClicked(pauseButtonR:get()) then
                 local sn = g.getSn()
                 sn.paused = not sn.paused
             end
+
+            g.drawImageContained("visibility_off", hideButtonR:padRatio(0.15):get())
+            g.drawImageContained("reset_focus", resetCameraR:padRatio(0.15):get())
+            g.drawImageContained("contract_delete", clearJobR:padRatio(0.15):get())
         end
     end
 
