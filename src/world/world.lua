@@ -139,6 +139,36 @@ local function drawPowerLines(htx, hty, pool)
 end
 
 
+---@param x1 number from X
+---@param y1 number from Y
+---@param x2 number to X
+---@param y2 number to Y
+---@param spacing number
+---@param offset number?
+local function drawArrows(x1, y1, x2, y2, spacing, offset)
+    offset = offset or 0.5
+    local dist = helper.magnitude(x2 - x1, y2 - y1)
+    local narrows = math.max(math.floor(dist / spacing), 1)
+    local r = math.atan2(y2 - y1, x2 - x1)
+
+    for i = 0, narrows - 1 do
+        local t = (i + offset) / narrows
+        local treal = t * dist
+        local alpha = 1
+        if treal < spacing then
+            alpha = treal / spacing
+        elseif treal > dist - spacing then
+            alpha = (dist - treal) / spacing
+        end
+        local c = gsman.mulColor(1, 1, 1, helper.EASINGS.sineOut(alpha))
+        local cx = helper.lerp(x1, x2, t)
+        local cy = helper.lerp(y1, y2, t)
+        g.drawImage("arrow_right", cx, cy, r, 0.2, 0.2)
+        c:pop()
+    end
+end
+
+
 function World:init()
     self.entities = objects.BufferedSet()
     self.items = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
@@ -953,11 +983,12 @@ function World:_draw()
                 alpha = 1
             end
             love.graphics.setColor(0, 0, 0, alpha)
-            love.graphics.line(
+            drawArrows(
+                (svr.tileX + 0.5) * wtz,
+                (svr.tileY + 0.5) * wtz,
                 (x + 0.5) * wtz,
                 (y + 0.5) * wtz,
-                (svr.tileX + 0.5) * wtz,
-                (svr.tileY + 0.5) * wtz
+                6, love.timer.getTime() % 1
             )
         end
     end
@@ -973,11 +1004,12 @@ function World:_draw()
                 alpha = 1
             end
             love.graphics.setColor(0, 0, 0, alpha)
-            love.graphics.line(
+            drawArrows(
                 (x + 0.5) * wtz,
                 (y + 0.5) * wtz,
                 (svr.tileX + 0.5) * wtz,
-                (svr.tileY + 0.5) * wtz
+                (svr.tileY + 0.5) * wtz,
+                6, love.timer.getTime() % 1
             )
         end
     end
