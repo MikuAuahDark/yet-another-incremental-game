@@ -28,6 +28,10 @@ function MainScene:enter()
     self.clearJobMode = false
 end
 
+function MainScene:leave()
+    g.getMainWorld():_setHoveredTile(nil, nil)
+end
+
 ---@param dt number
 function MainScene:update(dt)
     local z = self:zoomFromScale(ui.getUIScaling())
@@ -78,6 +82,7 @@ function MainScene:draw()
     local item = nil
     local beforeActiveDragWorld, currentActiveDragWorld = self.targetDrag, nil
     if world.items:contains(tx, ty) then
+        world:_setHoveredTile(tx, ty)
         -- tile indicator
         local t = math.sin(love.timer.getTime() * 4) ^ 2
         if hud.activeDragging and hud.activeDragging[1] >= consts.DRAG_ITEM_DURATION then
@@ -121,6 +126,8 @@ function MainScene:draw()
                 self.targetDrag = nil
             end
         end
+    else
+        world:_setHoveredTile(nil, nil)
     end
     currentActiveDragWorld = self.targetDrag
 

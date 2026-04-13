@@ -39,6 +39,8 @@ end
 ---@field connectedInputs g.World.DataInputData[] (readonly; connected data inputs, quick lookup only)
 ---@field activeOutput g.World.DataOutputData? (readonly; the data output used this frame)
 ---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
+---@field private animationDataInput number (1 = show, 0 = hide)
+---@field private animationDataOutput number (duration cycles)
 
 ---@class g.World.DataInputData: g.World.ItemData
 ---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
@@ -106,15 +108,31 @@ local function generateWorldTexture(seed)
 end
 
 
-local function drawPowerLines(pool)
+local POWER_COLOR = objects.Color("#83d6d3")
+
+---@param htx integer?
+---@param hty integer?
+---@param pool table<integer, g.World.PowerData>
+local function drawPowerLines(htx, hty, pool)
     local wtz = consts.WORLD_TILE_SIZE
     for _, node in pairs(pool) do
+        local nodeSelected = htx == node.tileX and hty == node.tileY
         local x1 = (node.tileX + 0.5) * wtz
         local y1 = (node.tileY + 0.5) * wtz
         for _, other in ipairs(node.connectsPowerNodes) do
+            local alpha = 0.25
+            if nodeSelected or htx == other.tileX and hty == other.tileY then
+                alpha = 1
+            end
+            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
             love.graphics.line(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz)
         end
         for _, consumer in ipairs(node.connectsTo) do
+            local alpha = 0.25
+            if nodeSelected or htx == consumer.tileX and hty == consumer.tileY then
+                alpha = 1
+            end
+            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
             love.graphics.line(x1, y1, (consumer.tileX + 0.5) * wtz, (consumer.tileY + 0.5) * wtz)
         end
     end
@@ -157,6 +175,11 @@ function World:init()
     self.jobPoller = {}
 
     self.worldTexture = generateWorldTexture(12345)
+
+    ---@type integer?
+    self.htx = nil
+    ---@type integer?
+    self.hty = nil
 end
 
 
@@ -917,57 +940,67 @@ function World:_draw()
     )
     prof_pop() -- prof_push("item_draw")
 
-    -- Draw data output connectors
-    prof_push("dpcon_draw")
-    love.graphics.setColor(0, 0, 0)
     local lw = gsman.setLineWidth(2)
-    self.items:foreach(function(itemData, x, y)
-        if itemData then
-            local _, category = g.getItemInfo(itemData.type)
-            if category == "data" then
-                ---@cast itemData g.World.DataOutputData
-                for _, svr in ipairs(itemData.connectsServers) do
-                    love.graphics.line(
-                        (x + 0.5) * wtz,
-                        (y + 0.5) * wtz,
-                        (svr.tileX + 0.5) * wtz,
-                        (svr.tileY + 0.5) * wtz
-                    )
-                end
-            elseif category == "indata" then
-                ---@cast itemData g.World.DataInputData
-                -- TODO: Change Data Input wire color to distinguish it from Data Output
-                love.graphics.setColor(0, 0, 0)
-                for _, svr in ipairs(itemData.connectsServers) do
-                    love.graphics.line(
-                        (x + 0.5) * wtz,
-                        (y + 0.5) * wtz,
-                        (svr.tileX + 0.5) * wtz,
-                        (svr.tileY + 0.5) * wtz
-                    )
-                end
+    -- Draw data output connectors
+    prof_push("dataoutput_draw")
+    love.graphics.setColor(0, 0, 0)
+    for _, itemData in pairs(self.dataProcessors) do
+        local x, y = itemData.tileX, itemData.tileY
+        local dpSelected = self.htx == x and self.hty == y
+        for _, svr in ipairs(itemData.connectsServers) do
+            local alpha = 0.25
+            if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
+                alpha = 1
             end
+            love.graphics.setColor(0, 0, 0, alpha)
+            love.graphics.line(
+                (x + 0.5) * wtz,
+                (y + 0.5) * wtz,
+                (svr.tileX + 0.5) * wtz,
+                (svr.tileY + 0.5) * wtz
+            )
         end
-    end)
-    lw:pop()
-    prof_pop() -- prof_push("dpcon_draw")
+    end
+    prof_pop() -- prof_push("dataoutput_draw")
+
+    prof_push("datainput_draw")
+    for _, itemData in pairs(self.dataInputs) do
+        local x, y = itemData.tileX, itemData.tileY
+        local dpSelected = self.htx == x and self.hty == y
+        for _, svr in ipairs(itemData.connectsServers) do
+            local alpha = 0.25
+            if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
+                alpha = 1
+            end
+            love.graphics.setColor(0, 0, 0, alpha)
+            love.graphics.line(
+                (x + 0.5) * wtz,
+                (y + 0.5) * wtz,
+                (svr.tileX + 0.5) * wtz,
+                (svr.tileY + 0.5) * wtz
+            )
+        end
+    end
+    prof_pop() -- prof_push("datainput_draw")
 
     -- Draw power network connectors
     prof_push("power_draw")
-    love.graphics.setColor(objects.Color("#83d6d3"))
-    local lw2 = gsman.setLineWidth(2)
-    drawPowerLines(self.powerGens)
-    drawPowerLines(self.powerRelays)
-    lw2:pop()
+    drawPowerLines(self.htx, self.hty, self.powerGens)
+    drawPowerLines(self.htx, self.hty, self.powerRelays)
     prof_pop() -- prof_push("power_draw")
 
     -- Draw booster connectors
     prof_push("boostercon_draw")
-    local bc = gsman.setColor(1, 0, 0)
-    local blw = gsman.setLineWidth(2)
     for _, booster in pairs(self.boosters) do
-        -- TODO: Styling
+        local boosterSelected = self.htx == booster.tileX and self.hty == booster.tileY
+
         for _, target in ipairs(booster.connectsTo) do
+            local alpha = 0.25
+            local targetSelected = self.htx == target.tileX and self.hty == target.tileY
+            if boosterSelected or targetSelected then
+                alpha = 1
+            end
+            love.graphics.setColor(1, 0, 0, alpha)
             love.graphics.line(
                 (booster.tileX + 0.5) * wtz,
                 (booster.tileY + 0.5) * wtz,
@@ -976,9 +1009,8 @@ function World:_draw()
             )
         end
     end
-    blw:pop()
-    bc:pop()
     prof_pop() -- prof_push("boostercon_draw")
+    lw:pop()
 
     -- Draw item problems status icons
     prof_push("item_problems_draw")
@@ -1052,6 +1084,12 @@ function World:_applyBoosterLoad(itemData)
         end
         itemData.load = itemData.load * mul
     end
+end
+
+---@param tx integer?
+---@param ty integer?
+function World:_setHoveredTile(tx, ty)
+    self.htx, self.hty = tx, ty
 end
 
 
