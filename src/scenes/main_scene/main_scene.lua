@@ -17,13 +17,15 @@ function MainScene:init()
     self.targetDrag = nil
     ---@type [number,g.World.DataOutputData]?
     self.dpDoubleClickData = nil
+    -- We track our own zoom because our zoom needs to be affected by UI scaling
+    self.zoomValue = 0
 end
 MainScene.mousemoved = MainScene.defaultMousemoved
 
 ---@param dt number
 function MainScene:update(dt)
     local z = self:zoomFromScale(ui.getUIScaling())
-    self:setZoom(z)
+    self:setZoom(z + self.zoomValue)
     self.camera:setViewport(0, 0, love.graphics.getDimensions())
     g.getHUD():update(dt)
 
@@ -135,6 +137,14 @@ function MainScene:draw()
     self:resetCamera()
     ui.startUI()
     local uimx, uimy = ui.getMouse()
+
+    -- Zooming on world
+    if safeArea:containsCoords(uimx, uimy) then
+        local wx, wy = iml.consumeWheelMove()
+        if wx and wy then
+            self.zoomValue = self.zoomValue + wy / 5
+        end
+    end
 
     love.graphics.setColor(0, 0, 0, 1)
     if world.heat:contains(tx, ty) then
