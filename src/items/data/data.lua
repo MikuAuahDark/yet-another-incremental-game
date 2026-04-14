@@ -58,7 +58,7 @@ g.PREUNLOCKED_ITEMS:add("basic_data")
 g.defineDataOutput("normal_data", "Data Output", {
     price = 150,
     load = 2,
-    dataPerSecond = 250,
+    dataPerSecond = 500,
     wireLength = 2,
     color = objects.Color("FFBAEB65"),
     draw = function(r)

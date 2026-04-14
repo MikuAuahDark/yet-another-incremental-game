@@ -26,7 +26,7 @@ end
 
 g.defineBooster("water_cooler", "Water Cooler", {
     description = "Reduces tile heat by 10.",
-    price = 100,
+    price = 350,
     load = 7,
     radiate = 1,
     radiateAlgorithm = "chessboard",
@@ -41,8 +41,8 @@ g.defineBooster("water_cooler", "Water Cooler", {
 })
 
 g.defineBooster("piped_water_cooler", "Piped Water Cooler", {
-    description = "Reduces tile heat by 10.",
-    price = 30,
+    description = "Reduces server heat by 10.",
+    price = 100,
     load = 4,
     radiate = 1,
     radiateAlgorithm = "chessboard",

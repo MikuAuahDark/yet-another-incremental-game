@@ -96,13 +96,13 @@ defJob("webhost", "Web Hosting", "general", {
 })
 defJob("cdn", "Content Delivery Network", "general", {
     image = "host",
-    compute = {2,5},
+    compute = {3,7},
     data = {20,50},
     money = {3,5},
 })
 defJob("image_processing", "Image Processing", "general", {
     image = "blur_on",
-    compute = {8,20},
+    compute = {13,32},
     data = {3,6},
     money = {3,8},
 })
