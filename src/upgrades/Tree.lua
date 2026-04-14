@@ -326,10 +326,12 @@ function Tree:canAffordUpgrade(upg, level)
         return g.canAfford(price)
     end
 
-    for res,p in pairs(upg.basePrice) do
-        local truePrice = modifyUpgradePrice(upg, uinfo, p, level)
-        if truePrice > g.getResource(res) then
-            return false -- cant afford
+    if not FLAGS.INFINITE_MONEY then
+        for res, p in pairs(upg.basePrice) do
+            local truePrice = modifyUpgradePrice(upg, uinfo, p, level)
+            if truePrice > g.getResource(res) then
+                return false -- cant afford
+            end
         end
     end
     return true

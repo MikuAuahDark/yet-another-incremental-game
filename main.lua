@@ -242,6 +242,7 @@ function love.load(arg)
     elseif arg[1] == "--test" and consts.DEV_MODE then
         FLAGS.UNLOCK_ALL_ITEMS = true
         FLAGS.DO_NOT_SAVE = true
+        FLAGS.INFINITE_MONEY = true
     end
 
     if simulation.isSimulating() then

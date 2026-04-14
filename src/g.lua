@@ -1025,6 +1025,9 @@ end
 function g.addResource(resId, amount)
     assertValidResource(resId)
     local r = g.getSn().resources
+    if FLAGS.INFINITE_MONEY then
+        amount = math.max(amount, 0)
+    end
     r[resId] = math.min(math.max(r[resId] + amount, 0), g.getResourceLimit(resId))
 end
 
@@ -1056,6 +1059,9 @@ end
 ---@param resourcePool g.Bundle?
 ---@return boolean
 function g.canAfford(price, resourcePool)
+    if FLAGS.INFINITE_MONEY then
+        return true
+    end
     local r = resourcePool or g.getSn().resources
     for resId, amount in pairs(price) do
         assertValidResource(resId)
@@ -1072,6 +1078,9 @@ end
 ---@param price g.Bundle
 ---@return boolean
 function g.trySubtractResources(price)
+    if FLAGS.INFINITE_MONEY then
+        return true
+    end
     local r = g.getSn().resources
     if not g.canAfford(price) then
         return false
