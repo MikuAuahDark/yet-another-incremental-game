@@ -31,6 +31,7 @@ end
 ---@class g.World.BoosterData: g.World.ItemData
 ---@field connectsTo g.World.ItemData[]
 ---@field effectiveness number
+---@field package animationTime number (duration cycles)
 
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
@@ -39,8 +40,9 @@ end
 ---@field connectedInputs g.World.DataInputData[] (readonly; connected data inputs, quick lookup only)
 ---@field activeOutput g.World.DataOutputData? (readonly; the data output used this frame)
 ---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
----@field private animationDataInput number (1 = show, 0 = hide)
----@field private animationDataOutput number (duration cycles)
+---@field package animationDataInput number (1 = moving, 0 = stationary, decrementing from 1 to 0)
+---@field package animationDataInputTime number (duration cycles)
+---@field package animationDataOutput number (duration cycles)
 
 ---@class g.World.DataInputData: g.World.ItemData
 ---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
@@ -108,37 +110,6 @@ local function generateWorldTexture(seed)
 end
 
 
-local POWER_COLOR = objects.Color("#83d6d3")
-
----@param htx integer?
----@param hty integer?
----@param pool table<integer, g.World.PowerData>
-local function drawPowerLines(htx, hty, pool)
-    local wtz = consts.WORLD_TILE_SIZE
-    for _, node in pairs(pool) do
-        local nodeSelected = htx == node.tileX and hty == node.tileY
-        local x1 = (node.tileX + 0.5) * wtz
-        local y1 = (node.tileY + 0.5) * wtz
-        for _, other in ipairs(node.connectsPowerNodes) do
-            local alpha = 0.25
-            if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = 1
-            end
-            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-            love.graphics.line(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz)
-        end
-        for _, consumer in ipairs(node.connectsTo) do
-            local alpha = 0.25
-            if nodeSelected or htx == consumer.tileX and hty == consumer.tileY then
-                alpha = 1
-            end
-            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-            love.graphics.line(x1, y1, (consumer.tileX + 0.5) * wtz, (consumer.tileY + 0.5) * wtz)
-        end
-    end
-end
-
-
 ---@param x1 number from X
 ---@param y1 number from Y
 ---@param x2 number to X
@@ -166,6 +137,84 @@ local function drawArrows(x1, y1, x2, y2, spacing, offset)
         g.drawImage("arrow_right", cx, cy, r, 0.2, 0.2)
         c:pop()
     end
+end
+
+
+local POWER_COLOR = objects.Color("#83d6d3")
+
+---@param powerNetwork g.World.PowerNetwork
+---@param htx integer?
+---@param hty integer?
+local function drawPowerLines(powerNetwork, htx, hty)
+    local wtz = consts.WORLD_TILE_SIZE
+    local t = g.getSn().worldTime % 1
+
+    -- Generator always one way. Generator -> Relay/Consumer.
+    for _, node in ipairs(powerNetwork.generators) do
+        local nodeSelected = htx == node.tileX and hty == node.tileY
+        local x1 = (node.tileX + 0.5) * wtz
+        local y1 = (node.tileY + 0.5) * wtz
+
+        for _, other in ipairs(node.connectsPowerNodes) do
+            local alpha = 0.25
+            if nodeSelected or htx == other.tileX and hty == other.tileY then
+                alpha = 1
+            end
+            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+
+            drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+        end
+    end
+
+    -- Relay is
+    -- * Two-way for Relay <-> Relay.
+    -- * One-way for Relay -> Consumer.
+    for _, node in ipairs(powerNetwork.relays) do
+        local nodeSelected = htx == node.tileX and hty == node.tileY
+        local x1 = (node.tileX + 0.5) * wtz
+        local y1 = (node.tileY + 0.5) * wtz
+
+        for _, other in ipairs(node.connectsPowerNodes) do
+            local alpha = 0.25
+            if nodeSelected or htx == other.tileX and hty == other.tileY then
+                alpha = 1
+            end
+            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+
+            local _, cat = g.getItemInfo(other.type)
+            if cat ~= "powergen" then
+                drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+            end
+        end
+
+        for _, other in ipairs(node.connectsTo) do
+            local alpha = 0.25
+            if nodeSelected or htx == other.tileX and hty == other.tileY then
+                alpha = 1
+            end
+            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+
+            local _, cat = g.getItemInfo(other.type)
+            if cat ~= "powergen" then
+                drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+            end
+        end
+    end
+end
+
+
+---This uses 1x1 from `g.drawImage` instead of `love.graphics.line` to improve batching.
+---@param x1 number from X
+---@param y1 number from Y
+---@param x2 number to X
+---@param y2 number to Y
+---@param thickness number
+local function drawLine(x1, y1, x2, y2, thickness)
+    local mx = (x1 + x2) / 2
+    local my = (y1 + y2) / 2
+    local angle = math.atan2(y2 - y1, x2 - x1)
+    local dist = helper.magnitude(x2 - x1, y2 - y1)
+    g.drawImage("1x1", mx, my, angle, dist, thickness)
 end
 
 
@@ -331,6 +380,8 @@ function World:_update(dt)
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
+                item.animationDataInput = math.max(0, item.animationDataInput - dt)
+                item.animationDataInputTime = (item.animationDataInputTime + dt) % 1
             elseif category == "powergen" then
                 ---@cast item g.World.PowerData
                 self.powerGens[index] = item
@@ -394,6 +445,8 @@ function World:_update(dt)
                 end
             end
         end
+
+        booster.animationTime = (booster.animationTime + dt * booster.effectiveness) % 1
     end
 
     -- Apply booster load multipliers
@@ -423,6 +476,7 @@ function World:_update(dt)
     local visited = {}
     for _, startNode in ipairs(allPowerNodes) do
         if not visited[startNode] then
+            -- TODO: Table pooling
             ---@type g.World.PowerNetwork
             local network = {
                 generators = {},
@@ -453,14 +507,24 @@ function World:_update(dt)
 
                 -- Find connected power nodes
                 for _, other in ipairs(allPowerNodes) do
-                    if not visited[other] then
+                    if node ~= other then
                         local otherInfo = g.getItemInfo(other.type)
                         ---@cast otherInfo g.PowerGenInfo | g.PowerRelayInfo
                         local dist = worldutil.getDistance("chessboard", node.tileX - other.tileX, node.tileY - other.tileY)
-                        if self:isWithinWorldLimit(node.tileX, node.tileY) and self:isWithinWorldLimit(other.tileX, other.tileY) and dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength) then
-                            visited[other] = true
-                            queue[#queue+1] = other
-                            node.connectsPowerNodes[#node.connectsPowerNodes+1] = other
+                        if
+                            self:isWithinWorldLimit(node.tileX, node.tileY) and
+                            self:isWithinWorldLimit(other.tileX, other.tileY) and
+                            dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength)
+                        then
+                            -- Always record the connection for drawing
+                            if not helper.index(node.connectsPowerNodes, other) then
+                                node.connectsPowerNodes[#node.connectsPowerNodes+1] = other
+                            end
+
+                            if not visited[other] then
+                                visited[other] = true
+                                queue[#queue+1] = other
+                            end
                         end
                     end
                 end
@@ -774,6 +838,8 @@ function World:_update(dt)
                 if requiredDPS <= wireDPS and requiredDPS <= (capacity - used) then
                     serverData.activeOutput = dpData
                     currentTransmit[dpData] = used + requiredDPS
+                    local speed = math.max(0.5, math.log(requiredDPS, 10))
+                    serverData.animationDataOutput = (serverData.animationDataOutput + dt * speed) % 1
                     break
                 end
             end
@@ -896,6 +962,7 @@ end
 
 function World:_draw()
     prof_push("world:_draw")
+    local time = g.getSn().worldTime
 
     -- Draw the actual world
     do
@@ -971,6 +1038,14 @@ function World:_draw()
     prof_pop() -- prof_push("item_draw")
 
     local lw = gsman.setLineWidth(2)
+
+    -- Draw power network connectors
+    prof_push("power_draw")
+    for _, v in ipairs(self.powerNetworks) do
+        drawPowerLines(v, self.htx, self.hty)
+    end
+    prof_pop() -- prof_push("power_draw")
+
     -- Draw data output connectors
     prof_push("dataoutput_draw")
     love.graphics.setColor(0, 0, 0)
@@ -983,13 +1058,23 @@ function World:_draw()
                 alpha = 1
             end
             love.graphics.setColor(0, 0, 0, alpha)
-            drawArrows(
-                (svr.tileX + 0.5) * wtz,
-                (svr.tileY + 0.5) * wtz,
-                (x + 0.5) * wtz,
-                (y + 0.5) * wtz,
-                6, love.timer.getTime() % 1
-            )
+            if svr.activeOutput == itemData then
+                drawArrows(
+                    (svr.tileX + 0.5) * wtz,
+                    (svr.tileY + 0.5) * wtz,
+                    (x + 0.5) * wtz,
+                    (y + 0.5) * wtz,
+                    6, svr.animationDataOutput
+                )
+            else
+                drawLine(
+                    (svr.tileX + 0.5) * wtz,
+                    (svr.tileY + 0.5) * wtz,
+                    (x + 0.5) * wtz,
+                    (y + 0.5) * wtz,
+                    3
+                )
+            end
         end
     end
     prof_pop() -- prof_push("dataoutput_draw")
@@ -1009,17 +1094,11 @@ function World:_draw()
                 (y + 0.5) * wtz,
                 (svr.tileX + 0.5) * wtz,
                 (svr.tileY + 0.5) * wtz,
-                6, love.timer.getTime() % 1
+                6, svr.animationDataInputTime
             )
         end
     end
     prof_pop() -- prof_push("datainput_draw")
-
-    -- Draw power network connectors
-    prof_push("power_draw")
-    drawPowerLines(self.htx, self.hty, self.powerGens)
-    drawPowerLines(self.htx, self.hty, self.powerRelays)
-    prof_pop() -- prof_push("power_draw")
 
     -- Draw booster connectors
     prof_push("boostercon_draw")
@@ -1033,11 +1112,12 @@ function World:_draw()
                 alpha = 1
             end
             love.graphics.setColor(1, 0, 0, alpha)
-            love.graphics.line(
+            drawArrows(
                 (booster.tileX + 0.5) * wtz,
                 (booster.tileY + 0.5) * wtz,
                 (target.tileX + 0.5) * wtz,
-                (target.tileY + 0.5) * wtz
+                (target.tileY + 0.5) * wtz,
+                6, booster.animationTime
             )
         end
     end
@@ -1202,6 +1282,9 @@ function World:putItem(itemId, tx, ty, removable)
             activeOutput = nil,
             computePerSecond = 0,
             removable = removable,
+            animationDataInput = 0,
+            animationDataInputTime = 0,
+            animationDataOutput = 0,
         }
     elseif category == "data" then
         ---@type g.World.DataOutputData
@@ -1227,6 +1310,7 @@ function World:putItem(itemId, tx, ty, removable)
             removable = removable,
             connectsTo = {},
             effectiveness = 1,
+            animationTime = 0,
         }
     elseif category == "indata" then
         ---@type g.World.DataInputData
