@@ -137,7 +137,7 @@ g.definePowerGenerator("main_power", "Main Datacenter Power", {
     color = objects.Color.WHITE,
     price = 0,
     power = 100,
-    wireLength = 5,
+    wireLength = 4,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         local centerR = _mainPowerDecor(r)
@@ -166,7 +166,7 @@ g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
 g.definePowerRelay("basic_relay", "Relay", {
     color = objects.Color.GRAY,
     price = 150,
-    wireLength = 5,
+    wireLength = 3,
     draw = function(r)
         drawRelay(r, 3, 0.075)
     end
@@ -175,7 +175,7 @@ g.definePowerRelay("basic_relay", "Relay", {
 g.definePowerRelay("advanced_relay", "Advanced Relay", {
     color = objects.Color("#707070"),
     price = 1000,
-    wireLength = 7,
+    wireLength = 6,
     draw = function(r)
         local sz = math.sqrt(r.w * r.h)
         do
