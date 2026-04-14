@@ -567,8 +567,7 @@ end
 do
     -- Add padding around to prevent bleeding
     local id = love.image.newImageData(3, 3, "rgba8")
-    id:mapPixel(function() return 1, 1, 1, 0 end) -- fill transparent white
-    id:setPixel(1, 1, 1, 1, 1, 1) -- set middle pixel
+    id:mapPixel(function() return 1, 1, 1, 1 end) -- fill white
     local q = assert(atlas:add(id))
     local x, y = q:getViewport()
     -- Now define it to be 1x1 instead of 3x3
