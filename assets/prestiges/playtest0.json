@@ -33,7 +33,7 @@
 			"id": "world_size_1",
 			"level": 0,
 			"basePrice": {
-				"money": 1000.0
+				"money": 300.0
 			},
 			"x": 1,
 			"y": 1,
@@ -46,13 +46,14 @@
 				"money": 150.0
 			},
 			"x": -3,
-			"y": -1
+			"y": -1,
+			"cps": 100.0
 		},
 		"26": {
 			"id": "piped_water_cooler",
 			"level": 0,
 			"basePrice": {
-				"money": 60.0
+				"money": 200.0
 			},
 			"x": -1,
 			"y": -3,
@@ -75,7 +76,8 @@
 				"money": 2500.0
 			},
 			"x": -3,
-			"y": 1
+			"y": 1,
+			"cps": 1000.0
 		},
 		"33": {
 			"id": "basic_generator",
@@ -138,10 +140,11 @@
 			"id": "water_cooler",
 			"level": 0,
 			"basePrice": {
-				"money": 200.0
+				"money": 700.0
 			},
 			"x": -1,
-			"y": -5
+			"y": -5,
+			"cps": 50.0
 		},
 		"67": {
 			"id": "higher_wire_dps",
@@ -166,7 +169,7 @@
 			"id": "max_load_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 250.0
+				"money": 500.0
 			},
 			"x": 3,
 			"y": -3,
@@ -202,22 +205,11 @@
 			"y": 5,
 			"priceScaling": 1.35
 		},
-		"80": {
-			"id": "money_limit",
-			"level": 0,
-			"basePrice": {
-				"money": 500000.0
-			},
-			"x": 5,
-			"y": 1,
-			"maxLevelOverride": 2,
-			"priceScaling": 2.0
-		},
 		"84": {
 			"id": "world_size_1",
 			"level": 0,
 			"basePrice": {
-				"money": 2000.0
+				"money": 1000.0
 			},
 			"x": 3,
 			"y": 3,
@@ -231,7 +223,8 @@
 				"money": 10000.0
 			},
 			"x": 1,
-			"y": 5
+			"y": 5,
+			"cps": 10000.0
 		},
 		"106": {
 			"id": "video_encode",
@@ -256,7 +249,7 @@
 			"id": "webhost",
 			"level": 0,
 			"basePrice": {
-				"money": 50.0
+				"money": 30.0
 			},
 			"x": -3,
 			"y": -5,
@@ -276,12 +269,11 @@
 			"id": "money_limit",
 			"level": 0,
 			"basePrice": {
-				"money": 2500.0
+				"money": 7500.0
 			},
 			"x": 7,
 			"y": -1,
-			"maxLevelOverride": 2,
-			"priceScaling": 2.0
+			"maxLevelOverride": 1
 		},
 		"122": {
 			"id": "video2_server",
@@ -296,7 +288,7 @@
 			"id": "efficient_generator",
 			"level": 0,
 			"basePrice": {
-				"money": 1000.0
+				"money": 2500.0
 			},
 			"x": 5,
 			"y": -3
@@ -352,12 +344,12 @@
 			"id": "money_limit",
 			"level": 0,
 			"basePrice": {
-				"money": 50000.0
+				"money": 75000.0
 			},
 			"x": 7,
 			"y": 1,
-			"maxLevelOverride": 2,
-			"priceScaling": 2.0
+			"maxLevelOverride": 1,
+			"cps": 500.0
 		},
 		"142": {
 			"id": "faster_servers",
@@ -376,13 +368,14 @@
 				"money": 3000.0
 			},
 			"x": 3,
-			"y": 5
+			"y": 5,
+			"cps": 250.0
 		},
 		"150": {
 			"id": "world_size_2",
 			"level": 0,
 			"basePrice": {
-				"money": 5000.0
+				"money": 3000.0
 			},
 			"x": 1,
 			"y": 7,
@@ -412,7 +405,7 @@
 			"id": "webhost_money",
 			"level": 0,
 			"basePrice": {
-				"money": 150.0
+				"money": 90.0
 			},
 			"x": -5,
 			"y": -5,
@@ -507,7 +500,7 @@
 			"id": "world_size_2",
 			"level": 0,
 			"basePrice": {
-				"money": 5000.0
+				"money": 1000.0
 			},
 			"x": 3,
 			"y": 7,
@@ -546,7 +539,7 @@
 			"id": "webhost_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 150.0
+				"money": 90.0
 			},
 			"x": -5,
 			"y": -7,
@@ -586,7 +579,7 @@
 			"id": "advanced_generator",
 			"level": 0,
 			"basePrice": {
-				"money": 5000.0
+				"money": 12500.0
 			},
 			"x": 7,
 			"y": -5
@@ -608,7 +601,8 @@
 				"money": 2000.0
 			},
 			"x": 5,
-			"y": -7
+			"y": -7,
+			"cps": 500.0
 		},
 		"290": {
 			"id": "research_model",
@@ -644,7 +638,7 @@
 			"id": "world_size_3",
 			"level": 0,
 			"basePrice": {
-				"money": 12000.0
+				"money": 8000.0
 			},
 			"x": 3,
 			"y": 9,
@@ -738,7 +732,8 @@
 				"money": 30000.0
 			},
 			"x": 7,
-			"y": -7
+			"y": -7,
+			"cps": 5000.0
 		},
 		"392": {
 			"id": "video3_server",
@@ -773,7 +768,7 @@
 			"id": "world_size_3",
 			"level": 0,
 			"basePrice": {
-				"money": 25000.0
+				"money": 10000.0
 			},
 			"x": 3,
 			"y": 11,
@@ -1001,10 +996,6 @@
 			180
 		],
 		[
-			121,
-			138
-		],
-		[
 			122,
 			106
 		],
@@ -1058,7 +1049,7 @@
 		],
 		[
 			138,
-			80
+			121
 		],
 		[
 			146,
