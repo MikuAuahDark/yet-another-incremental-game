@@ -396,7 +396,7 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
     end
 
     -- Attributes
-    builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerGenInfo.power}), attrF, "left")
+    builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerData.power}), attrF, "left")
     if powerData.powerNetwork then
         builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
     end

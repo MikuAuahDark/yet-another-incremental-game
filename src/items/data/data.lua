@@ -73,7 +73,7 @@ g.defineDataOutput("advanced_data", "Advanced Data Output", {
     price = 1000,
     load = 10,
     dataPerSecond = 5000,
-    wireLength = 4,
+    wireLength = 3,
     color = objects.Color("#95c9c7"),
     draw = function(r)
         -- Draw decor
@@ -87,7 +87,7 @@ g.defineDataOutput("he_data", "High-End Data Output", {
     price = 6000,
     load = 30,
     dataPerSecond = 30000,
-    wireLength = 6,
+    wireLength = 4,
     color = objects.Color("#E13B49"),
     draw = function(r)
         -- Draw decor
@@ -101,7 +101,7 @@ g.defineDataOutput("quantum_data", "Quantum Data Output", {
     price = 20000,
     load = 50,
     dataPerSecond = 100000,
-    wireLength = 7,
+    wireLength = 6,
     color = objects.Color("#DAB5C1"),
     draw = function(r)
         -- Draw decor

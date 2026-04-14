@@ -23,7 +23,7 @@ end
 
 g.definePowerGenerator("basic_generator", "Generator", {
     color = objects.Color.GRAY,
-    price = 100,
+    price = 1000,
     power = 2,
     wireLength = 2,
     draw = function(r)
@@ -35,9 +35,9 @@ g.definePowerGenerator("basic_generator", "Generator", {
 
 g.definePowerGenerator("efficient_generator", "Efficient Generator", {
     color = objects.Color("#909090"),
-    price = 500,
+    price = 5000,
     power = 10,
-    wireLength = 3,
+    wireLength = 2,
     draw = function(r)
         local t0 = love.timer.getTime()
         local opacity = helper.remap(math.sin(t0 * math.pi / 2) ^ 2, 0, 1, 0.7, 1)
@@ -49,7 +49,7 @@ g.definePowerGenerator("efficient_generator", "Efficient Generator", {
 
 g.definePowerGenerator("advanced_generator", "Advanced Generator", {
     color = objects.Color("#a0a0a0"),
-    price = 2500,
+    price = 25000,
     power = 40,
     wireLength = 4,
     draw = function(r)
@@ -136,7 +136,7 @@ g.definePowerGenerator("main_power", "Main Datacenter Power", {
     tags = {"datacenter_power"},
     color = objects.Color.WHITE,
     price = 0,
-    power = 100,
+    power = 80,
     wireLength = 4,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
@@ -151,7 +151,7 @@ g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
     tags = {"datacenter_power"},
     color = objects.Color.WHITE,
     price = 0,
-    power = 30,
+    power = 25,
     wireLength = 2,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)

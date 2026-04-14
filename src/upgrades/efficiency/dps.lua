@@ -12,7 +12,7 @@ g.defineUpgrade("data_compression", "Data Compression", {
 })
 
 g.defineUpgrade("higher_dps", "More Bandwidth", {
-    description = "Increases data throughput by %{1}.",
+    description = "Increases maximum Data Output throughput by %{1}.",
     kind = "EFFICIENCY",
     image = "database",
     getValues = helper.valueGetter(5, 10),
