@@ -83,7 +83,6 @@ local function description(upgrade, tree, x, y, safeArea)
     }), descF, "center")
 
     -- Price
-    local price = tree:getUpgradePrice(upgrade)
     ---@type string[]
     local priceStrs = {}
 

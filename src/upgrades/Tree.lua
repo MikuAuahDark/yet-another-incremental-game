@@ -83,6 +83,8 @@ end
 
 local floor = math.floor
 
+---@param x integer
+---@param y integer
 local function pair(x, y)
     local a = x >= 0 and 2 * x or -2 * x - 1
     local b = y >= 0 and 2 * y or -2 * y - 1
@@ -348,7 +350,6 @@ end
 ---@param upg g.Tree.Upgrade
 ---@return boolean wasPurchased
 function Tree:tryBuyUpgrade(upg)
-    local uinfo = g.getUpgradeInfo(upg.id)
     local maxLevel = self:getUpgradeMaxLevel(upg)
     if upg.level >= maxLevel then
         return false -- already max level
