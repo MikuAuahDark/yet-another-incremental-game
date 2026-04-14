@@ -1372,6 +1372,10 @@ function World:putItem(itemId, tx, ty, removable)
     return itemData
 end
 
+function World:getAvgCPS()
+    return self.cpsCollector:getAverage()
+end
+
 
 
 

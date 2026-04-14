@@ -765,8 +765,6 @@ local g_UpgradeDefinition_ProcGen
 ---@field descriptionContext string?
 ---@field rawDescription string?
 ---@field procGen g.UpgradeDefinition.ProcGen?
----@field customRequirementMet (fun(uinfo: g.UpgradeInfo, upg: g.Tree.Upgrade): boolean)?
----@field getCustomRequirementText (fun(uinfo: g.UpgradeInfo, upg: g.Tree.Upgrade): string)?
 ---@field getPriceOverride (fun(uinfo:g.UpgradeInfo, level:integer): g.Bundle)?
 ---@field isHidden (fun(uinfo: g.UpgradeInfo): boolean)?
 ---@field getValues (fun(uinfo: g.UpgradeInfo, level: integer):number,number?,number?,number?)?
@@ -1137,8 +1135,6 @@ local SPECIAL_FUNCTIONS = {
     isHidden = true,
     getPriceOverride = true,
     drawUI = true,
-    customRequirementMet = true,
-    getCustomRequirementText = true,
 }
 
 

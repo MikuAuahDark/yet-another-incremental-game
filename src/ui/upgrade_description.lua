@@ -83,33 +83,15 @@ local function description(upgrade, tree, x, y, safeArea)
     }), descF, "center")
 
     -- Price
-    local price = g.getUpgTree():getUpgradePrice(upgrade)
+    local price = tree:getUpgradePrice(upgrade)
     ---@type string[]
     local priceStrs = {}
 
-    for _, resId in ipairs(g.RESOURCE_LIST) do
-        local val = price[resId] or 0
-        if val > 0 then
-            local canAfford = g.getResource(resId) >= val
-            priceStrs[#priceStrs+1] = helper.wrapRichtextColor(
-                canAfford and g.COLORS.CAN_AFFORD or g.COLORS.CANT_AFFORD,
-                "{"..resId.."}"..g.formatNumber(val)
-            )
-        end
-    end
-
-    if uinfo.getCustomRequirementText then
-        local reqStr = uinfo.getCustomRequirementText(uinfo, upgrade)
-        if reqStr and reqStr ~= "" then
-            local isMet = true
-            if uinfo.customRequirementMet then
-                isMet = uinfo.customRequirementMet(uinfo, upgrade)
-            end
-            priceStrs[#priceStrs+1] = helper.wrapRichtextColor(
-                isMet and g.COLORS.CAN_AFFORD or g.COLORS.CANT_AFFORD,
-                reqStr
-            )
-        end
+    for _, info in ipairs(tree:getUpgradeRequirements(upgrade)) do
+        priceStrs[#priceStrs+1] = helper.wrapRichtextColor(
+            info[2] and g.COLORS.CAN_AFFORD or g.COLORS.CANT_AFFORD,
+            info[1]
+        )
     end
 
     local priceText = table.concat(priceStrs, " ")

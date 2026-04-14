@@ -314,11 +314,18 @@ end
 ---@param level number? Optional; defaults to the current upg's level.
 ---@return boolean
 function Tree:canAffordUpgrade(upg, level)
+    if FLAGS.INFINITE_MONEY then
+        return true
+    end
+
     local uinfo = g.getUpgradeInfo(upg.id)
     level = level or upg.level
 
-    if uinfo.customRequirementMet and not uinfo:customRequirementMet(upg) then
-        return false
+    if upg.cps then
+        local cps = g.getMainWorld():getAvgCPS()
+        if cps < upg.cps then
+            return false
+        end
     end
 
     if uinfo.getPriceOverride then
@@ -326,14 +333,13 @@ function Tree:canAffordUpgrade(upg, level)
         return g.canAfford(price)
     end
 
-    if not FLAGS.INFINITE_MONEY then
-        for res, p in pairs(upg.basePrice) do
-            local truePrice = modifyUpgradePrice(upg, uinfo, p, level)
-            if truePrice > g.getResource(res) then
-                return false -- cant afford
-            end
+    for res, p in pairs(upg.basePrice) do
+        local truePrice = modifyUpgradePrice(upg, uinfo, p, level)
+        if truePrice > g.getResource(res) then
+            return false -- cant afford
         end
     end
+
     return true
 end
 
@@ -355,6 +361,45 @@ function Tree:tryBuyUpgrade(upg)
         return true
     end
     return false
+end
+
+
+
+---@param upg g.Tree.Upgrade
+---@return [string,boolean][]
+function Tree:getUpgradeRequirements(upg)
+    ---@type [string,boolean][]
+    local reqs = {}
+    local uinfo = g.getUpgradeInfo(upg.id)
+
+    -- Price
+    if uinfo.getPriceOverride then
+        local price = uinfo:getPriceOverride(upg.level)
+        for _, resId in ipairs(g.RESOURCE_LIST) do
+            local val = price[resId] or 0
+            if val > 0 then
+                local canAfford = FLAGS.INFINITE_MONEY or g.getResource(resId) >= val
+                reqs[#reqs+1] = {"{"..resId.."}"..g.formatNumber(val), canAfford}
+            end
+        end
+    else
+        for _, resId in ipairs(g.RESOURCE_LIST) do
+            local val = modifyUpgradePrice(upg, uinfo, upg.basePrice[resId] or 0, upg.level)
+            if val > 0 then
+                local canAfford = FLAGS.INFINITE_MONEY or g.getResource(resId) >= val
+                reqs[#reqs+1] = {"{"..resId.."}"..g.formatNumber(val), canAfford}
+            end
+        end
+    end
+
+    -- CPS
+    if upg.cps then
+        local cps = g.getMainWorld():getAvgCPS()
+        local canAfford = FLAGS.INFINITE_MONEY or cps >= upg.cps
+        reqs[#reqs+1] = {g.formatNumber(upg.cps).."{dns}/s", canAfford}
+    end
+
+    return reqs
 end
 
 
