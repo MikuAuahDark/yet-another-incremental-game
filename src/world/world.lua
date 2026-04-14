@@ -70,7 +70,7 @@ local World = objects.Class("g:World")
 World.TILE_SIZE = 101
 
 
-local UNHIGHLIGHT_ALPHA = 0.25
+local UNHIGHLIGHT_ALPHA = 0.2
 local HIGHLIGHT_ALPHA = 1
 
 

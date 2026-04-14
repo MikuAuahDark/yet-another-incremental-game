@@ -831,6 +831,7 @@ function upgscene:draw()
         local safeArea = hud:getSafeArea()
         local tutTextR = safeArea:padRatio(0.1)
         local txt = consts.IS_MOBILE and TUTORIAL_UPGRADES_MOBILE or TUTORIAL_UPGRADES
+        love.graphics.setColor(1, 1, 1)
         richtext.printRich(txt, g.getMainFont(32), tutTextR.x, tutTextR.y, tutTextR.w, "center")
     end
 
