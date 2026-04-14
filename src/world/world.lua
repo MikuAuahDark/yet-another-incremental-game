@@ -70,6 +70,10 @@ local World = objects.Class("g:World")
 World.TILE_SIZE = 101
 
 
+local UNHIGHLIGHT_ALPHA = 0.25
+local HIGHLIGHT_ALPHA = 1
+
+
 ---@param seed integer
 local function generateWorldTexture(seed)
     -- Create tile "texture"
@@ -156,13 +160,26 @@ local function drawPowerLines(powerNetwork, htx, hty)
         local y1 = (node.tileY + 0.5) * wtz
 
         for _, other in ipairs(node.connectsPowerNodes) do
-            local alpha = 0.25
+            local alpha = UNHIGHLIGHT_ALPHA
             if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = 1
+                alpha = HIGHLIGHT_ALPHA
             end
             love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
 
             drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+        end
+
+        for _, other in ipairs(node.connectsTo) do
+            local alpha = UNHIGHLIGHT_ALPHA
+            if nodeSelected or htx == other.tileX and hty == other.tileY then
+                alpha = HIGHLIGHT_ALPHA
+            end
+            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+
+            local _, cat = g.getItemInfo(other.type)
+            if cat ~= "powergen" then
+                drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+            end
         end
     end
 
@@ -175,9 +192,9 @@ local function drawPowerLines(powerNetwork, htx, hty)
         local y1 = (node.tileY + 0.5) * wtz
 
         for _, other in ipairs(node.connectsPowerNodes) do
-            local alpha = 0.25
+            local alpha = UNHIGHLIGHT_ALPHA
             if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = 1
+                alpha = HIGHLIGHT_ALPHA
             end
             love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
 
@@ -188,9 +205,9 @@ local function drawPowerLines(powerNetwork, htx, hty)
         end
 
         for _, other in ipairs(node.connectsTo) do
-            local alpha = 0.25
+            local alpha = UNHIGHLIGHT_ALPHA
             if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = 1
+                alpha = HIGHLIGHT_ALPHA
             end
             love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
 
@@ -214,7 +231,7 @@ local function drawLine(x1, y1, x2, y2, thickness)
     local my = (y1 + y2) / 2
     local angle = math.atan2(y2 - y1, x2 - x1)
     local dist = helper.magnitude(x2 - x1, y2 - y1)
-    g.drawImage("1x1", mx, my, angle, dist, thickness)
+    g.drawImage("1x1", mx, my, angle, dist, thickness / 2)
 end
 
 
@@ -380,8 +397,8 @@ function World:_update(dt)
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
-                item.animationDataInput = math.max(0, item.animationDataInput - dt)
-                item.animationDataInputTime = (item.animationDataInputTime + dt) % 1
+                item.animationDataInput = math.max(0, item.animationDataInput - dt / 3)
+                item.animationDataInputTime = (item.animationDataInputTime + dt * item.animationDataInput) % 1
             elseif category == "powergen" then
                 ---@cast item g.World.PowerData
                 self.powerGens[index] = item
@@ -779,6 +796,7 @@ function World:_update(dt)
                 if candidateIndex then
                     serverData.currentJob = table.remove(self.jobQueue, candidateIndex)
                     serverData.jobProgress = 0
+                    serverData.animationDataInput = 1
                 end
             end
         end
@@ -1053,9 +1071,9 @@ function World:_draw()
         local x, y = itemData.tileX, itemData.tileY
         local dpSelected = self.htx == x and self.hty == y
         for _, svr in ipairs(itemData.connectsServers) do
-            local alpha = 0.25
+            local alpha = UNHIGHLIGHT_ALPHA
             if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
-                alpha = 1
+                alpha = HIGHLIGHT_ALPHA
             end
             love.graphics.setColor(0, 0, 0, alpha)
             if svr.activeOutput == itemData then
@@ -1084,18 +1102,28 @@ function World:_draw()
         local x, y = itemData.tileX, itemData.tileY
         local dpSelected = self.htx == x and self.hty == y
         for _, svr in ipairs(itemData.connectsServers) do
-            local alpha = 0.25
+            local alpha = UNHIGHLIGHT_ALPHA
             if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
-                alpha = 1
+                alpha = HIGHLIGHT_ALPHA
             end
             love.graphics.setColor(0, 0, 0, alpha)
-            drawArrows(
-                (x + 0.5) * wtz,
-                (y + 0.5) * wtz,
-                (svr.tileX + 0.5) * wtz,
-                (svr.tileY + 0.5) * wtz,
-                6, svr.animationDataInputTime
-            )
+            if svr.animationDataInput > 0 then
+                drawArrows(
+                    (x + 0.5) * wtz,
+                    (y + 0.5) * wtz,
+                    (svr.tileX + 0.5) * wtz,
+                    (svr.tileY + 0.5) * wtz,
+                    6, svr.animationDataInputTime
+                )
+            else
+                drawLine(
+                    (x + 0.5) * wtz,
+                    (y + 0.5) * wtz,
+                    (svr.tileX + 0.5) * wtz,
+                    (svr.tileY + 0.5) * wtz,
+                    3
+                )
+            end
         end
     end
     prof_pop() -- prof_push("datainput_draw")
@@ -1106,10 +1134,10 @@ function World:_draw()
         local boosterSelected = self.htx == booster.tileX and self.hty == booster.tileY
 
         for _, target in ipairs(booster.connectsTo) do
-            local alpha = 0.25
+            local alpha = UNHIGHLIGHT_ALPHA
             local targetSelected = self.htx == target.tileX and self.hty == target.tileY
             if boosterSelected or targetSelected then
-                alpha = 1
+                alpha = HIGHLIGHT_ALPHA
             end
             love.graphics.setColor(1, 0, 0, alpha)
             drawArrows(
