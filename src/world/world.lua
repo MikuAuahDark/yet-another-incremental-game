@@ -23,7 +23,7 @@ end
 ---@field type string Item ID
 ---@field tileX integer (readonly; updated every frame)
 ---@field tileY integer (readonly; updated every frame)
----@field load integer (readonly; updated every frame)
+---@field load number (readonly; updated every frame)
 ---@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
 ---@field removed boolean
 ---@field removable boolean
@@ -40,6 +40,8 @@ end
 ---@field connectedInputs g.World.DataInputData[] (readonly; connected data inputs, quick lookup only)
 ---@field activeOutput g.World.DataOutputData? (readonly; the data output used this frame)
 ---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
+---@field dataBottlenecked boolean
+---@field package desiredDPS number
 ---@field package animationDataInput number (1 = moving, 0 = stationary, decrementing from 1 to 0)
 ---@field package animationDataInputTime number (duration cycles)
 ---@field package animationDataOutput number (duration cycles)
@@ -51,6 +53,8 @@ end
 ---@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
 ---@field dataPerSecond number (readonly; updated every frame)
 ---@field wireDPS number (readonly; updated every frame)
+---@field package requestedLoad number
+---@field package dataScale number
 
 ---@class g.World.PowerData: g.World.ItemData
 ---@field power number (readonly; updated every frame)
@@ -399,6 +403,7 @@ function World:_update(dt)
                 self.servers[index] = item
                 item.animationDataInput = math.max(0, item.animationDataInput - dt / 3)
                 item.animationDataInputTime = (item.animationDataInputTime + dt * item.animationDataInput) % 1
+                item.dataBottlenecked = false
             elseif category == "powergen" then
                 ---@cast item g.World.PowerData
                 self.powerGens[index] = item
@@ -818,28 +823,61 @@ function World:_update(dt)
         local finalMul = perfMultiplier * worldutil.getLoadPercentage(serverData) * heatPerfMul * boosterMul
         serverData.computePerSecond = math.max(finalMod, 0) * finalMul
     end
-    -- Pass 2: Data transmit logic (packing)
-    ---@type table<g.World.DataOutputData, number>
-    local currentTransmit = {}
+    -- Pass 2: Data transmit logic (bottlenecking & proportional scaling)
+    for _, dpData in pairs(self.dataProcessors) do
+        dpData.requestedLoad = 0
+    end
+    -- Pass 2.1: Assign servers to outputs and accumulate load
     for _, serverData in pairs(self.servers) do
         serverData.activeOutput = nil
         local job = serverData.currentJob
         if job and #serverData.connectedOutputs > 0 then
             local requiredDPS = serverData.computePerSecond * job.outputData / job.computePower
+            -- Try to find the output that can provide the best capacity/load ratio
+            local bestDP = nil
+            local bestScale = -1
+
             for _, dpData in ipairs(serverData.connectedOutputs) do
                 local dpInfo = g.getItemInfo(dpData.type, "data")
-                local wireDPS = dpInfo.wireDPS or (dpInfo.dataPerSecond / 4)
+                local desired = math.min(requiredDPS, dpInfo.wireDPS)
                 local capacity = dpData.dataPerSecond
-                local used = currentTransmit[dpData] or 0
 
-                if requiredDPS <= wireDPS and requiredDPS <= (capacity - used) then
-                    serverData.activeOutput = dpData
-                    currentTransmit[dpData] = used + requiredDPS
-                    local speed = math.max(0.5, math.log(requiredDPS, 10))
-                    serverData.animationDataOutput = (serverData.animationDataOutput + dt * speed) % 1
-                    break
+                local projectedScale = capacity / (dpData.requestedLoad + desired)
+                if projectedScale > bestScale then
+                    bestScale = projectedScale
+                    bestDP = dpData
                 end
             end
+
+            if bestDP then
+                local dpInfo = g.getItemInfo(bestDP.type, "data")
+                serverData.activeOutput = bestDP
+                serverData.desiredDPS = math.min(requiredDPS, dpInfo.wireDPS)
+                bestDP.requestedLoad = bestDP.requestedLoad + serverData.desiredDPS
+            end
+        end
+    end
+
+    -- Pass 2.2: Compute scaling factors and finalize server performance
+    for _, dpData in pairs(self.dataProcessors) do
+        dpData.dataScale = math.min(dpData.dataPerSecond / dpData.requestedLoad, 1)
+    end
+
+    for _, serverData in pairs(self.servers) do
+        local job = serverData.currentJob
+        if serverData.activeOutput and job then
+            local requiredOriginal = serverData.computePerSecond * job.outputData / job.computePower
+            local actualDPS = serverData.desiredDPS * serverData.activeOutput.dataScale
+
+            if actualDPS < requiredOriginal then
+                serverData.dataBottlenecked = true
+            end
+
+            -- Downscale server performance based on actual throughput
+            serverData.computePerSecond = actualDPS * job.computePower / job.outputData
+
+            local speed = math.max(0.5, math.log(math.max(1, actualDPS), 10))
+            serverData.animationDataOutput = (serverData.animationDataOutput + dt * speed) % 1
         end
     end
     -- Pass 3: Update job progress
@@ -1292,6 +1330,8 @@ function World:putItem(itemId, tx, ty, removable)
             animationDataInput = 0,
             animationDataInputTime = 0,
             animationDataOutput = 0,
+            dataBottlenecked = false,
+            desiredDPS = 0,
         }
     elseif category == "data" then
         ---@type g.World.DataOutputData
@@ -1305,6 +1345,8 @@ function World:putItem(itemId, tx, ty, removable)
             dataPerSecond = 0,
             wireDPS = 0,
             removable = removable,
+            requestedLoad = 0,
+            dataScale = 1,
         }
     elseif category == "booster" then
         ---@type g.World.BoosterData

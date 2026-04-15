@@ -2307,6 +2307,12 @@ local ITEM_PROBLEMS = {
         icon = "power_off",
         text = loc("Data input is not connected to any server!", nil, {
             context = "Think of it as connection between machines."})
+    },
+    data_bottleneck = {
+        error = false,
+        icon = "database",
+        text = loc("Data output is overloaded! [Server performance is throttled]", nil, {
+            context = "The server is sending data slower than its peak capacity."}),
     }
 }
 
@@ -2334,6 +2340,10 @@ function g.getItemProblems(itemData)
 
         if #itemData.connectedInputs == 0 then
             result[#result+1] = "no_input_connection"
+        end
+
+        if itemData.dataBottlenecked then
+            result[#result+1] = "data_bottleneck"
         end
 
         if g.getTileHeat(itemData.tileX, itemData.tileY) > itemInfo.heatTolerance[2] then
