@@ -20,15 +20,8 @@ function TooltipBuilder:init(mode, x, y, safeArea)
     self.height = 0
     self.mx = x
     self.my = y
-    ---@type kirigami.Region?
-    self.safeArea = nil
-    self.isHUD = false
-
-    if mode == "world" then
-        self.safeArea = safeArea
-    elseif mode == "hud" then
-        self.isHUD = true
-    end
+    self.isHUD = mode == "hud"
+    self.safeArea = safeArea
 end
 
 if false then
@@ -92,7 +85,7 @@ end
 function TooltipBuilder:render()
     local tdrawableR, tcntR
     if self.isHUD then
-        tdrawableR, tcntR = ui.getTooltipRegion(self.mx - self.width / 2, self.my - self.height, self.width, self.height)
+        tdrawableR, tcntR = ui.getTooltipRegion(self.mx - self.width / 2, self.my - self.height, self.width, self.height, self.safeArea)
     else
         tdrawableR, tcntR = ui.getTooltipRegion(self.mx, self.my, self.width, self.height, self.safeArea)
     end

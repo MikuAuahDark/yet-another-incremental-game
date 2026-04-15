@@ -836,9 +836,10 @@ function upgscene:draw()
 
     if hoveredUpgrade then
         local mx, my = ui.getMouse()
+        local sa = ui.getFullScreenRegion():padUnit(8)
         -- Upgrade description
         love.graphics.setColor(1, 1, 1)
-        ui.upgradeDescriptionUI(hoveredUpgrade, g.getUpgTree(), mx + 14, my - 3, ui.getFullScreenRegion())
+        ui.upgradeDescriptionUI(hoveredUpgrade, g.getUpgTree(), mx, my - 16, sa)
     end
 
     if FLAGS.SHOW_DEV_STUFF then
