@@ -447,6 +447,7 @@ function HUD:draw(show)
                 ) - 1
                 self.scrollPos = newScroll
             else
+                self.scrollPos = 0
                 self.wheelX = 0
                 self.wheelY = 0
             end

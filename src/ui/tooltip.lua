@@ -21,7 +21,7 @@ local function getItemLoadText(itemInfo, itemData)
         local p = (actualLoad - baseLoad) / baseLoad
         loadText = loadText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "(+"..helper.round(p * 100, 2).."%)")
     elseif actualLoad < baseLoad then
-        local p = (actualLoad - baseLoad) / baseLoad
+        local p = (baseLoad - actualLoad) / baseLoad
         loadText = loadText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "(-"..helper.round(p * 100, 2).."%)")
     end
 
