@@ -100,7 +100,7 @@ g.defineDataOutput("he_data", "High-End Data Output", {
 g.defineDataOutput("quantum_data", "Quantum Data Output", {
     price = 20000,
     load = 50,
-    dataPerSecond = 100000,
+    dataPerSecond = 1000000,
     wireLength = 6,
     color = objects.Color("#DAB5C1"),
     draw = function(r)

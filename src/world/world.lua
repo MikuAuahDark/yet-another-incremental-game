@@ -1384,7 +1384,7 @@ function World:_setupPlaceables()
     self:putItem("main_power", center, center, false)
     local wz = math.floor(World.TILE_SIZE / 2)
 
-    for i = 5, wz, 3 do
+    for i = 5, wz, 4 do
         self:putItem("sub_power", center+i, center+i, false)
         self:putItem("sub_power", center+i, center-i, false)
         self:putItem("sub_power", center-i, center+i, false)
