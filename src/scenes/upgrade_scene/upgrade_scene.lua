@@ -828,8 +828,7 @@ function upgscene:draw()
 
     -- Draw tutorial text if needed
     if g.getSn().showTutorials.upgrades then
-        local safeArea = hud:getSafeArea()
-        local tutTextR = safeArea:padRatio(0.1)
+        local tutTextR = ui.getScreenRegion():padRatio(0.1)
         local txt = consts.IS_MOBILE and TUTORIAL_UPGRADES_MOBILE or TUTORIAL_UPGRADES
         love.graphics.setColor(1, 1, 1)
         richtext.printRich(txt, g.getMainFont(32), tutTextR.x, tutTextR.y, tutTextR.w, "center")
@@ -848,7 +847,12 @@ function upgscene:draw()
 
     -- Draw scene switch
     if not self.dev_editMode then
-        local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
+        local switchR, switchImageR = ui.getTooltipRegion(
+            hud.topR.x + hud.topR.w - 56,
+            hud.topR.y + hud.topR.h + 8,
+            40, 40,
+            ui.getScreenRegion()
+        )
         love.graphics.setColor(1, 1, 1)
         ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
         g.drawImageContained("schema", switchImageR:get())
