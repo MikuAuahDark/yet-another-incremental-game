@@ -298,24 +298,28 @@ function helper.assert(b,er, ...)
 end
 
 
----@param increase integer
----@param startingPercentage integer?
----@deprecated use helper.valueGetter instead
-function helper.percentageGetter(increase, startingPercentage)
-    return helper.valueGetter(increase, startingPercentage)
-end
-
-
 ---@param increase number
 ---@param startingVal number?
 function helper.valueGetter(increase, startingVal)
-    startingVal = startingVal or 0
-    helper.assert(type(increase)=="number","Increase needs to be a number")
-    helper.assert(type(startingVal)=="number","startingVal needs to be a number")
+    local gv0 = helper.valueGetterNoSelf(increase, startingVal)
     ---@param self g.UpgradeInfo
     ---@param level integer
     local function getValues(self, level)
-        return startingVal + ((level-1) * increase)
+        return gv0(level - 1)
+    end
+    return getValues
+end
+
+---Without the `self` in the returned function. The count 
+---@param increase number
+---@param startingVal number?
+function helper.valueGetterNoSelf(increase, startingVal)
+    startingVal = startingVal or 0
+    helper.assert(type(increase)=="number","Increase needs to be a number")
+    helper.assert(type(startingVal)=="number","startingVal needs to be a number")
+    ---@param count integer
+    local function getValues(count)
+        return startingVal + count * increase
     end
     return getValues
 end

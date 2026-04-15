@@ -45,7 +45,11 @@ end
 
 local _basicServerDecor = makeLineDrawerForServer(1)
 g.defineServer("basic_server", "Basic Server", {
-    price = 0,
+    price = 1,
+    getPriceMultiplier = function(count)
+        if count < 1 then return 0 end -- first 1 is free
+        return (count - 1) / 10 + 1
+    end,
     computePerSecond = 1,
     computePreference = {"general"},
     load = 1,
@@ -62,7 +66,8 @@ g.PREUNLOCKED_ITEMS:add("basic_server")
 
 local _tier1Server = makeLineDrawerForServer(2)
 g.defineServer("normal_server", "Server (Tier 1)", {
-    price = 100,
+    price = 75,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     computePerSecond = 10,
     computePreference = {"general"},
     load = 4,
@@ -79,6 +84,7 @@ g.defineServer("normal_server", "Server (Tier 1)", {
 local _tier2Server = makeLineDrawerForServer(3)
 g.defineServer("tier2_server", "Server (Tier 2)", {
     price = 250,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     computePerSecond = 35,
     computePreference = {"general"},
     load = 6,
@@ -95,6 +101,7 @@ g.defineServer("tier2_server", "Server (Tier 2)", {
 local _tier3Server = makeLineDrawerForServer(4)
 g.defineServer("tier3_server", "Server (Tier 3)", {
     price = 700,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     computePerSecond = 256,
     computePreference = {"general"},
     load = 9,
@@ -112,6 +119,7 @@ g.defineServer("tier3_server", "Server (Tier 3)", {
 
 g.defineServer("advanced_server", "Video Server (Tier 1)", {
     price = 300,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     computePerSecond = 30,
     computePreference = {"video"},
     load = 10,
@@ -127,6 +135,7 @@ g.defineServer("advanced_server", "Video Server (Tier 1)", {
 
 g.defineServer("video2_server", "Video Server (Tier 2)", {
     price = 900,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     computePerSecond = 400,
     computePreference = {"video"},
     load = 12,
@@ -142,6 +151,7 @@ g.defineServer("video2_server", "Video Server (Tier 2)", {
 
 g.defineServer("video3_server", "Video Server (Tier 3)", {
     price = 1500,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     computePerSecond = 1000,
     computePreference = {"video"},
     load = 20,
@@ -161,6 +171,7 @@ g.defineServer("video3_server", "Video Server (Tier 3)", {
 local _aiServer1 = makeLineDrawerForServer(3, 0.05)
 g.defineServer("ai_server", "AI Server (Tier 1)", {
     price = 5000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     computePerSecond = 5000,
     computePreference = {"ai"},
     load = 50,
@@ -179,6 +190,7 @@ g.defineServer("ai_server", "AI Server (Tier 1)", {
 local _aiServer2 = makeLineDrawerForServer(5, 0.05)
 g.defineServer("ai_server_t2", "AI Server (Tier 2)", {
     price = 14000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     computePerSecond = 10000,
     computePreference = {"ai"},
     load = 70,
@@ -196,6 +208,7 @@ g.defineServer("ai_server_t2", "AI Server (Tier 2)", {
 local _aiServer3 = makeLineDrawerForServer(8, 0.04)
 g.defineServer("ai_server_t3", "AI Server (Tier 3)", {
     price = 30000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     computePerSecond = 50000,
     computePreference = {"ai"},
     load = 100,

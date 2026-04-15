@@ -1737,6 +1737,7 @@ function g.defineServer(id, name, def)
     g.defineUpgrade(id, name, {
         description = def.description,
         descriptionContext = def.descriptionContext,
+        getPriceOverride = function() return {money = def.price} end,
         kind = "UNLOCKS",
         targetItem = id,
         maxLevel = 1,
@@ -1798,6 +1799,7 @@ function g.defineDataOutput(id, name, def)
     g.defineUpgrade(id, name, {
         description = def.description,
         descriptionContext = def.descriptionContext,
+        getPriceOverride = function() return {money = def.price} end,
         kind = "UNLOCKS",
         targetItem = id,
         maxLevel = 1,
@@ -1858,6 +1860,7 @@ function g.defineDataInput(id, name, def)
     g.defineUpgrade(id, name, {
         description = def.description,
         descriptionContext = def.descriptionContext,
+        getPriceOverride = function() return {money = def.price * 2} end,
         kind = "UNLOCKS",
         targetItem = id,
         maxLevel = 1,
@@ -1922,6 +1925,7 @@ function g.defineBooster(id, name, def)
     g.defineUpgrade(id, name, {
         description = def.description,
         descriptionContext = def.descriptionContext,
+        getPriceOverride = function() return {money = def.price * 3} end,
         kind = "UNLOCKS",
         targetItem = id,
         maxLevel = 1,
@@ -2301,7 +2305,7 @@ local ITEM_PROBLEMS = {
     data_bottleneck = {
         error = false,
         icon = "database",
-        text = loc("Data output is overloaded! [Server performance is throttled]", nil, {
+        text = loc("Data output or wire is overloaded!", nil, {
             context = "The server is sending data slower than its peak capacity."}),
     }
 }

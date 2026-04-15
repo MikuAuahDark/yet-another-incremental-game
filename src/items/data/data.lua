@@ -41,7 +41,11 @@ end
 
 
 g.defineDataOutput("basic_data", "Basic Data Output", {
-    price = 0,
+    price = 1,
+    getPriceMultiplier = function(count)
+        if count < 1 then return 0 end -- first 1 is free
+        return (count - 1) / 10 + 1
+    end,
     load = 1,
     dataPerSecond = 10,
     wireLength = 2,
@@ -57,6 +61,7 @@ g.PREUNLOCKED_ITEMS:add("basic_data")
 
 g.defineDataOutput("normal_data", "Data Output", {
     price = 150,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 2,
     dataPerSecond = 500,
     wireLength = 2,
@@ -71,6 +76,7 @@ g.defineDataOutput("normal_data", "Data Output", {
 
 g.defineDataOutput("advanced_data", "Advanced Data Output", {
     price = 1000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.2, 1),
     load = 10,
     dataPerSecond = 5000,
     wireLength = 3,
@@ -85,6 +91,7 @@ g.defineDataOutput("advanced_data", "Advanced Data Output", {
 
 g.defineDataOutput("he_data", "High-End Data Output", {
     price = 6000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.3, 1),
     load = 30,
     dataPerSecond = 30000,
     wireLength = 4,
@@ -99,6 +106,7 @@ g.defineDataOutput("he_data", "High-End Data Output", {
 
 g.defineDataOutput("quantum_data", "Quantum Data Output", {
     price = 20000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.5, 1),
     load = 50,
     dataPerSecond = 1000000,
     wireLength = 6,

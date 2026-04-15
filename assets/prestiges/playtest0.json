@@ -4,11 +4,13 @@
 			"id": "webhost",
 			"level": 4,
 			"startLevel": 4,
-			"basePrice": {},
+			"basePrice": {
+				"money": 10.0
+			},
 			"x": -1,
 			"y": -1,
 			"isRoot": false,
-			"maxLevelOverride": 4
+			"maxLevelOverride": 5
 		},
 		"7": {
 			"id": "money_limit",
@@ -131,10 +133,11 @@
 			"id": "normal_server",
 			"level": 0,
 			"basePrice": {
-				"money": 50.0
+				"money": 5.0
 			},
 			"x": -3,
-			"y": -3
+			"y": -3,
+			"cps": 1.0
 		},
 		"64": {
 			"id": "water_cooler",
@@ -250,20 +253,19 @@
 			"id": "indata_tier1",
 			"level": 0,
 			"basePrice": {
-				"money": 12.0
+				"money": 1.0
 			},
 			"x": -5,
 			"y": -3
 		},
 		"114": {
-			"id": "webhost",
+			"id": "webhost_money",
 			"level": 0,
 			"basePrice": {
-				"money": 30.0
+				"money": 35.0
 			},
 			"x": -3,
 			"y": -5,
-			"maxLevelOverride": 6,
 			"priceScaling": 1.1
 		},
 		"118": {
@@ -406,21 +408,22 @@
 			"id": "cdn",
 			"level": 0,
 			"basePrice": {
-				"money": 75.0
+				"money": 60.0
 			},
 			"x": -7,
 			"y": -3,
-			"priceScaling": 1.15
+			"cps": 1.0,
+			"priceScaling": 1.05
 		},
 		"180": {
-			"id": "webhost_money",
+			"id": "webhost",
 			"level": 0,
 			"basePrice": {
-				"money": 90.0
+				"money": 20.0
 			},
 			"x": -5,
 			"y": -5,
-			"priceScaling": 1.15
+			"maxLevelOverride": 5
 		},
 		"184": {
 			"id": "piped_ice_cooler",
@@ -561,21 +564,21 @@
 			"id": "cdn_money",
 			"level": 0,
 			"basePrice": {
-				"money": 225.0
+				"money": 100.0
 			},
 			"x": -7,
 			"y": -5,
-			"priceScaling": 1.15
+			"priceScaling": 1.1
 		},
 		"266": {
 			"id": "webhost_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 90.0
+				"money": 35.0
 			},
 			"x": -5,
 			"y": -7,
-			"priceScaling": 1.15
+			"priceScaling": 1.1
 		},
 		"270": {
 			"id": "ice_cooler",
@@ -694,13 +697,14 @@
 			},
 			"x": -11,
 			"y": -3,
+			"cps": 3.0,
 			"priceScaling": 1.2
 		},
 		"360": {
 			"id": "indata_tier2",
 			"level": 0,
 			"basePrice": {
-				"money": 30.0
+				"money": 3.0
 			},
 			"x": -9,
 			"y": -5
@@ -709,21 +713,11 @@
 			"id": "cdn_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 225.0
+				"money": 100.0
 			},
 			"x": -7,
 			"y": -7,
-			"priceScaling": 1.15
-		},
-		"368": {
-			"id": "general_mod",
-			"level": 0,
-			"basePrice": {
-				"money": 250.0
-			},
-			"x": -5,
-			"y": -9,
-			"priceScaling": 1.2
+			"priceScaling": 1.1
 		},
 		"384": {
 			"id": "video_mod",
@@ -831,10 +825,20 @@
 			"id": "general_mod",
 			"level": 0,
 			"basePrice": {
-				"money": 350.0
+				"money": 250.0
 			},
 			"x": -9,
 			"y": -7,
+			"priceScaling": 1.2
+		},
+		"482": {
+			"id": "general_mod",
+			"level": 0,
+			"basePrice": {
+				"money": 100.0
+			},
+			"x": -7,
+			"y": -9,
 			"priceScaling": 1.2
 		},
 		"514": {
@@ -892,10 +896,11 @@
 			"id": "tier3_server",
 			"level": 0,
 			"basePrice": {
-				"money": 375.0
+				"money": 3.0
 			},
 			"x": -13,
-			"y": -7
+			"y": -7,
+			"cps": 5.0
 		}
 	},
 	"connections": [
@@ -906,6 +911,10 @@
 		[
 			4,
 			60
+		],
+		[
+			4,
+			180
 		],
 		[
 			7,
@@ -1033,11 +1042,7 @@
 		],
 		[
 			114,
-			60
-		],
-		[
-			114,
-			180
+			482
 		],
 		[
 			122,
@@ -1117,7 +1122,7 @@
 		],
 		[
 			180,
-			368
+			114
 		],
 		[
 			184,
@@ -1177,7 +1182,7 @@
 		],
 		[
 			266,
-			114
+			180
 		],
 		[
 			282,
@@ -1240,10 +1245,6 @@
 			478
 		],
 		[
-			368,
-			266
-		],
-		[
 			388,
 			384
 		],
@@ -1282,6 +1283,10 @@
 		[
 			474,
 			356
+		],
+		[
+			482,
+			266
 		],
 		[
 			604,
