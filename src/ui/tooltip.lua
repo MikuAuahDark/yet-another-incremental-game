@@ -515,8 +515,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
         builder:addText(priceText, attrF, "left")
     end
     -- Load
-    local load = world:computeLoadModifier(serverInfo)
-    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
+    builder:addText(getItemLoadText(serverInfo), attrF, "left")
     -- CPS
     builder:addText(TEXT.CPS_NUMBER({cps = g.formatNumber(serverInfo.computePerSecond)}), attrF, "left")
     -- Heat tolerance
@@ -558,8 +557,7 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
         builder:addText(priceText, attrF, "left")
     end
     -- Load
-    local load = world:computeLoadModifier(dpInfo)
-    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
+    builder:addText(getItemLoadText(dpInfo), attrF, "left")
     -- DPS
     builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpInfo.dataPerSecond)}), attrF, "left")
     -- Wire Range
@@ -600,8 +598,7 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
         builder:addText(priceText, attrF, "left")
     end
     -- Load
-    local load = world:computeLoadModifier(diInfo)
-    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
+    builder:addText(getItemLoadText(diInfo), attrF, "left")
     -- Queued Job Category
     builder:addText(TEXT.CATEGORY_LIST({
         categories = g.getJobCategoryName(diInfo.queuesJob)
@@ -644,8 +641,7 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
         builder:addText(priceText, attrF, "left")
     end
     -- Load
-    local load = world:computeLoadModifier(boosterInfo)
-    builder:addText(TEXT.LOAD_TOOLTIP({load = load}), attrF, "left")
+    builder:addText(getItemLoadText(boosterInfo), attrF, "left")
 
     builder:render()
 end
