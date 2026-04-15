@@ -643,16 +643,7 @@ function World:_update(dt)
     -- Run data output update
     for _, dpData in pairs(self.dataProcessors) do
         local dpInfo = g.getItemInfo(dpData.type, "data")
-
-        -- Disconnect servers which are out of range or invalid
-        for i = #dpData.connectsServers, 1, -1 do
-            local serverData = dpData.connectsServers[i]
-            local sx, sy = serverData.tileX, serverData.tileY
-            if serverData.removed or worldutil.getDistance("chessboard", sx - dpData.tileX, sy - dpData.tileY) > dpInfo.wireLength
-                or not self:isWithinWorldLimit(dpData.tileX, dpData.tileY) or not self:isWithinWorldLimit(sx, sy) then
-                table.remove(dpData.connectsServers, i)
-            end
-        end
+        table.clear(dpData.connectsServers)
 
         -- Connect servers which are in range
         local range = dpInfo.wireLength
@@ -665,10 +656,7 @@ function World:_update(dt)
                         local _, category = g.getItemInfo(item.type)
                         if category == "server" then
                             ---@cast item g.World.ServerData
-                            -- Check if already in connectsServers
-                            if not helper.index(dpData.connectsServers, item) then
-                                dpData.connectsServers[#dpData.connectsServers+1] = item
-                            end
+                            dpData.connectsServers[#dpData.connectsServers+1] = item
                         end
                     end
                 end
@@ -705,16 +693,7 @@ function World:_update(dt)
     -- Run data input update
     for _, diData in pairs(self.dataInputs) do
         local diInfo = g.getItemInfo(diData.type, "indata")
-
-        -- Disconnect servers which are out of range or invalid
-        for i = #diData.connectsServers, 1, -1 do
-            local serverData = diData.connectsServers[i]
-            local sx, sy = serverData.tileX, serverData.tileY
-            if serverData.removed or worldutil.getDistance("chessboard", sx - diData.tileX, sy - diData.tileY) > diInfo.wireLength
-                or not self:isWithinWorldLimit(diData.tileX, diData.tileY) or not self:isWithinWorldLimit(sx, sy) then
-                table.remove(diData.connectsServers, i)
-            end
-        end
+        table.clear(diData.connectsServers)
 
         -- Connect servers which are in range
         local range = diInfo.wireLength
@@ -724,11 +703,11 @@ function World:_update(dt)
                 if self:isWithinWorldLimit(diData.tileX, diData.tileY) and self:isWithinWorldLimit(tx, ty) then
                     local item = self.items:get(tx, ty)
                     if item and not item.removed then
-                        local _, category = g.getItemInfo(item.type)
+                        local itemInfo, category = g.getItemInfo(item.type)
                         if category == "server" then
-                            ---@cast item g.World.ServerData
-                            -- Check if already in connectsServers
-                            if not helper.index(diData.connectsServers, item) then
+                            ---@cast itemInfo g.ServerInfo
+                            if helper.index(itemInfo.computePreference, diInfo.queuesJob) then
+                                ---@cast item g.World.ServerData
                                 diData.connectsServers[#diData.connectsServers+1] = item
                             end
                         end
