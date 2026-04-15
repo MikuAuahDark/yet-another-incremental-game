@@ -1692,13 +1692,18 @@ function g.isValidItem(itemid)
 end
 
 ---@param itemid string|g.ItemInfo
-function g.getItemPrice(itemid)
+---@param count integer?
+function g.getItemPrice(itemid, count)
     if type(itemid) == "string" then
         itemid = g.getItemInfo(itemid)
     end
 
-    local world = g.getMainWorld()
-    return itemid.price * itemid.getPriceMultiplier(world.itemCounts[itemid.id])
+    if not count then
+        local world = g.getMainWorld()
+        count = world.itemCounts[itemid.id]
+    end
+
+    return itemid.price * itemid.getPriceMultiplier(math.max(count, 0))
 end
 
 
@@ -1707,7 +1712,7 @@ end
 
 local drawLockOpen = helper.genDrawUIIntuition("lock_open", "theme", "theme")
 
----@class g._ServerDef
+---@class g._CommonSpecificItemDef
 ---@field nameContext string?
 ---@field rawDescription string?
 ---@field description string?
@@ -1715,7 +1720,10 @@ local drawLockOpen = helper.genDrawUIIntuition("lock_open", "theme", "theme")
 ---@field tags string[]?
 ---@field color objects.Color
 ---@field price number
+---@field getPriceMultiplier (fun(count:integer):number)?
 ---@field load number
+
+---@class g._ServerDef: g._CommonSpecificItemDef
 ---@field computePerSecond number
 ---@field computePreference string[]
 ---@field heatTolerance [number, number]
@@ -1754,6 +1762,7 @@ function g.defineServer(id, name, def)
         tags = def.tags,
         load = def.load,
         price = def.price,
+        getPriceMultiplier = def.getPriceMultiplier,
         computePerSecond = def.computePerSecond,
         computePreference = def.computePreference,
         heatTolerance = def.heatTolerance,
@@ -1776,15 +1785,7 @@ function g.defineServer(id, name, def)
     })
 end
 
----@class g._DataDef
----@field nameContext string?
----@field rawDescription string?
----@field description string?
----@field descriptionContext string?
----@field tags string[]?
----@field color objects.Color
----@field price number
----@field load number
+---@class g._DataDef: g._CommonSpecificItemDef
 ---@field dataPerSecond number
 ---@field wireLength integer
 ---@field wireDPS number? (defaults to dataPerSecond / 4)
@@ -1821,6 +1822,7 @@ function g.defineDataOutput(id, name, def)
         descriptionContext = def.descriptionContext,
         tags = def.tags,
         price = def.price,
+        getPriceMultiplier = def.getPriceMultiplier,
         load = def.load,
         dataPerSecond = def.dataPerSecond,
         wireLength = def.wireLength,
@@ -1843,15 +1845,7 @@ function g.defineDataOutput(id, name, def)
     })
 end
 
----@class g._DataInDef
----@field nameContext string?
----@field rawDescription string?
----@field description string?
----@field descriptionContext string?
----@field tags string[]?
----@field color objects.Color
----@field price number
----@field load number
+---@class g._DataInDef: g._CommonSpecificItemDef
 ---@field queuesJob g.JobCategory
 ---@field maxJobQueue integer
 ---@field wireLength integer
@@ -1888,6 +1882,7 @@ function g.defineDataInput(id, name, def)
         descriptionContext = def.descriptionContext,
         tags = def.tags,
         price = def.price,
+        getPriceMultiplier = def.getPriceMultiplier,
         load = def.load,
         queuesJob = def.queuesJob,
         maxJobQueue = def.maxJobQueue,
@@ -1910,15 +1905,7 @@ function g.defineDataInput(id, name, def)
     })
 end
 
----@class g._BoosterDef
----@field nameContext string?
----@field rawDescription string?
----@field description string?
----@field descriptionContext string?
----@field tags string[]?
----@field color objects.Color
----@field price number
----@field load number
+---@class g._BoosterDef: g._CommonSpecificItemDef
 ---@field radiate integer
 ---@field radiateAlgorithm g.RadiateAlgorithm
 ---@field connectable {max:integer,target:g.ItemCategory}?
@@ -1959,6 +1946,7 @@ function g.defineBooster(id, name, def)
         descriptionContext = def.descriptionContext,
         tags = def.tags,
         price = def.price,
+        getPriceMultiplier = def.getPriceMultiplier,
         load = def.load,
         radiate = def.radiate,
         radiateAlgorithm = def.radiateAlgorithm,
@@ -1986,14 +1974,7 @@ function g.defineBooster(id, name, def)
     })
 end
 
----@class g._PowerGenDef
----@field nameContext string?
----@field rawDescription string?
----@field description string?
----@field descriptionContext string?
----@field tags string[]?
----@field color objects.Color
----@field price number
+---@class g._PowerGenDef: g._CommonSpecificItemDef
 ---@field power number
 ---@field wireLength integer
 ---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
@@ -2029,6 +2010,7 @@ function g.definePowerGenerator(id, name, def)
         descriptionContext = def.descriptionContext,
         tags = def.tags,
         price = def.price,
+        getPriceMultiplier = def.getPriceMultiplier,
         load = 0,
         power = def.power,
         wireLength = def.wireLength,
@@ -2050,14 +2032,7 @@ function g.definePowerGenerator(id, name, def)
     })
 end
 
----@class g._PowerRelayDef
----@field nameContext string?
----@field rawDescription string?
----@field description string?
----@field descriptionContext string?
----@field tags string[]?
----@field color objects.Color
----@field price number
+---@class g._PowerRelayDef: g._CommonSpecificItemDef
 ---@field wireLength integer
 ---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
@@ -2092,6 +2067,7 @@ function g.definePowerRelay(id, name, def)
         descriptionContext = def.descriptionContext,
         tags = def.tags,
         price = def.price,
+        getPriceMultiplier = def.getPriceMultiplier,
         load = 0,
         wireLength = def.wireLength,
         draw = function(itemData)

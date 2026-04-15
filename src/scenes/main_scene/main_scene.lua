@@ -184,8 +184,9 @@ function MainScene:draw()
         else
             -- Remove
             local itemInfo = g.getItemInfo(beforeActiveDragWorld[2].type)
+            local itemPrice = g.getItemPrice(itemInfo, world.itemCounts[itemInfo.id] - 1)
             g.removeItem(beforeActiveDragWorld[2])
-            g.addResource("money", itemInfo.price * 0.5)
+            g.addResource("money", itemPrice * 0.5)
         end
     end
 
@@ -215,7 +216,8 @@ function MainScene:draw()
         if helper.isInsideRect(uimx, uimy, safeArea:get()) then
             -- Place
             local itemInfo = g.getItemInfo(beforeActiveDragHUD[2].id)
-            if g.canPutItem(tx, ty) and g.trySubtractResources({money = itemInfo.price}) then
+            local itemPrice = g.getItemPrice(itemInfo)
+            if g.canPutItem(tx, ty) and g.trySubtractResources({money = itemPrice}) then
                 g.putItem(beforeActiveDragHUD[2].id, tx, ty)
             end
         end

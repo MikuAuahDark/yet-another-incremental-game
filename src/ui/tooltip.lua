@@ -61,12 +61,13 @@ end
 
 ---@param itemInfo g.ItemInfo
 local function getItemPrice(itemInfo)
-    if itemInfo.price <= 0 then
+    local price = g.getItemPrice(itemInfo)
+    if price <= 0 then
         return nil
     end
 
-    local priceText = TEXT.PRICE_TOOLTIP({price = g.formatNumber(itemInfo.price)})
-    if not g.canAfford({money = itemInfo.price}) then
+    local priceText = TEXT.PRICE_TOOLTIP({price = g.formatNumber(price)})
+    if not g.canAfford({money = price}) then
         priceText = helper.wrapRichtextColor(g.COLORS.CANT_AFFORD, priceText)
     else
         priceText = helper.wrapRichtextColor(g.COLORS.CAN_AFFORD, priceText)
