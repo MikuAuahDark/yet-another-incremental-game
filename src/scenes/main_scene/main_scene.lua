@@ -86,7 +86,8 @@ function MainScene:draw()
         -- tile indicator
         local t = math.sin(love.timer.getTime() * 4) ^ 2
         if hud.activeDragging and hud.activeDragging[1] >= consts.DRAG_ITEM_DURATION then
-            if g.canPutItem(tx, ty) and g.canAfford({money = hud.activeDragging[2].price}) then
+            local price = g.getItemPrice(hud.activeDragging[2])
+            if g.canPutItem(tx, ty) and g.canAfford({money = price}) then
                 love.graphics.setColor(0, 1, 0, t)
             else
                 love.graphics.setColor(1, 0, 0, t)

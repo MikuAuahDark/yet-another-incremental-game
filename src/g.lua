@@ -1135,6 +1135,7 @@ local SPECIAL_FUNCTIONS = {
     isHidden = true,
     getPriceOverride = true,
     drawUI = true,
+    getPriceMultiplier = true,
 }
 
 
@@ -1463,6 +1464,7 @@ g.CATEGORIES = {
 ---@field public load number
 ---@field public drawItem fun(r: kirigami.Region) (not translated)
 ---@field public draw (fun(itemData: g.World.ItemData))? (already translated to center of tile)
+---@field public getPriceMultiplier (fun(count:integer):number)?
 
 ---@class g.ItemInfo: g._MixinHasNameInfo
 ---@field public id string
@@ -1472,6 +1474,7 @@ g.CATEGORIES = {
 ---@field public load number
 ---@field public drawItem fun(r: kirigami.Region) (not translated)
 ---@field public draw fun(itemData: g.World.ItemData) (already translated to center of tile)
+---@field public getPriceMultiplier fun(count:integer):number
 
 
 ---@alias g.RadiateAlgorithm "taxicab"|"chessboard"
@@ -1591,6 +1594,7 @@ function g.defineItem(id, def)
 
     ---@cast def g.ItemInfo
     assert(def.price, "invalid price")
+    def.getPriceMultiplier = def.getPriceMultiplier or return1
     if def.category == "powergen" or def.category == "powerrelay" then
         def.load = 0
     else
@@ -1675,7 +1679,7 @@ g.PREUNLOCKED_ITEMS = objects.Set()
 
 ---@param itemid string
 function g.isItemUnlocked(itemid)
-    if not itemList[itemid] then
+    if not g.isValidItem(itemid) then
         error("unknown item id '"..itemid.."'")
     end
 
@@ -1685,6 +1689,16 @@ end
 ---@param itemid string
 function g.isValidItem(itemid)
     return not not itemList[itemid]
+end
+
+---@param itemid string|g.ItemInfo
+function g.getItemPrice(itemid)
+    if type(itemid) == "string" then
+        itemid = g.getItemInfo(itemid)
+    end
+
+    local world = g.getMainWorld()
+    return itemid.price * itemid.getPriceMultiplier(world.itemCounts[itemid.id])
 end
 
 

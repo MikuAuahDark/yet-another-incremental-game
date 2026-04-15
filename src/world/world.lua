@@ -280,6 +280,9 @@ function World:init()
     self.htx = nil
     ---@type integer?
     self.hty = nil
+
+    ---@type table<string, integer>
+    self.itemCounts = setmetatable({}, {__index = function() return 0 end})
 end
 
 
@@ -375,12 +378,14 @@ function World:_update(dt)
     table.clear(self.powerGens)
     table.clear(self.powerRelays)
     table.clear(self.powerNetworks)
+    table.clear(self.itemCounts)
     ---@param item g.World.ItemData?
     self.items:foreach(function(item, x, y)
         if item then
             local itemInfo, category = g.getItemInfo(item.type)
             item.load = self:computeLoadModifier(itemInfo)
             item.powerNetwork = nil
+            self.itemCounts[item.type] = self.itemCounts[item.type] + 1
 
             loads = loads + item.load
             local index = self.items:coordsToIndex(x, y)
