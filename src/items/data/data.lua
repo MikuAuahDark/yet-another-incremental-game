@@ -41,6 +41,7 @@ end
 
 
 g.defineDataOutput("basic_data", "Basic Data Output", {
+    description = "First one is free for startups.",
     price = 1,
     getPriceMultiplier = function(count)
         if count < 1 then return 0 end -- first 1 is free

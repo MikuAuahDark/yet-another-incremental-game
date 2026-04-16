@@ -101,7 +101,6 @@ local function getCheapestUpgrade(tree)
     local bestUpgrade = nil
 
     for _, upg in ipairs(tree:getUpgradesOnTree()) do
-        local uinfo = g.getUpgradeInfo(upg.id)
         local lv = upg.level
 
         if (not tree:isUpgradeHidden(upg)) and (lv < tree:getUpgradeMaxLevel(upg)) then
@@ -936,8 +935,14 @@ function upgscene:keypressed(k)
     elseif consts.DEV_MODE then
         -- upgrades for dev
         if k == "u" then
-            local u = getCheapestUpgrade(tree)
-            local _ = u and tree:tryBuyUpgrade(u)
+            for _ = 1, (love.keyboard.isDown("lshift") and 20 or 1) do
+                local u = getCheapestUpgrade(tree)
+                if u then
+                    if tree:tryBuyUpgrade(u) then
+                        print("bought upgrade", u.id)
+                    end
+                end
+            end
         end
 
         if k == "z" and self.dev_editMode then
@@ -948,13 +953,6 @@ function upgscene:keypressed(k)
                 tree:setUpgradeBasePrice(upg, {money=0})
                 tree:setUpgradeLevel(upg, 0)
                 upg.maxLevelOverride = 0
-            end
-        end
-
-        if k == "u" and love.keyboard.isDown("lshift")then
-            for i=1,20 do
-                local u = getCheapestUpgrade(tree)
-                local _ = u and tree:tryBuyUpgrade(u)
             end
         end
 

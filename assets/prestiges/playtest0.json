@@ -15,9 +15,7 @@
 		"7": {
 			"id": "money_limit",
 			"level": 0,
-			"basePrice": {
-				"money": 500.0
-			},
+			"basePrice": {},
 			"x": 1,
 			"y": -1,
 			"maxLevelOverride": 1
@@ -138,7 +136,7 @@
 			"id": "higher_wire_dps",
 			"level": 0,
 			"basePrice": {
-				"money": 750.0
+				"money": 1250.0
 			},
 			"x": 5,
 			"y": -1,
@@ -504,11 +502,10 @@
 		"258": {
 			"id": "tier2_server",
 			"level": 0,
-			"basePrice": {
-				"money": 175.0
-			},
+			"basePrice": {},
 			"x": -9,
-			"y": -3
+			"y": -3,
+			"cps": 5.0
 		},
 		"262": {
 			"id": "cdn_money",
@@ -773,7 +770,7 @@
 			},
 			"x": -9,
 			"y": -7,
-			"priceScaling": 1.2
+			"priceScaling": 1.25
 		},
 		"482": {
 			"id": "general_mod",
@@ -783,7 +780,7 @@
 			},
 			"x": -7,
 			"y": -9,
-			"priceScaling": 1.2
+			"priceScaling": 1.25
 		},
 		"514": {
 			"id": "video_mul",
@@ -834,7 +831,7 @@
 			},
 			"x": -11,
 			"y": -7,
-			"priceScaling": 1.2
+			"priceScaling": 1.5
 		},
 		"754": {
 			"id": "tier3_server",
@@ -842,7 +839,7 @@
 			"basePrice": {},
 			"x": -13,
 			"y": -7,
-			"cps": 10.0
+			"cps": 15.0
 		}
 	},
 	"connections": [

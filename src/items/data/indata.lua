@@ -41,6 +41,7 @@ local function drawDataInputDecorator(r, n, dist, len, thickness)
 end
 
 g.defineDataInput("basic_indata", "Basic Data Input", {
+    description = "First one is free for startups.",
     price = 1,
     getPriceMultiplier = function(count)
         if count < 1 then return 0 end -- first 1 is free
