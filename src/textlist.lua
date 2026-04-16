@@ -6,7 +6,7 @@ local text = {
     HORIZONTAL_LIST_SEPARATOR = loc(", ", nil, {
         context = "A separator symbol used to denote item list in single horizontal text"}),
 
-    JOB_QUEUE_NUMBER = interp("Tasks: %{njobs}/%{maxjobs}", {
+    JOB_QUEUE_INFO = loc("Task Queues", nil, {
         context = "Used in place to list tasks, with specific maximum amount of queueable tasks"}),
     MONEY = loc("Money", nil, {
         context = "A resource"}),

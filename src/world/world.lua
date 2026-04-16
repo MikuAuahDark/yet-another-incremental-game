@@ -245,6 +245,10 @@ function World:init()
     self.heat = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
     ---@type g.Job[]
     self.jobQueue = {}
+    ---@type table<g.JobCategory, integer>
+    self.jobQueueCounts = setmetatable({}, {__index = function() return 0 end})
+    ---@type table<g.JobCategory, integer>
+    self.maxJobQueues = setmetatable({}, {__index = function() return 0 end})
     ---@type table<integer, g.World.BoosterData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.boosters = {}
     ---@type table<integer, g.World.ItemData[]>
@@ -265,7 +269,6 @@ function World:init()
     self.timer = 0 -- For per second update
     self.seconds = 0 -- how many seconds have elapsed (perSecondUpdate)
     self.analyticsSendTime = 0
-    self.maxJobs = 0 -- (read-only) Updated every frame
     zeroTileHeat(self.heat)
 
     self.cpsCollector = DataCollector(60)
@@ -358,18 +361,21 @@ function World:_update(dt)
         v.dirty = true
     end
 
+    table.clear(self.jobQueueCounts)
     -- Update job queues
     for i = #self.jobQueue, 1, -1 do
         local job = self.jobQueue[i]
         job.timeout = job.timeout - dt
         if job.timeout <= 0 then
             table.remove(self.jobQueue, i)
+        else
+            self.jobQueueCounts[job.category] = self.jobQueueCounts[job.category] + 1
         end
     end
 
     -- Update electricity load
     local loads = 0
-    local maxJobs = 0
+    table.clear(self.maxJobQueues)
     table.clear(self.boosters)
     table.clear(self.boostersInTiles)
     table.clear(self.dataProcessors)
@@ -402,7 +408,7 @@ function World:_update(dt)
                 ---@cast item g.World.DataInputData
                 ---@cast itemInfo g.DataInInfo
                 self.dataInputs[index] = item
-                maxJobs = maxJobs + itemInfo.maxJobQueue
+                self.maxJobQueues[itemInfo.queuesJob] = self.maxJobQueues[itemInfo.queuesJob] + itemInfo.maxJobQueue
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
@@ -422,7 +428,6 @@ function World:_update(dt)
             item.tileY = y
         end
     end)
-    self.maxJobs = maxJobs
 
     -- Update booster connections and effectiveness
     for _, booster in pairs(self.boosters) do
@@ -922,7 +927,7 @@ function World:_update(dt)
                 jpinfo[1] = jpinfo[1] + dt
 
                 while jpinfo[1] >= time do
-                    if #self.jobQueue < maxJobs then
+                    if self.jobQueueCounts[ji.category] < self.maxJobQueues[ji.category] then
                         local job = g.genJob(k)
                         g.queueJob(job)
                     end

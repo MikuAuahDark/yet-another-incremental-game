@@ -269,22 +269,31 @@ function HUD:draw(show)
 
         -- Draw job queue
         if showJobQueue then
+            local jobQueueKeyList = {TEXT.JOB_QUEUE_INFO}
+            local jobQueueValueList = {""}
+            for _, jobCat in ipairs(g.JOB_CATEGORIES) do
+                if world.maxJobQueues[jobCat] > 0 then
+                    local name = g.getJobCategoryName(jobCat)
+                    jobQueueKeyList[#jobQueueKeyList+1] = name
+                    jobQueueValueList[#jobQueueValueList+1] = world.jobQueueCounts[jobCat].."/"..world.maxJobQueues[jobCat]
+                end
+            end
+
             local jobQueueF = g.getMainFont(12)
+            local jobQueueKeyText = table.concat(jobQueueKeyList, "\n")
+            local jobQueueValueText = table.concat(jobQueueValueList, "\n")
             -- TODO: Add scrollbars
             local jobTextR, jobQR = helper.splitRegionByExactSizes(
                 self.leftR:padUnit(4, 4, 4, 0),
                 "vertical",
-                jobQueueF:getHeight() * 2,
+                jobQueueF:getHeight() * #jobQueueKeyList,
                 0
             )
 
             -- Draw job queue text
-            local jobQueueText = TEXT.JOB_QUEUE_NUMBER({
-                njobs = #world.jobQueue,
-                maxjobs = world.maxJobs,
-            })
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-            ui.printRichInRegion(jobQueueText, jobQueueF, jobTextR, true, "left", "top")
+            ui.printRichInRegion(jobQueueKeyText, jobQueueF, jobTextR, true, "left", "top")
+            ui.printRichInRegion(jobQueueValueText, jobQueueF, jobTextR, true, "right", "top")
 
             local jobCardHeight = getJobCardHeight()
             local iterCount = math.min(#world.jobQueue, math.floor(jobQR.h / (jobCardHeight + 4)))

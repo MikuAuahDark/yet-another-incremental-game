@@ -729,11 +729,7 @@ end
 
 ---@alias g.PrestigeRange {lower: integer, upper: integer}
 
----@alias g.UpgradeKind
----| "UNLOCKS"
----| "JOB"
----| "EFFICIENCY"
----| "MISC"
+---@enum (key) g.UpgradeKind
 local UPGRADE_KINDS = {
     UNLOCKS=true,
     JOB=true,
@@ -1271,6 +1267,8 @@ do
 ---Key is the ID, value is the name
 ---@type table<string, [string,string]>
 g.VALID_JOB_CATEGORIES = {}
+---@type g.JobCategory[]
+g.JOB_CATEGORIES = {}
 
 ---@class g.Job
 ---@field public type string
@@ -1288,6 +1286,7 @@ function g.defineJobCategory(id, name, def)
     assert(not g.VALID_JOB_CATEGORIES[id], "Redefined job category!")
     local ctx = def.nameContext
     if not ctx then ctx = nil end
+    g.JOB_CATEGORIES[#g.JOB_CATEGORIES+1] = id
     g.VALID_JOB_CATEGORIES[id] = {name, loc(name, nil, {context = ctx})}
     return g.defineStat(name.."JobFrequency", def.startingStatValue, name.." Job Spawn Frequency")
 end
@@ -1415,11 +1414,12 @@ end
 function g.queueJob(job)
     local world = g.getMainWorld()
 
-    if #world.jobQueue >= world.maxJobs then
+    if world.jobQueueCounts[job.category] >= world.maxJobQueues[job.category] then
         return false
     end
 
     world.jobQueue[#world.jobQueue+1] = job
+    world.jobQueueCounts[job.category] = world.jobQueueCounts[job.category] + 1
     return true
 end
 
