@@ -118,7 +118,7 @@ g.defineServer("tier3_server", "Server (Tier 3)", {
 
 
 g.defineServer("advanced_server", "Video Server (Tier 1)", {
-    price = 300,
+    price = 500,
     getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     computePerSecond = 30,
     computePreference = {"video"},
@@ -134,7 +134,7 @@ g.defineServer("advanced_server", "Video Server (Tier 1)", {
 })
 
 g.defineServer("video2_server", "Video Server (Tier 2)", {
-    price = 900,
+    price = 1100,
     getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     computePerSecond = 400,
     computePreference = {"video"},
@@ -150,7 +150,7 @@ g.defineServer("video2_server", "Video Server (Tier 2)", {
 })
 
 g.defineServer("video3_server", "Video Server (Tier 3)", {
-    price = 1500,
+    price = 2000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     computePerSecond = 1000,
     computePreference = {"video"},
@@ -170,7 +170,7 @@ g.defineServer("video3_server", "Video Server (Tier 3)", {
 
 local _aiServer1 = makeLineDrawerForServer(3, 0.05)
 g.defineServer("ai_server", "AI Server (Tier 1)", {
-    price = 5000,
+    price = 7000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     computePerSecond = 5000,
     computePreference = {"ai"},
@@ -189,7 +189,7 @@ g.defineServer("ai_server", "AI Server (Tier 1)", {
 
 local _aiServer2 = makeLineDrawerForServer(5, 0.05)
 g.defineServer("ai_server_t2", "AI Server (Tier 2)", {
-    price = 14000,
+    price = 16000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     computePerSecond = 10000,
     computePreference = {"ai"},
@@ -207,7 +207,7 @@ g.defineServer("ai_server_t2", "AI Server (Tier 2)", {
 
 local _aiServer3 = makeLineDrawerForServer(8, 0.04)
 g.defineServer("ai_server_t3", "AI Server (Tier 3)", {
-    price = 30000,
+    price = 35000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     computePerSecond = 50000,
     computePreference = {"ai"},

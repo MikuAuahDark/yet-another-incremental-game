@@ -1982,6 +1982,7 @@ function g.defineBooster(id, name, def)
 end
 
 ---@class g._PowerGenDef: g._CommonSpecificItemDef
+---@field load number? (always 0)
 ---@field power number
 ---@field wireLength integer
 ---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
@@ -1993,6 +1994,7 @@ function g.definePowerGenerator(id, name, def)
     g.defineUpgrade(id, name, {
         description = def.description,
         descriptionContext = def.descriptionContext,
+        getPriceOverride = function() return {money = def.price} end,
         kind = "UNLOCKS",
         targetItem = id,
         maxLevel = 1,
@@ -2040,6 +2042,7 @@ function g.definePowerGenerator(id, name, def)
 end
 
 ---@class g._PowerRelayDef: g._CommonSpecificItemDef
+---@field load number? (always 0)
 ---@field wireLength integer
 ---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
@@ -2050,6 +2053,7 @@ function g.definePowerRelay(id, name, def)
     g.defineUpgrade(id, name, {
         description = def.description,
         descriptionContext = def.descriptionContext,
+        getPriceOverride = function() return {money = def.price / 2} end,
         kind = "UNLOCKS",
         targetItem = id,
         maxLevel = 1,

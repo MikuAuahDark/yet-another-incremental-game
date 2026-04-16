@@ -92,7 +92,7 @@ g.defineDataInput("indata_tier2", "General Data Input (Tier 2)", {
 
 
 g.defineDataInput("video_indata", "Video Data Input (Tier 1)", {
-    price = 50,
+    price = 80,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     load = 10,
     queuesJob = "video",
@@ -107,7 +107,7 @@ g.defineDataInput("video_indata", "Video Data Input (Tier 1)", {
 })
 
 g.defineDataInput("video_indata_t2", "Video Data Input (Tier 2)", {
-    price = 80,
+    price = 150,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
     load = 10,
     queuesJob = "video",

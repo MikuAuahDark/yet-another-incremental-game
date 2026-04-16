@@ -83,6 +83,9 @@ g.defineUpgrade("money_limit", "Money Limit", {
     description = "Increase money limit.",
     image = "attach_money",
     maxLevel = 10,
+    getPriceOverride = function()
+        return {money = g.getResourceLimit("money")/2}
+    end,
     getValues = function(uinfo, level)
         return 10 ^ level
     end,

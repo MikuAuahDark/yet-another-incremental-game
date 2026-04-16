@@ -24,6 +24,7 @@ end
 g.definePowerGenerator("basic_generator", "Generator", {
     color = objects.Color.GRAY,
     price = 2000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.25, 1),
     power = 2,
     wireLength = 2,
     draw = function(r)
@@ -36,6 +37,7 @@ g.definePowerGenerator("basic_generator", "Generator", {
 g.definePowerGenerator("efficient_generator", "Efficient Generator", {
     color = objects.Color("#909090"),
     price = 10000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.25, 1),
     power = 10,
     wireLength = 2,
     draw = function(r)
@@ -50,6 +52,7 @@ g.definePowerGenerator("efficient_generator", "Efficient Generator", {
 g.definePowerGenerator("advanced_generator", "Advanced Generator", {
     color = objects.Color("#a0a0a0"),
     price = 50000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.25, 1),
     power = 40,
     wireLength = 4,
     draw = function(r)
@@ -165,7 +168,8 @@ g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
 
 g.definePowerRelay("basic_relay", "Relay", {
     color = objects.Color.GRAY,
-    price = 150,
+    price = 500,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     wireLength = 3,
     draw = function(r)
         drawRelay(r, 3, 0.075)
@@ -175,6 +179,7 @@ g.definePowerRelay("basic_relay", "Relay", {
 g.definePowerRelay("advanced_relay", "Advanced Relay", {
     color = objects.Color("#707070"),
     price = 1000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     wireLength = 6,
     draw = function(r)
         local sz = math.sqrt(r.w * r.h)

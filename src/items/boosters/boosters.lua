@@ -26,7 +26,8 @@ end
 
 g.defineBooster("water_cooler", "Water Cooler", {
     description = "Reduces tile heat by 10.",
-    price = 350,
+    price = 550,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 7,
     radiate = 1,
     radiateAlgorithm = "chessboard",
@@ -42,18 +43,19 @@ g.defineBooster("water_cooler", "Water Cooler", {
 
 g.defineBooster("piped_water_cooler", "Piped Water Cooler", {
     description = "Reduces server heat by 10.",
-    price = 100,
+    price = 300,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 4,
     radiate = 1,
     radiateAlgorithm = "chessboard",
     color = objects.Color("FF58AEDD"),
     connectable = {
-        max = 4,
+        max = 3,
         target = "server"
     },
     draw = function(r)
         -- Draw decor
-        drawConnectableDecor(r, 4)
+        drawConnectableDecor(r, 3)
         g.drawImageContained("water_drop", r:padRatio(0.25):get())
     end,
     getTileHeat = function(reltx, relty)
@@ -63,7 +65,8 @@ g.defineBooster("piped_water_cooler", "Piped Water Cooler", {
 
 g.defineBooster("ice_cooler", "Ice Cooler", {
     description = "Reduces tile heat by 40.",
-    price = 450,
+    price = 6000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     load = 18,
     radiate = 4,
     radiateAlgorithm = "taxicab",
@@ -79,7 +82,8 @@ g.defineBooster("ice_cooler", "Ice Cooler", {
 
 g.defineBooster("piped_ice_cooler", "Piped Ice Cooler", {
     description = "Reduces tile heat by 30.",
-    price = 175,
+    price = 2600,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     load = 10,
     radiate = 4,
     radiateAlgorithm = "taxicab",
@@ -106,8 +110,9 @@ g.defineBooster("piped_ice_cooler", "Piped Ice Cooler", {
 
 g.defineBooster("power_efficiency", "Power Efficiency", {
     description = "Reduces server load by 20% but reduces performance by 8%.",
-    price = 400,
-    load = 1,
+    price = 6500,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
+    load = 2,
     radiate = 3,
     radiateAlgorithm = "taxicab",
     color = objects.Color("FF5FD35F"),
@@ -125,8 +130,9 @@ g.defineBooster("power_efficiency", "Power Efficiency", {
 
 g.defineBooster("pfc", "Power Factor Correction", {
     description = "Reduces server load by 15% but reduces performance by 5%.",
-    price = 100,
-    load = 1,
+    price = 1000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
+    load = 2,
     radiate = 2,
     radiateAlgorithm = "chessboard",
     color = objects.Color("FF499A49"),
@@ -149,7 +155,8 @@ g.defineBooster("pfc", "Power Factor Correction", {
 
 g.defineBooster("wired_pe", "Wired Power Efficiency", {
     description = "Reduces server load by 35% but reduces performance by 13%.",
-    price = 150,
+    price = 3000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     load = 1,
     radiate = 2,
     radiateAlgorithm = "chessboard",
@@ -178,8 +185,9 @@ g.defineBooster("wired_pe", "Wired Power Efficiency", {
 -------------------
 
 g.defineBooster("overclocker", "Overclock", {
-    description = "Increase server performance by 25% but increases load by 10%.",
-    price = 1250,
+    description = "Increase server performance by 25% but increases load by 8%.",
+    price = 7000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
     load = 1,
     radiate = 1,
     radiateAlgorithm = "taxicab",
@@ -194,14 +202,15 @@ g.defineBooster("overclocker", "Overclock", {
         return 1.25
     end,
     getLoadMultiplier = function(reltx, relty)
-        return 1.1
+        return 1.08
     end
 })
 
 g.defineBooster("selective_tweaks", "Selective Tweaks", {
     description = "Increase server performance by 20% but increases load by 7%.",
-    price = 250,
-    load = 1,
+    price = 4000,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
+    load = 2,
     radiate = 2,
     radiateAlgorithm = "chessboard",
     color = objects.Color("FF9973EC"),

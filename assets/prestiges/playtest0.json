@@ -25,9 +25,7 @@
 		"8": {
 			"id": "normal_data",
 			"level": 0,
-			"basePrice": {
-				"money": 75.0
-			},
+			"basePrice": {},
 			"x": -1,
 			"y": 1
 		},
@@ -44,9 +42,7 @@
 		"22": {
 			"id": "advanced_server",
 			"level": 0,
-			"basePrice": {
-				"money": 150.0
-			},
+			"basePrice": {},
 			"x": -3,
 			"y": -1,
 			"cps": 100.0
@@ -54,29 +50,26 @@
 		"26": {
 			"id": "piped_water_cooler",
 			"level": 0,
-			"basePrice": {
-				"money": 200.0
-			},
+			"basePrice": {},
 			"x": -1,
 			"y": -3,
-			"isRoot": false
+			"isRoot": false,
+			"cps": 15.0
 		},
 		"29": {
 			"id": "efficient_machine",
 			"level": 0,
 			"basePrice": {
-				"money": 700.0
+				"money": 1000.0
 			},
 			"x": 3,
 			"y": -1,
-			"priceScaling": 1.25
+			"priceScaling": 1.5
 		},
 		"30": {
 			"id": "ai_server",
 			"level": 0,
-			"basePrice": {
-				"money": 5000.0
-			},
+			"basePrice": {},
 			"x": -3,
 			"y": 1,
 			"cps": 2000.0
@@ -84,11 +77,10 @@
 		"33": {
 			"id": "basic_generator",
 			"level": 0,
-			"basePrice": {
-				"money": 150.0
-			},
+			"basePrice": {},
 			"x": 1,
-			"y": -3
+			"y": -3,
+			"cps": 10.0
 		},
 		"34": {
 			"id": "data_compression",
@@ -99,42 +91,37 @@
 			"x": -1,
 			"y": 3,
 			"maxLevelOverride": 3,
-			"priceScaling": 1.2
+			"cps": 5.0,
+			"priceScaling": 1.35
 		},
 		"38": {
 			"id": "higher_dps",
 			"level": 0,
 			"basePrice": {
-				"money": 700.0
+				"money": 1000.0
 			},
 			"x": 3,
 			"y": 1,
-			"priceScaling": 1.25
+			"priceScaling": 1.5
 		},
 		"42": {
 			"id": "advanced_data",
 			"level": 0,
-			"basePrice": {
-				"money": 500.0
-			},
+			"basePrice": {},
 			"x": 1,
 			"y": 3
 		},
 		"56": {
 			"id": "video_indata",
 			"level": 0,
-			"basePrice": {
-				"money": 25.0
-			},
+			"basePrice": {},
 			"x": -5,
 			"y": -1
 		},
 		"60": {
 			"id": "normal_server",
 			"level": 0,
-			"basePrice": {
-				"money": 5.0
-			},
+			"basePrice": {},
 			"x": -3,
 			"y": -3,
 			"cps": 1.0
@@ -142,9 +129,7 @@
 		"64": {
 			"id": "water_cooler",
 			"level": 0,
-			"basePrice": {
-				"money": 700.0
-			},
+			"basePrice": {},
 			"x": -1,
 			"y": -5,
 			"cps": 50.0
@@ -157,14 +142,12 @@
 			},
 			"x": 5,
 			"y": -1,
-			"priceScaling": 1.1
+			"priceScaling": 1.5
 		},
 		"68": {
 			"id": "ai_indata",
 			"level": 0,
-			"basePrice": {
-				"money": 1000.0
-			},
+			"basePrice": {},
 			"x": -5,
 			"y": 1
 		},
@@ -177,6 +160,7 @@
 			"x": 3,
 			"y": -3,
 			"maxLevelOverride": 2,
+			"cps": 25.0,
 			"priceScaling": 2.0
 		},
 		"72": {
@@ -192,9 +176,7 @@
 		"75": {
 			"id": "pfc",
 			"level": 0,
-			"basePrice": {
-				"money": 200.0
-			},
+			"basePrice": {},
 			"x": 1,
 			"y": -5
 		},
@@ -211,9 +193,7 @@
 		"80": {
 			"id": "money_limit",
 			"level": 0,
-			"basePrice": {
-				"money": 75000000.0
-			},
+			"basePrice": {},
 			"x": 5,
 			"y": 1,
 			"maxLevelOverride": 1
@@ -227,14 +207,13 @@
 			"x": 3,
 			"y": 3,
 			"maxLevelOverride": 3,
+			"cps": 50.0,
 			"priceScaling": 1.25
 		},
 		"88": {
 			"id": "quantum_data",
 			"level": 0,
-			"basePrice": {
-				"money": 10000.0
-			},
+			"basePrice": {},
 			"x": 1,
 			"y": 5,
 			"cps": 10000.0
@@ -243,7 +222,7 @@
 			"id": "video_encode",
 			"level": 0,
 			"basePrice": {
-				"money": 100.0
+				"money": 250.0
 			},
 			"x": -7,
 			"y": -1,
@@ -252,9 +231,7 @@
 		"110": {
 			"id": "indata_tier1",
 			"level": 0,
-			"basePrice": {
-				"money": 1.0
-			},
+			"basePrice": {},
 			"x": -5,
 			"y": -3
 		},
@@ -271,18 +248,15 @@
 		"118": {
 			"id": "selective_tweaks",
 			"level": 0,
-			"basePrice": {
-				"money": 500.0
-			},
+			"basePrice": {},
 			"x": -1,
-			"y": -7
+			"y": -7,
+			"cps": 500.0
 		},
 		"121": {
 			"id": "money_limit",
 			"level": 0,
-			"basePrice": {
-				"money": 7500.0
-			},
+			"basePrice": {},
 			"x": 7,
 			"y": -1,
 			"maxLevelOverride": 1
@@ -290,20 +264,18 @@
 		"122": {
 			"id": "video2_server",
 			"level": 0,
-			"basePrice": {
-				"money": 450.0
-			},
+			"basePrice": {},
 			"x": -7,
-			"y": 1
+			"y": 1,
+			"cps": 250.0
 		},
 		"125": {
 			"id": "efficient_generator",
 			"level": 0,
-			"basePrice": {
-				"money": 2500.0
-			},
+			"basePrice": {},
 			"x": 5,
-			"y": -3
+			"y": -3,
+			"cps": 1000.0
 		},
 		"126": {
 			"id": "physics_simulation",
@@ -318,11 +290,10 @@
 		"129": {
 			"id": "basic_relay",
 			"level": 0,
-			"basePrice": {
-				"money": 300.0
-			},
+			"basePrice": {},
 			"x": 3,
-			"y": -5
+			"y": -5,
+			"cps": 25.0
 		},
 		"130": {
 			"id": "physics_simulation_money",
@@ -337,27 +308,22 @@
 		"133": {
 			"id": "power_efficiency",
 			"level": 0,
-			"basePrice": {
-				"money": 800.0
-			},
+			"basePrice": {},
 			"x": 1,
-			"y": -7
+			"y": -7,
+			"cps": 500.0
 		},
 		"134": {
 			"id": "ai_server_t3",
 			"level": 0,
-			"basePrice": {
-				"money": 40000.0
-			},
+			"basePrice": {},
 			"x": -1,
 			"y": 7
 		},
 		"138": {
 			"id": "money_limit",
 			"level": 0,
-			"basePrice": {
-				"money": 75000.0
-			},
+			"basePrice": {},
 			"x": 7,
 			"y": 1,
 			"maxLevelOverride": 1,
@@ -376,9 +342,7 @@
 		"146": {
 			"id": "he_data",
 			"level": 0,
-			"basePrice": {
-				"money": 3000.0
-			},
+			"basePrice": {},
 			"x": 3,
 			"y": 5,
 			"cps": 250.0
@@ -398,11 +362,11 @@
 			"id": "video_encode_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 210.0
+				"money": 540.0
 			},
 			"x": -9,
 			"y": -1,
-			"priceScaling": 1.1
+			"priceScaling": 1.25
 		},
 		"176": {
 			"id": "cdn",
@@ -428,9 +392,7 @@
 		"184": {
 			"id": "piped_ice_cooler",
 			"level": 0,
-			"basePrice": {
-				"money": 350.0
-			},
+			"basePrice": {},
 			"x": -3,
 			"y": -7
 		},
@@ -438,18 +400,16 @@
 			"id": "video_encode_money",
 			"level": 0,
 			"basePrice": {
-				"money": 210.0
+				"money": 540.0
 			},
 			"x": -9,
 			"y": 1,
-			"priceScaling": 1.1
+			"priceScaling": 1.25
 		},
 		"196": {
 			"id": "video_indata_t2",
 			"level": 0,
-			"basePrice": {
-				"money": 40.0
-			},
+			"basePrice": {},
 			"x": -7,
 			"y": 3
 		},
@@ -467,9 +427,7 @@
 		"200": {
 			"id": "ai_server_t2",
 			"level": 0,
-			"basePrice": {
-				"money": 12000.0
-			},
+			"basePrice": {},
 			"x": -5,
 			"y": 5,
 			"cps": 10000.0
@@ -477,29 +435,25 @@
 		"203": {
 			"id": "wired_pe",
 			"level": 0,
-			"basePrice": {
-				"money": 300.0
-			},
+			"basePrice": {},
 			"x": 3,
-			"y": -7
+			"y": -7,
+			"cps": 500.0
 		},
 		"204": {
 			"id": "ai_indata_t2",
 			"level": 0,
-			"basePrice": {
-				"money": 4000.0
-			},
+			"basePrice": {},
 			"x": -3,
 			"y": 7
 		},
 		"207": {
 			"id": "overclocker",
 			"level": 0,
-			"basePrice": {
-				"money": 2500.0
-			},
+			"basePrice": {},
 			"x": 1,
-			"y": -9
+			"y": -9,
+			"cps": 1000.0
 		},
 		"208": {
 			"id": "llm",
@@ -514,9 +468,7 @@
 		"216": {
 			"id": "money_limit",
 			"level": 0,
-			"basePrice": {
-				"money": 750000.0
-			},
+			"basePrice": {},
 			"x": 7,
 			"y": 3,
 			"maxLevelOverride": 1
@@ -524,9 +476,7 @@
 		"220": {
 			"id": "money_limit",
 			"level": 0,
-			"basePrice": {
-				"money": 7500000.0
-			},
+			"basePrice": {},
 			"x": 5,
 			"y": 5,
 			"maxLevelOverride": 1
@@ -568,7 +518,7 @@
 			},
 			"x": -7,
 			"y": -5,
-			"priceScaling": 1.1
+			"priceScaling": 1.2
 		},
 		"266": {
 			"id": "webhost_mul",
@@ -583,9 +533,7 @@
 		"270": {
 			"id": "ice_cooler",
 			"level": 0,
-			"basePrice": {
-				"money": 900.0
-			},
+			"basePrice": {},
 			"x": -3,
 			"y": -9
 		},
@@ -593,37 +541,36 @@
 			"id": "video_mod",
 			"level": 0,
 			"basePrice": {
-				"money": 435.0
+				"money": 1000.0
 			},
 			"x": -11,
 			"y": 1,
 			"maxLevelOverride": 7,
-			"priceScaling": 1.2
+			"priceScaling": 1.25
 		},
 		"282": {
 			"id": "livestream_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 300.0
+				"money": 1300.0
 			},
 			"x": -9,
 			"y": 3,
-			"priceScaling": 1.2
+			"priceScaling": 1.25
 		},
 		"285": {
 			"id": "advanced_generator",
 			"level": 0,
-			"basePrice": {
-				"money": 12500.0
-			},
+			"basePrice": {},
 			"x": 7,
-			"y": -5
+			"y": -5,
+			"cps": 10000.0
 		},
 		"286": {
 			"id": "livestream",
 			"level": 0,
 			"basePrice": {
-				"money": 140.0
+				"money": 550.0
 			},
 			"x": -7,
 			"y": 5,
@@ -632,9 +579,7 @@
 		"289": {
 			"id": "advanced_relay",
 			"level": 0,
-			"basePrice": {
-				"money": 2000.0
-			},
+			"basePrice": {},
 			"x": 5,
 			"y": -7,
 			"cps": 500.0
@@ -698,7 +643,7 @@
 			"x": -11,
 			"y": -3,
 			"cps": 3.0,
-			"priceScaling": 1.2
+			"priceScaling": 1.25
 		},
 		"360": {
 			"id": "indata_tier2",
@@ -717,13 +662,13 @@
 			},
 			"x": -7,
 			"y": -7,
-			"priceScaling": 1.1
+			"priceScaling": 1.2
 		},
 		"384": {
 			"id": "video_mod",
 			"level": 0,
 			"basePrice": {
-				"money": 600.0
+				"money": 2500.0
 			},
 			"x": -11,
 			"y": 3,
@@ -739,26 +684,25 @@
 			"x": 9,
 			"y": -5,
 			"maxLevelOverride": 4,
-			"priceScaling": 1.5
+			"priceScaling": 2.0
 		},
 		"388": {
 			"id": "livestream_money",
 			"level": 0,
 			"basePrice": {
-				"money": 300.0
+				"money": 1300.0
 			},
 			"x": -9,
 			"y": 5,
-			"priceScaling": 1.2
+			"priceScaling": 1.25
 		},
 		"392": {
 			"id": "video3_server",
 			"level": 0,
-			"basePrice": {
-				"money": 750.0
-			},
+			"basePrice": {},
 			"x": -7,
-			"y": 7
+			"y": 7,
+			"cps": 1000.0
 		},
 		"396": {
 			"id": "research_model_mul",
@@ -809,7 +753,7 @@
 			},
 			"x": -13,
 			"y": -3,
-			"priceScaling": 1.15
+			"priceScaling": 1.25
 		},
 		"474": {
 			"id": "image_processing_money",
@@ -819,7 +763,7 @@
 			},
 			"x": -11,
 			"y": -5,
-			"priceScaling": 1.15
+			"priceScaling": 1.25
 		},
 		"478": {
 			"id": "general_mod",
@@ -845,7 +789,7 @@
 			"id": "video_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 1200.0
+				"money": 3000.0
 			},
 			"x": -7,
 			"y": 9,
@@ -876,11 +820,11 @@
 			"id": "general_mod",
 			"level": 0,
 			"basePrice": {
-				"money": 475.0
+				"money": 625.0
 			},
 			"x": -13,
 			"y": -5,
-			"priceScaling": 1.2
+			"priceScaling": 1.25
 		},
 		"608": {
 			"id": "general_mul",
@@ -895,12 +839,10 @@
 		"754": {
 			"id": "tier3_server",
 			"level": 0,
-			"basePrice": {
-				"money": 3.0
-			},
+			"basePrice": {},
 			"x": -13,
 			"y": -7,
-			"cps": 5.0
+			"cps": 10.0
 		}
 	},
 	"connections": [
@@ -1045,6 +987,10 @@
 			482
 		],
 		[
+			118,
+			75
+		],
+		[
 			122,
 			106
 		],
@@ -1153,6 +1099,10 @@
 			207
 		],
 		[
+			207,
+			118
+		],
+		[
 			216,
 			220
 		],
@@ -1175,6 +1125,10 @@
 		[
 			258,
 			356
+		],
+		[
+			258,
+			754
 		],
 		[
 			262,
@@ -1293,12 +1247,8 @@
 			474
 		],
 		[
-			754,
-			258
-		],
-		[
-			754,
-			608
+			608,
+			754
 		]
 	],
 	"unboundUpgrades": []
