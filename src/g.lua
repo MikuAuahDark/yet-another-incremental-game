@@ -2226,82 +2226,79 @@ end
 
 do
 
----@alias g.ItemProblems
----Server is not connected to datacenter.
----| "not_connected"
----Datacenter load is too high.
----| "overloaded"
----Not connected to power network
----| "no_power"
----Server is too hot
----| "overheat"
----Data output is not connected to any server.
----| "no_connection"
----Booster does not provide any benefit
----| "booster_noop"
----Data output is overloaded
----| "data_bottleneck"
----No suitable data output found
----| "no_suitable_output"
----No suitable data input found
----| "no_input_connection"
----Data input is not connected to any server
----| "input_not_connected"
+---@enum (key) g.ItemProblems
 local ITEM_PROBLEMS = {
+    -- Server is not connected to datacenter.
     not_connected = {
         error = true,
         icon = "power_off",
         text = loc("Server is not connected to data output!", nil, {
             context = "Think of it as connection between machines."}),
     },
-    overloaded = {
-        error = false,
-        icon = "bolt",
-        text = loc("Power network load is too high!", nil, {
-            context = "Think of \"load\" as the \"electricity load\""}),
-    },
-    no_power = {
-        error = true,
-        icon = "bolt",
-        text = loc("Server is not connected to power network!", nil, {
-            context = "Think of it as connection between the machine and the power grid."}),
-    },
-    overheat = {
-        error = false,
-        icon = "emergency_heat",
-        text = loc("The server exceeded the heat tolerance it can handle!", nil, {
-            context = "Denotes when a machine is overheating."}),
-    },
-    no_connection = {
-        error = false,
-        icon = "power_off",
-        text = loc("Data output is not connected to any server!", nil, {
-            context = "Think of it as connection between machines."})
-    },
-    booster_noop = {
-        error = false,
-        icon = "warning",
-        text = loc("Booster does not affecting any servers!", nil, {
-            context = "Booster is an item that boosts stats of other machines."})
-    },
-    no_suitable_output = {
-        error = true,
-        icon = "database",
-        text = loc("No suitable data output found for the current data load!", nil, {
-            context = "The server cannot find any data output that can handle its data load."}),
-    },
+    -- No suitable data input found
     no_input_connection = {
         error = true,
         icon = "power_off",
         text = loc("Server is not connected to data input!", nil, {
             context = "Think of it as connection between machines."}),
     },
+    -- Server is not connected to data input and output
+    no_io_connection = {
+        error = true,
+        icon = "power_off",
+        text = loc("Server is not connected to data input and output!", nil, {
+            context = "Think of it as connection between machines."}),
+    },
+    -- Datacenter load is too high.
+    overloaded = {
+        error = false,
+        icon = "bolt",
+        text = loc("Power network load is too high!", nil, {
+            context = "Think of \"load\" as the \"electricity load\""}),
+    },
+    -- Not connected to power network
+    no_power = {
+        error = true,
+        icon = "bolt",
+        text = loc("Server is not connected to power network!", nil, {
+            context = "Think of it as connection between the machine and the power grid."}),
+    },
+    -- Server is too hot
+    overheat = {
+        error = false,
+        icon = "emergency_heat",
+        text = loc("The server exceeded the heat tolerance it can handle!", nil, {
+            context = "Denotes when a machine is overheating."}),
+    },
+    -- Data output is not connected to any server.
+    no_connection = {
+        error = false,
+        icon = "power_off",
+        text = loc("Data output is not connected to any server!", nil, {
+            context = "Think of it as connection between machines."})
+    },
+    -- Booster does not provide any benefit
+    booster_noop = {
+        error = false,
+        icon = "warning",
+        text = loc("Booster does not affecting any servers!", nil, {
+            context = "Booster is an item that boosts stats of other machines."})
+    },
+    -- No suitable data output found
+    no_suitable_output = {
+        error = true,
+        icon = "database",
+        text = loc("No suitable data output found for the current data load!", nil, {
+            context = "The server cannot find any data output that can handle its data load."}),
+    },
+    -- Data input is not connected to any server
     input_not_connected = {
         error = false,
         icon = "power_off",
         text = loc("Data input is not connected to any server!", nil, {
             context = "Think of it as connection between machines."})
     },
+    -- Data output is overloaded
     data_bottleneck = {
         error = false,
         icon = "database",
@@ -2326,14 +2323,19 @@ function g.getItemProblems(itemData)
     if category == "server" then
         ---@cast itemData g.World.ServerData
         ---@cast itemInfo g.ServerInfo
-        if #itemData.connectedOutputs == 0 then
+        local nInputs = #itemData.connectedInputs
+        local nOutputs = #itemData.connectedOutputs
+
+        if nOutputs == 0 and nInputs == 0 then
+            result[#result+1] = "no_io_connection"
+        elseif nOutputs == 0 then
             result[#result+1] = "not_connected"
-        elseif itemData.currentJob and not itemData.activeOutput then
-            result[#result+1] = "no_suitable_output"
+        elseif nInputs == 0 then
+            result[#result+1] = "no_input_connection"
         end
 
-        if #itemData.connectedInputs == 0 then
-            result[#result+1] = "no_input_connection"
+        if itemData.currentJob and not itemData.activeOutput then
+            result[#result+1] = "no_suitable_output"
         end
 
         if itemData.dataBottlenecked then
