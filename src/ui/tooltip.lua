@@ -99,7 +99,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    builder:addText(serverInfo.name, titleF, "center", titleFH)
+    builder:addText(serverInfo.name, titleF, "center")
 
     -- Category
     local computeNames = {}
@@ -109,13 +109,13 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local categoryText = TEXT.CATEGORY_LIST({
         categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
     })
-    builder:addText(categoryText, descF, "center", titleFH)
+    builder:addText(categoryText, descF, "center")
 
     -- Description
     if serverInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(serverInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -236,13 +236,13 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    builder:addText(dpInfo.name, titleF, "center", titleFH)
+    builder:addText(dpInfo.name, titleF, "center")
 
     -- Description
     if dpInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(dpInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -283,13 +283,13 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    builder:addText(boosterInfo.name, titleF, "center", titleFH)
+    builder:addText(boosterInfo.name, titleF, "center")
 
     -- Description
     if boosterInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(boosterInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -338,13 +338,13 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
 
     -- Title
-    builder:addText(diInfo.name, titleF, "center", titleFH)
+    builder:addText(diInfo.name, titleF, "center")
 
     -- Description
     if diInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(diInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -387,13 +387,13 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
     local builder = ui.TooltipBuilder("world", x, y, safeArea)
 
     -- Title
-    builder:addText(powerGenInfo.name, titleF, "center", titleFH)
+    builder:addText(powerGenInfo.name, titleF, "center")
 
     -- Description
     if powerGenInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(powerGenInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -423,13 +423,13 @@ function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
     local builder = ui.TooltipBuilder("world", x, y, safeArea)
 
     -- Title
-    builder:addText(powerRelayInfo.name, titleF, "center", titleFH)
+    builder:addText(powerRelayInfo.name, titleF, "center")
 
     -- Description
     if powerRelayInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(powerRelayInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -489,7 +489,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    builder:addText(serverInfo.name, titleF, "center", titleFH)
+    builder:addText(serverInfo.name, titleF, "center")
 
     -- Category
     local computeNames = {}
@@ -499,13 +499,13 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     local categoryText = TEXT.CATEGORY_LIST({
         categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
     })
-    builder:addText(categoryText, descF, "center", titleFH)
+    builder:addText(categoryText, descF, "center")
 
     -- Description
     if serverInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(serverInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -541,17 +541,16 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
     local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    builder:addText(dpInfo.name, titleF, "center", titleFH)
+    builder:addText(dpInfo.name, titleF, "center")
 
     -- Description
     if dpInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(dpInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
-    local world = g.getMainWorld()
     -- Price
     local priceText = getItemPrice(dpInfo)
     if priceText then
@@ -582,17 +581,16 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
     local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    builder:addText(diInfo.name, titleF, "center", titleFH)
+    builder:addText(diInfo.name, titleF, "center")
 
     -- Description
     if diInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(diInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
-    local world = g.getMainWorld()
     -- Price
     local priceText = getItemPrice(diInfo)
     if priceText then
@@ -625,17 +623,16 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
     local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    builder:addText(boosterInfo.name, titleF, "center", titleFH)
+    builder:addText(boosterInfo.name, titleF, "center")
 
     -- Description
     if boosterInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(boosterInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
-    local world = g.getMainWorld()
     -- Price
     local priceText = getItemPrice(boosterInfo)
     if priceText then
@@ -660,13 +657,13 @@ function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y)
     local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    builder:addText(powerGenInfo.name, titleF, "center", titleFH)
+    builder:addText(powerGenInfo.name, titleF, "center")
 
     -- Description
     if powerGenInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(powerGenInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
@@ -695,13 +692,13 @@ function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y)
     local builder = ui.TooltipBuilder("hud", x, y)
 
     -- Title
-    builder:addText(powerRelayInfo.name, titleF, "center", titleFH)
+    builder:addText(powerRelayInfo.name, titleF, "center")
 
     -- Description
     if powerRelayInfo.description then
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
         builder:addText(powerRelayInfo.description, descF, "center")
-        builder:addPadding(descFH)
+        builder:addPadding(descFH / 4)
     end
 
     -- Attributes
