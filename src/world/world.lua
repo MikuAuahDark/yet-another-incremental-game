@@ -980,6 +980,7 @@ local function sortOrder(a, b)
 end
 
 local NONREMOVABLE_MESH
+local STATUS_MESH
 do
 local FOOT_LEN = 0.2
 NONREMOVABLE_MESH = love.graphics.newMesh({
@@ -1002,12 +1003,29 @@ NONREMOVABLE_MESH = love.graphics.newMesh({
     {0, 1 - FOOT_LEN, 0, 1 - FOOT_LEN},
 }, "triangles", "static")
 NONREMOVABLE_MESH:setVertexMap({1, 2, 3, 1, 3, 4, 1, 5, 6, 1, 6, 7, 1, 8, 9, 1, 9, 10, 1, 11, 12, 1, 12, 13})
+
+local FOOT2_LEN = 0.3
+STATUS_MESH = love.graphics.newMesh({
+    {0.5, 0.5, 0.5, 0.5},
+    -- Top
+    {FOOT2_LEN, 0, FOOT2_LEN, 0, 1, 1, 1, 0},
+    {1 - FOOT2_LEN, 0, 1 - FOOT2_LEN, 0, 1, 1, 1, 0},
+    -- Right
+    {1, FOOT2_LEN, 1, FOOT2_LEN, 1, 1, 1, 0},
+    {1, 1 - FOOT2_LEN, 1, 1 - FOOT2_LEN, 1, 1, 1, 0},
+    -- Bottom
+    {1 - FOOT2_LEN, 1, 1 - FOOT2_LEN, 1, 1, 1, 1, 0},
+    {FOOT2_LEN, 1, FOOT2_LEN, 1, 1, 1, 1, 0},
+    -- Left
+    {0, 1 - FOOT2_LEN, 0, 1 - FOOT2_LEN, 1, 1, 1, 0},
+    {0, FOOT2_LEN, 0, FOOT2_LEN, 1, 1, 1, 0},
+}, "triangles", "static")
+STATUS_MESH:setVertexMap({1, 2, 3, 1, 4, 5, 1, 6, 7, 1, 8, 9})
 end
 
 
 function World:_draw()
     prof_push("world:_draw")
-    local time = g.getSn().worldTime
 
     -- Draw the actual world
     do
@@ -1072,7 +1090,29 @@ function World:_draw()
                     love.graphics.draw(NONREMOVABLE_MESH, x * wtz, y * wtz, 0, wtz, wtz)
                 end
 
-                local itemInfo = g.getItemInfo(itemData.type)
+                local itemInfo, cat = g.getItemInfo(itemData.type)
+                if cat == "server" then
+                    ---@cast itemData g.World.ServerData
+                    local probs = g.getItemProblems(itemData)
+                    local hasError = false
+                    for _, prob in ipairs(probs) do
+                        local probInfo = g.getItemProblemInfo(prob)
+                        if probInfo.error then
+                            hasError = true
+                            break
+                        end
+                    end
+
+                    if hasError then
+                        love.graphics.setColor(1, 0.3, 0.3)
+                    elseif itemData.currentJob then
+                        love.graphics.setColor(0.3, 1, 0.3)
+                    else
+                        love.graphics.setColor(0.3, 0.3, 1)
+                    end
+
+                    love.graphics.draw(STATUS_MESH, (x + 0.5) * wtz, (y + 0.5) * wtz, 0, wtz * 1.1, wtz * 1.1, 0.5, 0.5)
+                end
                 local trans = gsman.transform((x + 0.5) * wtz, (y + 0.5) * wtz)
                 love.graphics.setColor(1, 1, 1)
                 itemInfo.draw(itemData)
