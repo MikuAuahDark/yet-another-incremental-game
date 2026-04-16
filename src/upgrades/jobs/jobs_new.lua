@@ -97,7 +97,7 @@ defJob("webhost", "Web Hosting", "general", {
 defJob("cdn", "CDN", "general", {
     image = "host",
     compute = {3,7},
-    data = {20,50},
+    data = {18,45},
     money = {3,5},
 })
 defJob("image_processing", "Image Processing", "general", {

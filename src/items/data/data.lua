@@ -49,6 +49,7 @@ g.defineDataOutput("basic_data", "Basic Data Output", {
     load = 1,
     dataPerSecond = 10,
     wireLength = 2,
+    wireDPS = 5,
     color = objects.Color("#ebc965"),
     draw = function(r)
         -- Draw decor
