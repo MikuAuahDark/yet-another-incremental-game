@@ -8,7 +8,7 @@ local consts = {
     EMULATE_TOUCH = os.getenv("INCREMENTAL_GAME_EMULATE_TOUCH") == "1", -- Set later
     IS_MOBILE = false, -- Set later
 
-    PROFILING = false,
+    PROFILING = true,
 
     ANALYTICS_URL = nil, -- URL, without trailing slash.
     -- How long it should take before sending "update" event to analytics server (in seconds)?
@@ -48,6 +48,9 @@ local consts = {
     WORLD_TILE_SIZE = 32, -- World tile size on both width and height.
 
     DRAG_ITEM_DURATION = 0.5,
+
+    UPGRADE_BURNOUT_INCREASE = 0.05,
+    UPGADE_BURNOUT_DECAY = 0.995,
 }
 
 if not consts.DEV_MODE then

@@ -77,6 +77,8 @@ function Tree:init()
         event -> {upg1, upg2, upg3 ...}
     ]]}
     self._filename = nil
+
+    self.priceBurnout = 1
 end
 
 
@@ -263,12 +265,13 @@ end
 ---@param uinfo g.UpgradeInfo
 ---@param val number
 ---@param level integer
-local function modifyUpgradePrice(upg, uinfo, val, level)
+---@param mult3 number
+local function modifyUpgradePrice(upg, uinfo, val, level, mult3)
     local m1 = upg.priceScaling or 1
     local m2 = uinfo.priceScaling or consts.DEFAULT_UPGRADE_PRICE_SCALING
     local mult = (m1 * m2) ^ level
     local mult2 = g.ask("getUpgradePriceMultiplier", uinfo, level)
-    val = floorSignificant(val*mult*mult2, 2)
+    val = floorSignificant(val*mult*mult2*mult3, 2)
     return val
 end
 
@@ -290,7 +293,7 @@ function Tree:getUpgradePrice(upg, level)
             truePrice[resId] = val
         end
         for _,res in ipairs(g.RESOURCE_LIST)do
-            truePrice[res] = modifyUpgradePrice(upg, uinfo, truePrice[res] or 0, level)
+            truePrice[res] = modifyUpgradePrice(upg, uinfo, truePrice[res] or 0, level, self.priceBurnout)
         end
     end
 
@@ -336,7 +339,7 @@ function Tree:canAffordUpgrade(upg, level)
     end
 
     for res, p in pairs(upg.basePrice) do
-        local truePrice = modifyUpgradePrice(upg, uinfo, p, level)
+        local truePrice = modifyUpgradePrice(upg, uinfo, p, level, self.priceBurnout)
         if truePrice > g.getResource(res) then
             return false -- cant afford
         end
@@ -359,6 +362,7 @@ function Tree:tryBuyUpgrade(upg)
         achievements.emitUnlockUpgrade(upg.id, price)
         g.subtractResources(price)
         self:setUpgradeLevel(upg, upg.level + 1)
+        self.priceBurnout = self.priceBurnout + consts.UPGRADE_BURNOUT_INCREASE
         return true
     end
     return false
@@ -385,7 +389,7 @@ function Tree:getUpgradeRequirements(upg)
         end
     else
         for _, resId in ipairs(g.RESOURCE_LIST) do
-            local val = modifyUpgradePrice(upg, uinfo, upg.basePrice[resId] or 0, upg.level)
+            local val = modifyUpgradePrice(upg, uinfo, upg.basePrice[resId] or 0, upg.level, self.priceBurnout)
             if val > 0 then
                 local canAfford = FLAGS.INFINITE_MONEY or g.getResource(resId) >= val
                 reqs[#reqs+1] = {"{"..resId.."}"..g.formatNumber(val), canAfford}
