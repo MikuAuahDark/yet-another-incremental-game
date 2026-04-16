@@ -154,7 +154,6 @@ function HUD:init()
     self.wheelY = 0
 
     self.wasVisibilityButtonPressed = false
-    self.wasJobClearButtonPressed = false
     self.wasResetCameraButtonPressed = false
 end
 
@@ -183,7 +182,6 @@ function HUD:update(dt)
     end
 
     self.wasVisibilityButtonPressed = false
-    self.wasJobClearButtonPressed = false
     self.wasResetCameraButtonPressed = false
 end
 
@@ -521,9 +519,9 @@ function HUD:draw(show)
 
         -- Draw resource and stats (top area)
         if showStats then
-            local _, moneyR, cpsR, _, clearJobR, _, resetCameraR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
+            local _, moneyR, cpsR, _, resetCameraR, _, hideButtonR, _, pauseButtonR = helper.splitRegionByExactSizes(
                 self.topR, "horizontal",
-                8, 144, 144, 0, self.topR.h, 8, self.topR.h, 8, self.topR.h, 8, self.topR.h, 8
+                8, 144, 144, 0, self.topR.h, 8, self.topR.h, 8, self.topR.h, 8
             )
             local lw2 = gsman.setLineWidth(1)
             local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
@@ -545,9 +543,6 @@ function HUD:draw(show)
 
                 g.drawImageContained("reset_focus", resetCameraR:padRatio(0.15):get())
                 self.wasResetCameraButtonPressed = iml.wasJustClicked(resetCameraR:get())
-
-                g.drawImageContained("contract_delete", clearJobR:padRatio(0.15):get())
-                self.wasJobClearButtonPressed = iml.wasJustClicked(clearJobR:get())
             end
         end
     end
