@@ -310,7 +310,7 @@ function helper.valueGetter(increase, startingVal)
     return getValues
 end
 
----Without the `self` in the returned function. The count 
+---Without the `self` in the returned function and no `count - 1` before multiplying.
 ---@param increase number
 ---@param startingVal number?
 function helper.valueGetterNoSelf(increase, startingVal)

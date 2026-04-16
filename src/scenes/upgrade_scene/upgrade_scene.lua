@@ -708,9 +708,9 @@ local function drawDevEditModeUI(self, treeUpgrades)
                     dev_fromFormattedNumber
                 )
                 if ok then
+                    hasPrice = hasPrice + 1
                     if val and val > 0 then
                         bundle[resId] = val
-                        hasPrice = hasPrice + 1
                     else
                         bundle[resId] = nil
                     end

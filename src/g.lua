@@ -1446,8 +1446,7 @@ do
 ---@field public description string?
 
 
----@alias g.ItemCategory "server"|"data"|"indata"|"booster"|"powergen"|"powerrelay"
----@type table<g.ItemCategory, boolean?>
+---@enum (key) g.ItemCategory
 g.CATEGORIES = {
     server = true,
     data = true,
@@ -1579,6 +1578,10 @@ local function dummy() end
 function g.defineItem(id, def)
     if itemList[id] then
         error("Redefined item: "..id)
+    end
+
+    if not g.CATEGORIES[def.category] then
+        error("Invalid category: "..def.category)
     end
 
     -- Set the name and description
