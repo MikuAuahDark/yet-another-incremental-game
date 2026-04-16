@@ -22,6 +22,7 @@ local Z = require("lib.zorder")
 ---@field stats table<string, number>
 ---@field tree g.Tree
 ---@field paused boolean
+---@field pauseReason? "button"|"debug"
 ---@field showTutorials g.Session.TutorialState
 local Session = objects.Class("g:Session")
 
@@ -120,6 +121,18 @@ function Session:_update(dt)
     self.mainWorld:_update(dt)
 
     prof_pop()
+end
+
+
+---@param reason? "button"|"debug"
+function Session:setPaused(reason)
+    if reason then
+        self.paused = true
+        self.pauseReason = reason
+    else
+        self.paused = false
+        self.pauseReason = nil
+    end
 end
 
 

@@ -529,13 +529,26 @@ function HUD:draw(show)
             drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world:getAvgCPS()), "{dns}/s")
             lw2:pop()
 
-            love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+
+            local sn = g.getSn()
+            if sn.pauseReason == "debug" then
+                love.graphics.setColor(1, 0, 0)
+            else
+                love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+            end
 
             g.drawImageContained("pause", pauseButtonR:padRatio(0.15):get())
             if iml.wasJustClicked(pauseButtonR:get()) then
-                local sn = g.getSn()
-                sn.paused = not sn.paused
+                sn:setPaused("button")
+            elseif consts.DEV_MODE and iml.wasKeyJustReleased("p") then
+                if sn.paused and sn.pauseReason == "debug" then
+                    sn:setPaused()
+                else
+                    sn:setPaused("debug")
+                end
             end
+
+            love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
 
             if mode == "main" then
                 g.drawImageContained("visibility_off", hideButtonR:padRatio(0.15):get())

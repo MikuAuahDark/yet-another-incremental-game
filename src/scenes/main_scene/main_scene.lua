@@ -28,10 +28,6 @@ function MainScene:enter()
     self.clearJobMode = false
 end
 
-function MainScene:leave()
-    g.getMainWorld():_setHoveredTile(nil, nil)
-end
-
 ---@param dt number
 function MainScene:update(dt)
     local z = self:zoomFromScale(ui.getUIScaling())

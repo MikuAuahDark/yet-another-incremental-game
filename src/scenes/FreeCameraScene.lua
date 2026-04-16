@@ -57,7 +57,7 @@ end
 
 local function resume()
     if g.hasSession() then
-        g.getSn().paused = false
+        g.getSn():setPaused()
     end
 end
 
@@ -85,12 +85,17 @@ local PAUSE_BUTTON_PAD = 4
 local PAUSE_TEXT = "{w}{o thickness=2}"..loc("PAUSED").."{/o}{/w}"
 
 function FreeCameraScene:renderPause()
-    if g.hasSession() and g.getSn().paused then
+    if not g.hasSession() then
+        return
+    end
+
+    local sn = g.getSn()
+    if sn.paused and sn.pauseReason == "button" then
         local r = ui.getScreenRegion()
-        iml.panel(r:get()) -- Prevent propagation to bottom panels
+        iml.panel(ui.getFullScreenRegion():get()) -- Prevent propagation to bottom panels
 
         love.graphics.setColor(0, 0, 0, 0.6)
-        love.graphics.rectangle("fill", r:get())
+        love.graphics.rectangle("fill", ui.getFullScreenRegion():get())
 
         -- Setup layout
         local buttonGridR = Kirigami(0, 0, PAUSE_BUTTON_SIZE[1], PAUSE_BUTTON_SIZE[2] * #PAUSE_BUTTONS)
