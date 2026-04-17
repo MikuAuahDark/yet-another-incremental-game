@@ -211,7 +211,7 @@ local function drawStats(r, title, desc, left, right, col)
     col1:pop()
 
     local oy = padR.y + (padR.h - font:getHeight()) / 2
-    local col2 = gsman.setColor(col or objects.Color.WHITE)
+    local col2 = gsman.mulColor(col or objects.Color.WHITE)
     richtext.printRich(left, font, padR.x + 8, oy, padR.w, "left")
     richtext.printRich(right, font, padR.x - 8, oy, padR.w, "right")
     col2:pop()
@@ -533,9 +533,24 @@ function HUD:draw(show)
                 8, 144, 144, 0, self.topR.h, 8, self.topR.h, 8, self.topR.h, 8
             )
             local lw2 = gsman.setLineWidth(1)
-            local money = g.formatNumber(g.getResource("money")).."/"..g.formatNumber(g.getResourceLimit("money"))
-            drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", money)
-            drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(world:getAvgCPS()), "{dns}/s")
+            local money = g.getResource("money")
+            local maxMoney = g.getResourceLimit("money")
+            local moneyText = g.formatNumber(money).."/"..g.formatNumber(maxMoney)
+
+            if money >= maxMoney then
+                love.graphics.setColor(g.COLORS.UI.DEBUFF)
+            else
+                love.graphics.setColor(1, 1, 1)
+            end
+            drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", moneyText)
+
+            local cps = world:getAvgCPS()
+            if cps >= 1e9 then
+                love.graphics.setColor(g.COLORS.UI.BUFF)
+            else
+                love.graphics.setColor(1, 1, 1)
+            end
+            drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(cps), "{dns}/s")
             lw2:pop()
 
 

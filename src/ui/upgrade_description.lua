@@ -83,19 +83,21 @@ local function description(upgrade, tree, x, y, safeArea)
     }), descF, "center")
 
     -- Price
-    ---@type string[]
-    local priceStrs = {}
+    if upgrade.level < maxLevel then
+        ---@type string[]
+        local priceStrs = {}
 
-    for _, info in ipairs(tree:getUpgradeRequirements(upgrade)) do
-        priceStrs[#priceStrs+1] = helper.wrapRichtextColor(
-            info[2] and g.COLORS.CAN_AFFORD or g.COLORS.CANT_AFFORD,
-            info[1]
-        )
-    end
+        for _, info in ipairs(tree:getUpgradeRequirements(upgrade)) do
+            priceStrs[#priceStrs+1] = helper.wrapRichtextColor(
+                info[2] and g.COLORS.CAN_AFFORD or g.COLORS.CANT_AFFORD,
+                info[1]
+            )
+        end
 
-    local priceText = table.concat(priceStrs, " ")
-    if #priceStrs > 0 then
-        builder:addText(priceText, priceF, "center")
+        local priceText = table.concat(priceStrs, " ")
+        if #priceStrs > 0 then
+            builder:addText(priceText, priceF, "center")
+        end
     end
 
     builder:render()
