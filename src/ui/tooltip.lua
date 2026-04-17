@@ -27,18 +27,16 @@ end
 
 
 ---@param itemData g.World.ItemData
-local function getLogMessages(itemData)
+---@param builder ui.TooltipBuilder
+local function addLogMessages(itemData, builder)
     local problems = g.getItemProblems(itemData)
-    ---@type string[]
-    local logMessages = {}
+    local attrF = ItemTooltip.getAttrFont()
 
     for _, v in ipairs(problems) do
         local pinfo = g.getItemProblemInfo(v)
         local col = pinfo.error and g.COLORS.UI.DEBUFF or g.COLORS.UI.WARNING
-        logMessages[#logMessages+1] = helper.wrapRichtextColor(col, "{"..pinfo.icon.."} "..pinfo.text)
+        builder:addText(helper.wrapRichtextColor(col, "{"..pinfo.icon.."} "..pinfo.text), attrF, "center")
     end
-
-    return logMessages
 end
 
 ---@param powerNetwork g.World.PowerNetwork
@@ -191,13 +189,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     builder:addText(heatText, attrF, "left")
 
     -- Log
-    local l = getLogMessages(serverData)
-    if #l > 0 then
-        builder:addPadding(descFH)
-        for _, logmsg in ipairs(l) do
-            builder:addText(logmsg, attrF, "center")
-        end
-    end
+    addLogMessages(serverData, builder)
 
     -- Job
     if serverData.currentJob then
@@ -295,14 +287,7 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
         :addText(getWireDPS(dpInfo), attrF, "left")
 
     -- Log message
-    local l = getLogMessages(dpData)
-    if #l > 0 then
-        builder:addPadding(descFH)
-
-        for _, logmsg in ipairs(l) do
-            builder:addText(logmsg, attrF, "center")
-        end
-    end
+    addLogMessages(dpData, builder)
 
     builder:render()
 end
@@ -349,14 +334,7 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     builder:addText(effectivity, attrF, "left")
 
     -- Log message
-    local l = getLogMessages(boosterData)
-    if #l > 0 then
-        builder:addPadding(descFH)
-
-        for _, logmsg in ipairs(l) do
-            builder:addText(logmsg, attrF, "center")
-        end
-    end
+    addLogMessages(boosterData, builder)
 
     builder:render()
 end
@@ -397,14 +375,7 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
         :addText(TEXT.WIRE_COUNT({s = #diData.connectsServers}), attrF, "left")
 
     -- Log message
-    local l = getLogMessages(diData)
-    if #l > 0 then
-        builder:addPadding(descFH)
-
-        for _, logmsg in ipairs(l) do
-            builder:addText(logmsg, attrF, "center")
-        end
-    end
+    addLogMessages(diData, builder)
 
     builder:render()
 end
@@ -440,6 +411,9 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
     builder:addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
         :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
 
+    -- Log message
+    addLogMessages(powerData, builder)
+
     builder:render()
 end
 
@@ -473,6 +447,9 @@ function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
     end
     builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
         :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
+
+    -- Log message
+    addLogMessages(powerData, builder)
 
     builder:render()
 end
