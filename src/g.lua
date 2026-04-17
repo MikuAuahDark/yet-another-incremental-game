@@ -2239,56 +2239,56 @@ local ITEM_PROBLEMS = {
     not_connected = {
         error = true,
         icon = "power_off",
-        text = loc("Server is not connected to data output!", nil, {
+        text = loc("Not connected to data output!", nil, {
             context = "Think of it as connection between machines."}),
     },
     -- No suitable data input found
     no_input_connection = {
         error = true,
         icon = "power_off",
-        text = loc("Server is not connected to data input!", nil, {
+        text = loc("Not connected to data input!", nil, {
             context = "Think of it as connection between machines."}),
     },
     -- Server is not connected to data input and output
     no_io_connection = {
         error = true,
         icon = "power_off",
-        text = loc("Server is not connected to data input and output!", nil, {
+        text = loc("Not connected to data input and output!", nil, {
             context = "Think of it as connection between machines."}),
     },
     -- Datacenter load is too high.
     overloaded = {
         error = false,
         icon = "bolt",
-        text = loc("Power network load is too high!", nil, {
+        text = loc("Power network load exceeded!", nil, {
             context = "Think of \"load\" as the \"electricity load\""}),
     },
     -- Not connected to power network
     no_power = {
         error = true,
         icon = "bolt",
-        text = loc("Server is not connected to power network!", nil, {
+        text = loc("Not connected to power network!", nil, {
             context = "Think of it as connection between the machine and the power grid."}),
     },
     -- Server is too hot
     overheat = {
         error = false,
         icon = "emergency_heat",
-        text = loc("The server exceeded the heat tolerance it can handle!", nil, {
+        text = loc("Heat tolerance exceeded!", nil, {
             context = "Denotes when a machine is overheating."}),
     },
     -- Data output is not connected to any server.
     no_connection = {
         error = false,
         icon = "power_off",
-        text = loc("Data output is not connected to any server!", nil, {
+        text = loc("Not connected to any server!", nil, {
             context = "Think of it as connection between machines."})
     },
     -- Booster does not provide any benefit
     booster_noop = {
         error = false,
         icon = "warning",
-        text = loc("Booster does not affecting any servers!", nil, {
+        text = loc("Booster is doing nothing!", nil, {
             context = "Booster is an item that boosts stats of other machines."})
     },
     -- No suitable data output found
@@ -2302,7 +2302,7 @@ local ITEM_PROBLEMS = {
     input_not_connected = {
         error = false,
         icon = "power_off",
-        text = loc("Data input is not connected to any server!", nil, {
+        text = loc("Not connected to any server!", nil, {
             context = "Think of it as connection between machines."})
     },
     -- Data output is overloaded
