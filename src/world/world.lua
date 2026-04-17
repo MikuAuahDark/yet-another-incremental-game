@@ -1197,28 +1197,21 @@ function World:_draw()
     for _, itemData in pairs(self.dataInputs) do
         local x, y = itemData.tileX, itemData.tileY
         local dpSelected = self.htx == x and self.hty == y
+        local dpx, dpy = (x + 0.5) * wtz, (y + 0.5) * wtz
+        local dpVisible = visibleAreaPadded:containsCoords(dpx, dpy)
         for _, svr in ipairs(itemData.connectsServers) do
-            local alpha = UNHIGHLIGHT_ALPHA
-            if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
-                alpha = HIGHLIGHT_ALPHA
-            end
-            love.graphics.setColor(0, 0, 0, alpha)
-            if svr.animationDataInput > 0 then
-                drawArrows(
-                    (x + 0.5) * wtz,
-                    (y + 0.5) * wtz,
-                    (svr.tileX + 0.5) * wtz,
-                    (svr.tileY + 0.5) * wtz,
-                    6, svr.animationDataInputTime
-                )
-            else
-                drawLine(
-                    (x + 0.5) * wtz,
-                    (y + 0.5) * wtz,
-                    (svr.tileX + 0.5) * wtz,
-                    (svr.tileY + 0.5) * wtz,
-                    3
-                )
+            local svrx, svry = (svr.tileX + 0.5) * wtz, (svr.tileY + 0.5) * wtz
+            if dpVisible or visibleAreaPadded:containsCoords(svrx, svry) then
+                local alpha = UNHIGHLIGHT_ALPHA
+                if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
+                    alpha = HIGHLIGHT_ALPHA
+                end
+                love.graphics.setColor(0, 0, 0, alpha)
+                if svr.animationDataInput > 0 then
+                    drawArrows(dpx, dpy, svrx, svry, 6, svr.animationDataInputTime)
+                else
+                    drawLine(dpx, dpy, svrx, svry, 3)
+                end
             end
         end
     end
@@ -1229,20 +1222,20 @@ function World:_draw()
     for _, booster in pairs(self.boosters) do
         local boosterSelected = self.htx == booster.tileX and self.hty == booster.tileY
 
+        local bx, by = (booster.tileX + 0.5) * wtz, (booster.tileY + 0.5) * wtz
+        local boosterVisible = visibleAreaPadded:containsCoords(bx, by)
+
         for _, target in ipairs(booster.connectsTo) do
-            local alpha = UNHIGHLIGHT_ALPHA
-            local targetSelected = self.htx == target.tileX and self.hty == target.tileY
-            if boosterSelected or targetSelected then
-                alpha = HIGHLIGHT_ALPHA
+            local tx, ty = (target.tileX + 0.5) * wtz, (target.tileY + 0.5) * wtz
+            if boosterVisible or visibleAreaPadded:containsCoords(tx, ty) then
+                local alpha = UNHIGHLIGHT_ALPHA
+                local targetSelected = self.htx == target.tileX and self.hty == target.tileY
+                if boosterSelected or targetSelected then
+                    alpha = HIGHLIGHT_ALPHA
+                end
+                love.graphics.setColor(1, 0, 0, alpha)
+                drawArrows(bx, by, tx, ty, 6, booster.animationTime)
             end
-            love.graphics.setColor(1, 0, 0, alpha)
-            drawArrows(
-                (booster.tileX + 0.5) * wtz,
-                (booster.tileY + 0.5) * wtz,
-                (target.tileX + 0.5) * wtz,
-                (target.tileY + 0.5) * wtz,
-                6, booster.animationTime
-            )
         end
     end
     prof_pop() -- prof_push("boostercon_draw")
