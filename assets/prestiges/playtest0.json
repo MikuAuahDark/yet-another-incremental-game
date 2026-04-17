@@ -43,7 +43,7 @@
 			"basePrice": {},
 			"x": -3,
 			"y": -1,
-			"cps": 100.0
+			"cps": 50.0
 		},
 		"26": {
 			"id": "piped_water_cooler",
@@ -165,7 +165,7 @@
 			"id": "physics_simulation_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 3000.0
+				"money": 7000.0
 			},
 			"x": -3,
 			"y": 3,
@@ -182,7 +182,7 @@
 			"id": "ai_mod",
 			"level": 0,
 			"basePrice": {
-				"money": 4800.0
+				"money": 15000.0
 			},
 			"x": -1,
 			"y": 5,
@@ -214,7 +214,7 @@
 			"basePrice": {},
 			"x": 1,
 			"y": 5,
-			"cps": 10000.0
+			"cps": 15000.0
 		},
 		"106": {
 			"id": "video_encode",
@@ -265,7 +265,7 @@
 			"basePrice": {},
 			"x": -7,
 			"y": 1,
-			"cps": 250.0
+			"cps": 200.0
 		},
 		"125": {
 			"id": "efficient_generator",
@@ -279,7 +279,7 @@
 			"id": "physics_simulation",
 			"level": 0,
 			"basePrice": {
-				"money": 1500.0
+				"money": 3000.0
 			},
 			"x": -5,
 			"y": 3,
@@ -297,7 +297,7 @@
 			"id": "physics_simulation_money",
 			"level": 0,
 			"basePrice": {
-				"money": 3000.0
+				"money": 7000.0
 			},
 			"x": -3,
 			"y": 5,
@@ -354,7 +354,7 @@
 			"x": 1,
 			"y": 7,
 			"maxLevelOverride": 4,
-			"priceScaling": 1.5
+			"priceScaling": 2.5
 		},
 		"172": {
 			"id": "video_encode_mul",
@@ -457,7 +457,7 @@
 			"id": "llm",
 			"level": 0,
 			"basePrice": {
-				"money": 14000.0
+				"money": 30000.0
 			},
 			"x": -1,
 			"y": 9,
@@ -487,13 +487,13 @@
 			},
 			"x": 3,
 			"y": 7,
-			"priceScaling": 1.5
+			"priceScaling": 2.5
 		},
 		"228": {
 			"id": "ai_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 8000.0
+				"money": 75000.0
 			},
 			"x": 1,
 			"y": 9,
@@ -542,7 +542,6 @@
 			},
 			"x": -11,
 			"y": 1,
-			"maxLevelOverride": 7,
 			"priceScaling": 1.25
 		},
 		"282": {
@@ -585,7 +584,7 @@
 			"id": "research_model",
 			"level": 0,
 			"basePrice": {
-				"money": 3000.0
+				"money": 6000.0
 			},
 			"x": -5,
 			"y": 7,
@@ -595,7 +594,7 @@
 			"id": "research_model_money",
 			"level": 0,
 			"basePrice": {
-				"money": 6000.0
+				"money": 12000.0
 			},
 			"x": -3,
 			"y": 9,
@@ -605,27 +604,35 @@
 			"id": "ai_mod",
 			"level": 0,
 			"basePrice": {
-				"money": 55000.0
+				"money": 100000.0
 			},
 			"x": -1,
 			"y": 11,
 			"priceScaling": 1.5
 		},
+		"310": {
+			"id": "money_limit",
+			"level": 0,
+			"basePrice": {},
+			"x": 7,
+			"y": 5,
+			"maxLevelOverride": 1
+		},
 		"318": {
 			"id": "world_size_3",
 			"level": 0,
 			"basePrice": {
-				"money": 22000.0
+				"money": 100000.0
 			},
 			"x": 3,
 			"y": 9,
-			"priceScaling": 1.25
+			"priceScaling": 3.0
 		},
 		"322": {
 			"id": "llm_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 28000.0
+				"money": 55000.0
 			},
 			"x": 1,
 			"y": 11,
@@ -669,7 +676,6 @@
 			},
 			"x": -11,
 			"y": 3,
-			"maxLevelOverride": 8,
 			"priceScaling": 1.25
 		},
 		"387": {
@@ -699,13 +705,13 @@
 			"basePrice": {},
 			"x": -7,
 			"y": 7,
-			"cps": 1000.0
+			"cps": 500.0
 		},
 		"396": {
 			"id": "research_model_mul",
 			"level": 0,
 			"basePrice": {
-				"money": 6000.0
+				"money": 12000.0
 			},
 			"x": -5,
 			"y": 9,
@@ -715,7 +721,7 @@
 			"id": "llm_money",
 			"level": 0,
 			"basePrice": {
-				"money": 28000.0
+				"money": 55000.0
 			},
 			"x": -3,
 			"y": 11,
@@ -725,22 +731,22 @@
 			"id": "world_size_3",
 			"level": 0,
 			"basePrice": {
-				"money": 50000.0
+				"money": 100000.0
 			},
 			"x": 5,
 			"y": 9,
 			"maxLevelOverride": 2,
-			"priceScaling": 1.4
+			"priceScaling": 3.0
 		},
 		"428": {
 			"id": "world_size_3",
 			"level": 0,
 			"basePrice": {
-				"money": 35000.0
+				"money": 1500000.0
 			},
 			"x": 3,
 			"y": 11,
-			"priceScaling": 1.5
+			"priceScaling": 3.5
 		},
 		"470": {
 			"id": "image_processing_mul",
@@ -796,7 +802,7 @@
 			"id": "ai_mod",
 			"level": 0,
 			"basePrice": {
-				"money": 13000.0
+				"money": 24000.0
 			},
 			"x": -5,
 			"y": 11,
@@ -806,12 +812,12 @@
 			"id": "world_size_3",
 			"level": 0,
 			"basePrice": {
-				"money": 75000.0
+				"money": 1500000.0
 			},
 			"x": 5,
 			"y": 11,
 			"maxLevelOverride": 2,
-			"priceScaling": 1.4
+			"priceScaling": 3.5
 		},
 		"604": {
 			"id": "general_mod",
@@ -1101,7 +1107,7 @@
 		],
 		[
 			216,
-			220
+			310
 		],
 		[
 			220,
@@ -1170,6 +1176,10 @@
 		[
 			294,
 			518
+		],
+		[
+			310,
+			220
 		],
 		[
 			318,
