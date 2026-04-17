@@ -63,7 +63,7 @@ g.PREUNLOCKED_ITEMS:add("basic_indata")
 g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
     price = 25,
     getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
-    load = 5,
+    load = 4,
     queuesJob = "general",
     maxJobQueue = 5,
     wireLength = 3,
@@ -78,7 +78,7 @@ g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
 g.defineDataInput("indata_tier2", "General Data Input (Tier 2)", {
     price = 60,
     getPriceMultiplier = helper.valueGetterNoSelf(0.05, 1),
-    load = 10,
+    load = 7,
     queuesJob = "general",
     maxJobQueue = 7,
     wireLength = 5,
@@ -95,7 +95,7 @@ g.defineDataInput("indata_tier2", "General Data Input (Tier 2)", {
 g.defineDataInput("video_indata", "Video Data Input (Tier 1)", {
     price = 80,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
-    load = 10,
+    load = 6,
     queuesJob = "video",
     maxJobQueue = 5,
     wireLength = 3,
@@ -127,7 +127,7 @@ g.defineDataInput("video_indata_t2", "Video Data Input (Tier 2)", {
 g.defineDataInput("ai_indata", "AI Data Input", {
     price = 500,
     getPriceMultiplier = helper.valueGetterNoSelf(0.25, 1),
-    load = 20,
+    load = 25,
     queuesJob = "ai",
     maxJobQueue = 5,
     wireLength = 4,
@@ -142,7 +142,7 @@ g.defineDataInput("ai_indata", "AI Data Input", {
 g.defineDataInput("ai_indata_t2", "AI Data Input (Tier 2)", {
     price = 800,
     getPriceMultiplier = helper.valueGetterNoSelf(0.25, 1),
-    load = 25,
+    load = 36,
     queuesJob = "ai",
     maxJobQueue = 8,
     wireLength = 6,
