@@ -272,6 +272,13 @@ function g.ask(q, arg1, ...)
         val = reducer(val, sc[q](sc, arg1, ...))
     end
 
+    if g.hasSession() then
+        local world = g.getMainWorld()
+        if world and world[q] then
+            val = reducer(val, world[q](world, arg1, ...))
+        end
+    end
+
     if (type(arg1) == "table") and arg1[q] then
         val = reducer(val, arg1[q](arg1, ...))
     end
@@ -1511,7 +1518,12 @@ g.CATEGORIES = {
 ---@field public wireLength integer
 
 ---@class g.DataInInfo: g.ItemInfo, g._DataInInfoCommon
+---@field public jobFrequencyModifier number
+---@field public jobFrequencyMultiplier number
+
 ---@class g.DataInDefinition: g.ItemDefinition, g._DataInInfoCommon
+---@field public jobFrequencyModifier number?
+---@field public jobFrequencyMultiplier number?
 
 
 ---@class g.BoosterInfo: g.ItemInfo
@@ -1629,6 +1641,8 @@ function g.defineItem(id, def)
         assert(g.VALID_JOB_CATEGORIES[def.queuesJob], "invalid queuesJob")
         assert(def.maxJobQueue and def.maxJobQueue > 0, "invalid maxJobQueue")
         assert(def.wireLength and def.wireLength > 0, "invalid wireLength")
+        def.jobFrequencyModifier = def.jobFrequencyModifier or 0
+        def.jobFrequencyMultiplier = def.jobFrequencyMultiplier or 1
     elseif def.category == "booster" then
         ---@cast def g.BoosterInfo
         def.radiate = def.radiate or 1
@@ -1853,6 +1867,8 @@ end
 ---@class g._DataInDef: g._CommonSpecificItemDef
 ---@field queuesJob g.JobCategory
 ---@field maxJobQueue integer
+---@field jobFrequencyModifier number?
+---@field jobFrequencyMultiplier number?
 ---@field wireLength integer
 ---@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
@@ -1892,6 +1908,8 @@ function g.defineDataInput(id, name, def)
         load = def.load,
         queuesJob = def.queuesJob,
         maxJobQueue = def.maxJobQueue,
+        jobFrequencyModifier = def.jobFrequencyModifier,
+        jobFrequencyMultiplier = def.jobFrequencyMultiplier,
         wireLength = def.wireLength,
         draw = function(itemData)
             ---@cast itemData g.World.ItemData

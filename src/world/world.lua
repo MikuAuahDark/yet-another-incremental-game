@@ -266,6 +266,11 @@ function World:init()
     self.jobQueueCounts = setmetatable({}, {__index = function() return 0 end})
     ---@type table<g.JobCategory, integer>
     self.maxJobQueues = setmetatable({}, {__index = function() return 0 end})
+    ---@type table<g.JobCategory, number>
+    self.jobFreqModByCategory = setmetatable({}, {__index = function() return 0 end})
+    ---@type table<g.JobCategory, number>
+    self.jobFreqMulByCategory = setmetatable({}, {__index = function() return 1 end})
+
     ---@type table<integer, g.World.BoosterData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
     self.boosters = {}
     ---@type table<integer, g.World.ItemData[]>
@@ -393,6 +398,8 @@ function World:_update(dt)
     -- Update electricity load
     local loads = 0
     table.clear(self.maxJobQueues)
+    table.clear(self.jobFreqModByCategory)
+    table.clear(self.jobFreqMulByCategory)
     table.clear(self.boosters)
     table.clear(self.boostersInTiles)
     table.clear(self.dataProcessors)
@@ -426,6 +433,8 @@ function World:_update(dt)
                 ---@cast itemInfo g.DataInInfo
                 self.dataInputs[index] = item
                 self.maxJobQueues[itemInfo.queuesJob] = self.maxJobQueues[itemInfo.queuesJob] + itemInfo.maxJobQueue
+                self.jobFreqModByCategory[itemInfo.queuesJob] = self.jobFreqModByCategory[itemInfo.queuesJob] + itemInfo.jobFrequencyModifier
+                self.jobFreqMulByCategory[itemInfo.queuesJob] = self.jobFreqMulByCategory[itemInfo.queuesJob] * itemInfo.jobFrequencyMultiplier
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
@@ -1477,6 +1486,33 @@ function World:_setupPlaceables()
         self:putItem("sub_power", center-i, center-i, false)
     end
 end
+
+
+
+
+--- Buses
+
+---@param cat string
+local function defJobFreqBus(cat)
+    local catlow = cat:lower()
+    ---@param self g.World
+    World["get"..cat.."JobFrequencyModifier"] = function(self)
+        return self.jobFreqModByCategory[catlow]
+    end
+    ---@param self g.World
+    World["get"..cat.."JobFrequencyMultiplier"] = function(self)
+        return self.jobFreqMulByCategory[catlow]
+    end
+end
+
+-- These are MSOT unfortunately, but is there a way?
+-- Will think of it later. Gotta move fast.
+-- Just make sure to sync this with g.defineJobCategory
+defJobFreqBus("General")
+defJobFreqBus("Video")
+defJobFreqBus("AI")
+
+--- End Buses
 
 
 
