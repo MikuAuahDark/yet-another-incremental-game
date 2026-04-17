@@ -1,9 +1,6 @@
 ---@class ui.ItemTooltip
 local ItemTooltip = {}
 
-local MAX_TOOLTIP_WIDTH = 200
-
-
 
 ---@param itemInfo g.ItemInfo
 ---@param itemData g.World.ItemData?
@@ -76,6 +73,50 @@ local function getItemPrice(itemInfo)
     return priceText
 end
 
+---@param dpInfo g.DataOutInfo
+local function getDPS(dpInfo)
+    local dps = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, 1, dpInfo)
+    local dpsText = TEXT.DPS_NUMBER({dps = g.formatNumber(dps)})
+    if dps > dpInfo.dataPerSecond then
+        local p = (dps - dpInfo.dataPerSecond) / dpInfo.dataPerSecond
+        dpsText = dpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "("..helper.round(p * 100, 2).."%)")
+    elseif dps < dpInfo.dataPerSecond then
+        local p = (dpInfo.dataPerSecond - dps) / dpInfo.dataPerSecond
+        dpsText = dpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "("..helper.round(p * 100, 2).."%)")
+    end
+    return dpsText
+end
+
+---@param dpInfo g.DataOutInfo
+local function getWireDPS(dpInfo)
+    local dps = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
+
+    local dpsText = TEXT.WIRE_DPS({dps = g.formatNumber(dps)})
+    if dps > dpInfo.wireDPS then
+        local p = (dps - dpInfo.wireDPS) / dpInfo.wireDPS
+        dpsText = dpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "(+"..helper.round(p * 100, 2).."%)")
+    elseif dps < dpInfo.wireDPS then
+        local p = (dpInfo.wireDPS - dps) / dpInfo.wireDPS
+        dpsText = dpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "(-"..helper.round(p * 100, 2).."%)")
+    end
+
+    return dpsText
+end
+
+---@param powerGenInfo g.PowerGenInfo
+local function getGeneratorOutput(powerGenInfo)
+    local power = g.getProperty("getGeneratorLoad", powerGenInfo.power, 1, powerGenInfo)
+    local powerText = TEXT.PROVIDE_LOAD_TOOLTIP({load = g.formatNumber(power)})
+    if power > powerGenInfo.power then
+        local p = (power - powerGenInfo.power) / powerGenInfo.power
+        powerText = powerText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "("..helper.round(p * 100, 2).."%)")
+    elseif power < powerGenInfo.power then
+        local p = (powerGenInfo.power - power) / powerGenInfo.power
+        powerText = powerText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "("..helper.round(p * 100, 2).."%)")
+    end
+    return powerText
+end
+
 -- Putting this here so font sizes can be changed in one place
 function ItemTooltip.getTitleFont() return g.getMainFont(16) end
 function ItemTooltip.getAttrFont() return g.getMainFont(13) end
@@ -92,7 +133,6 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
 
@@ -230,7 +270,6 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
@@ -250,10 +289,10 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     if dpData.powerNetwork then
         builder:addText(getPowerNetworkText(dpData.powerNetwork), attrF, "left")
     end
-    builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpData.dataPerSecond)}), attrF, "left")
+    builder:addText(getDPS(dpInfo), attrF, "left")
         :addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
         :addText(TEXT.WIRE_COUNT({s = #dpData.connectsServers}), attrF, "left")
-        :addText(TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)}), attrF, "left")
+        :addText(getWireDPS(dpInfo), attrF, "left")
 
     -- Log message
     local l = getLogMessages(dpData)
@@ -277,7 +316,6 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
@@ -332,7 +370,6 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("world", mx, my, safeArea)
@@ -381,7 +418,6 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("world", x, y, safeArea)
@@ -397,7 +433,7 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
     end
 
     -- Attributes
-    builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerData.power}), attrF, "left")
+    builder:addText(getGeneratorOutput(powerGenInfo), attrF, "left")
     if powerData.powerNetwork then
         builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
     end
@@ -417,7 +453,6 @@ function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("world", x, y, safeArea)
@@ -483,7 +518,6 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("hud", x, y)
@@ -509,7 +543,6 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     end
 
     -- Attributes
-    local world = g.getMainWorld()
     -- Price
     local priceText = getItemPrice(serverInfo)
     if priceText then
@@ -535,7 +568,6 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("hud", x, y)
@@ -559,11 +591,11 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
     -- Load
     builder:addText(getItemLoadText(dpInfo), attrF, "left")
     -- DPS
-    builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(dpInfo.dataPerSecond)}), attrF, "left")
+    builder:addText(getDPS(dpInfo), attrF, "left")
     -- Wire Range
     builder:addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
     -- Wire DPS
-    builder:addText(TEXT.WIRE_DPS({dps = g.formatNumber(dpInfo.wireDPS)}), attrF, "left")
+    builder:addText(getWireDPS(dpInfo), attrF, "left")
 
     builder:render()
 end
@@ -575,7 +607,6 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("hud", x, y)
@@ -617,7 +648,6 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("hud", x, y)
@@ -651,7 +681,6 @@ function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("hud", x, y)
@@ -673,7 +702,7 @@ function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y)
         builder:addText(priceText, attrF, "left")
     end
     -- Load
-    builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = powerGenInfo.power}), attrF, "left")
+    builder:addText(getGeneratorOutput(powerGenInfo), attrF, "left")
         :addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
 
     builder:render()
@@ -686,7 +715,6 @@ function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
-    local titleFH = titleF:getHeight()
     local descFH = descF:getHeight()
 
     local builder = ui.TooltipBuilder("hud", x, y)

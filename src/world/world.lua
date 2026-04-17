@@ -489,7 +489,7 @@ function World:_update(dt)
     -- Update power generator power
     for _, powerGen in pairs(self.powerGens) do
         local powerGenInfo = g.getItemInfo(powerGen.type, "powergen")
-        powerGen.power = g.getProperty("getGeneratorLoad", powerGenInfo.power, 1, powerGen)
+        powerGen.power = g.getProperty("getGeneratorLoad", powerGenInfo.power, 1, powerGenInfo)
     end
 
     -- Run power network update
@@ -848,8 +848,7 @@ function World:_update(dt)
             local bestScale = -1
 
             for _, dpData in ipairs(serverData.connectedOutputs) do
-                local dpInfo = g.getItemInfo(dpData.type, "data")
-                local desired = math.min(requiredDPS, dpInfo.wireDPS)
+                local desired = math.min(requiredDPS, dpData.wireDPS)
                 local capacity = dpData.dataPerSecond
 
                 local projectedScale = capacity / (dpData.requestedLoad + desired)
@@ -860,9 +859,8 @@ function World:_update(dt)
             end
 
             if bestDP then
-                local dpInfo = g.getItemInfo(bestDP.type, "data")
                 serverData.activeOutput = bestDP
-                serverData.desiredDPS = math.min(requiredDPS, dpInfo.wireDPS)
+                serverData.desiredDPS = math.min(requiredDPS, bestDP.wireDPS)
                 bestDP.requestedLoad = bestDP.requestedLoad + serverData.desiredDPS
             end
         end

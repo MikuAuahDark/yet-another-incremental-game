@@ -41,10 +41,9 @@ g.defineUpgrade("max_load_mul", "Max Load+", {
     valueFormatter = helper.PERCENTAGE_FORMATTER,
     ---@param uinfo g.UpgradeInfo
     ---@param level integer
-    ---@param itemdata g.World.PowerData
-    getGeneratorLoadMultiplier = function(uinfo, level, itemdata)
-        local itemInfo, cat = g.getItemInfo(itemdata.type)
-        if cat == "powergen" and not itemInfo.tags:has("datacenter_power") then
+    ---@param itemInfo g.PowerGenInfo
+    getGeneratorLoadMultiplier = function(uinfo, level, itemInfo)
+        if itemInfo.category == "powergen" and not itemInfo.tags:has("datacenter_power") then
             return uinfo:getValues(level) / 100
         end
 
@@ -62,10 +61,9 @@ g.defineUpgrade("datacenter_load_mul", "Datacenter Load+", {
     valueFormatter = helper.PERCENTAGE_FORMATTER,
     ---@param uinfo g.UpgradeInfo
     ---@param level integer
-    ---@param itemdata g.World.PowerData
-    getGeneratorLoadMultiplier = function(uinfo, level, itemdata)
-        local itemInfo, cat = g.getItemInfo(itemdata.type)
-        if cat == "powergen" and itemInfo.tags:has("datacenter_power") then
+    ---@param itemInfo g.PowerGenInfo
+    getGeneratorLoadMultiplier = function(uinfo, level, itemInfo)
+        if itemInfo.category == "powergen" and itemInfo.tags:has("datacenter_power") then
             return uinfo:getValues(level) / 100
         end
 
