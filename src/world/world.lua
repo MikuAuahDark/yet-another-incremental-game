@@ -1166,37 +1166,6 @@ function World:_draw()
     for _, itemData in pairs(self.dataProcessors) do
         local x, y = itemData.tileX, itemData.tileY
         local dpSelected = self.htx == x and self.hty == y
-        for _, svr in ipairs(itemData.connectsServers) do
-            local alpha = UNHIGHLIGHT_ALPHA
-            if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
-                alpha = HIGHLIGHT_ALPHA
-            end
-            love.graphics.setColor(0, 0, 0, alpha)
-            if svr.activeOutput == itemData then
-                drawArrows(
-                    (svr.tileX + 0.5) * wtz,
-                    (svr.tileY + 0.5) * wtz,
-                    (x + 0.5) * wtz,
-                    (y + 0.5) * wtz,
-                    6, svr.animationDataOutput
-                )
-            else
-                drawLine(
-                    (svr.tileX + 0.5) * wtz,
-                    (svr.tileY + 0.5) * wtz,
-                    (x + 0.5) * wtz,
-                    (y + 0.5) * wtz,
-                    3
-                )
-            end
-        end
-    end
-    prof_pop() -- prof_push("dataoutput_draw")
-
-    prof_push("datainput_draw")
-    for _, itemData in pairs(self.dataInputs) do
-        local x, y = itemData.tileX, itemData.tileY
-        local dpSelected = self.htx == x and self.hty == y
         local dpx, dpy = (x + 0.5) * wtz, (y + 0.5) * wtz
         local dpVisible = visibleAreaPadded:containsCoords(dpx, dpy)
         for _, svr in ipairs(itemData.connectsServers) do
@@ -1207,10 +1176,34 @@ function World:_draw()
                     alpha = HIGHLIGHT_ALPHA
                 end
                 love.graphics.setColor(0, 0, 0, alpha)
-                if svr.animationDataInput > 0 then
-                    drawArrows(dpx, dpy, svrx, svry, 6, svr.animationDataInputTime)
+                if svr.activeOutput == itemData then
+                    drawArrows(svrx, svry, dpx, dpy, 6, svr.animationDataOutput)
                 else
-                    drawLine(dpx, dpy, svrx, svry, 3)
+                    drawLine(svrx, svry, dpx, dpy, 3)
+                end
+            end
+        end
+    end
+    prof_pop() -- prof_push("dataoutput_draw")
+
+    prof_push("datainput_draw")
+    for _, itemData in pairs(self.dataInputs) do
+        local x, y = itemData.tileX, itemData.tileY
+        local diSelected = self.htx == x and self.hty == y
+        local dix, diy = (x + 0.5) * wtz, (y + 0.5) * wtz
+        local diVisible = visibleAreaPadded:containsCoords(dix, diy)
+        for _, svr in ipairs(itemData.connectsServers) do
+            local svrx, svry = (svr.tileX + 0.5) * wtz, (svr.tileY + 0.5) * wtz
+            if diVisible or visibleAreaPadded:containsCoords(svrx, svry) then
+                local alpha = UNHIGHLIGHT_ALPHA
+                if diSelected or self.htx == svr.tileX and self.hty == svr.tileY then
+                    alpha = HIGHLIGHT_ALPHA
+                end
+                love.graphics.setColor(0, 0, 0, alpha)
+                if svr.animationDataInput > 0 then
+                    drawArrows(dix, diy, svrx, svry, 6, svr.animationDataInputTime)
+                else
+                    drawLine(dix, diy, svrx, svry, 3)
                 end
             end
         end
