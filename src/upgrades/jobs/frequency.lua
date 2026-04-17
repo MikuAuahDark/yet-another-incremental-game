@@ -51,10 +51,10 @@ local function defJobFreqMul(cat, img, startval, incr, maxLevel, suffix)
     })
 end
 
-defJobFreqMod("general", "docs", 0.1, 0.075, 4)
-defJobFreqMod("video", "movie", 0.1, 0.075, 5)
-defJobFreqMod("ai", "network_intelligence", 0.1, 0.075, 5)
+defJobFreqMod("general", "docs", 0.1, 0.075, 20)
+defJobFreqMod("video", "movie", 0.1, 0.075, 22)
+defJobFreqMod("ai", "network_intelligence", 0.1, 0.075, 25)
 
-defJobFreqMul("general", "docs", 10, 10, 5)
-defJobFreqMul("video", "movie", 10, 15, 5)
-defJobFreqMul("ai", "network_intelligence", 10, 11, 5)
+defJobFreqMul("general", "docs", 10, 10, 20)
+defJobFreqMul("video", "movie", 10, 15, 22)
+defJobFreqMul("ai", "network_intelligence", 10, 11, 25)
