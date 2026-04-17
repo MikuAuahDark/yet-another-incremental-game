@@ -271,13 +271,18 @@ function HUD:draw(show)
         if showJobQueue then
             local jobQueueKeyList = {TEXT.JOB_QUEUE_INFO}
             local jobQueueValueList = {""}
+            local totalJobs = 0
+            local totalMaxJobs = 0
             for _, jobCat in ipairs(g.JOB_CATEGORIES) do
                 if world.maxJobQueues[jobCat] > 0 then
                     local name = g.getJobCategoryName(jobCat)
                     jobQueueKeyList[#jobQueueKeyList+1] = name
                     jobQueueValueList[#jobQueueValueList+1] = world.jobQueueCounts[jobCat].."/"..world.maxJobQueues[jobCat]
+                    totalJobs = totalJobs + world.jobQueueCounts[jobCat]
+                    totalMaxJobs = totalMaxJobs + world.maxJobQueues[jobCat]
                 end
             end
+            jobQueueValueList[1] = totalJobs.."/"..totalMaxJobs
 
             local jobQueueF = g.getMainFont(12)
             local jobQueueKeyText = table.concat(jobQueueKeyList, "\n")

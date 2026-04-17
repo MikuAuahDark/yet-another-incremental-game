@@ -107,10 +107,10 @@ local function getGeneratorOutput(powerGenInfo)
     local powerText = TEXT.PROVIDE_LOAD_TOOLTIP({load = g.formatNumber(power)})
     if power > powerGenInfo.power then
         local p = (power - powerGenInfo.power) / powerGenInfo.power
-        powerText = powerText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "("..helper.round(p * 100, 2).."%)")
+        powerText = powerText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "(+"..helper.round(p * 100, 2).."%)")
     elseif power < powerGenInfo.power then
         local p = (powerGenInfo.power - power) / powerGenInfo.power
-        powerText = powerText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "("..helper.round(p * 100, 2).."%)")
+        powerText = powerText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "(-"..helper.round(p * 100, 2).."%)")
     end
     return powerText
 end
