@@ -27,10 +27,11 @@ end
 ---@param uinfo g.UpgradeInfo
 ---@param level integer
 local function getJobFreqMul(uinfo, level)
-    return 1 + uinfo:getValues(level)
+    return 1 + uinfo:getValues(level) / 100
 end
 
 ---@param cat g.JobCategory
+---@param img string
 ---@param startval integer
 ---@param incr integer
 ---@param maxLevel integer?
@@ -50,10 +51,10 @@ local function defJobFreqMul(cat, img, startval, incr, maxLevel, suffix)
     })
 end
 
-defJobFreqMod("general", "docs", 0.1, 0.1, 4)
-defJobFreqMod("video", "movie", 0.1, 0.1, 5)
-defJobFreqMod("ai", "network_intelligence", 0.1, 0.1, 5)
+defJobFreqMod("general", "docs", 0.1, 0.075, 4)
+defJobFreqMod("video", "movie", 0.1, 0.075, 5)
+defJobFreqMod("ai", "network_intelligence", 0.1, 0.075, 5)
 
-defJobFreqMul("general", "docs", 1, 1, 5)
-defJobFreqMul("video", "movie", 1, 1, 5)
-defJobFreqMul("ai", "network_intelligence", 1, 1, 5)
+defJobFreqMul("general", "docs", 5, 5, 5)
+defJobFreqMul("video", "movie", 5, 6, 5)
+defJobFreqMul("ai", "network_intelligence", 5, 7, 5)
