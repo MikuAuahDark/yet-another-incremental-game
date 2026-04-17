@@ -151,9 +151,10 @@ end
 local POWER_COLOR = objects.Color("#83d6d3")
 
 ---@param powerNetwork g.World.PowerNetwork
+---@param visibleArea kirigami.Region
 ---@param htx integer?
 ---@param hty integer?
-local function drawPowerLines(powerNetwork, htx, hty)
+local function drawPowerLines(powerNetwork, visibleArea, htx, hty)
     local wtz = consts.WORLD_TILE_SIZE
     local t = g.getSn().worldTime % 1
 
@@ -162,27 +163,36 @@ local function drawPowerLines(powerNetwork, htx, hty)
         local nodeSelected = htx == node.tileX and hty == node.tileY
         local x1 = (node.tileX + 0.5) * wtz
         local y1 = (node.tileY + 0.5) * wtz
+        local nodeHasCoords = visibleArea:containsCoords(x1, y1)
 
         for _, other in ipairs(node.connectsPowerNodes) do
-            local alpha = UNHIGHLIGHT_ALPHA
-            if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = HIGHLIGHT_ALPHA
-            end
-            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+            local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
 
-            drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+            if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
+                local alpha = UNHIGHLIGHT_ALPHA
+                if nodeSelected or htx == other.tileX and hty == other.tileY then
+                    alpha = HIGHLIGHT_ALPHA
+                end
+                love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+
+                drawArrows(x1, y1, x2, y2, 6, t)
+            end
         end
 
         for _, other in ipairs(node.connectsTo) do
-            local alpha = UNHIGHLIGHT_ALPHA
-            if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = HIGHLIGHT_ALPHA
-            end
-            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-
             local _, cat = g.getItemInfo(other.type)
             if cat ~= "powergen" then
-                drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+                local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
+
+                if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
+                    local alpha = UNHIGHLIGHT_ALPHA
+                    if nodeSelected or htx == other.tileX and hty == other.tileY then
+                        alpha = HIGHLIGHT_ALPHA
+                    end
+                    love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+
+                    drawArrows(x1, y1, x2, y2, 6, t)
+                end
             end
         end
     end
@@ -194,30 +204,37 @@ local function drawPowerLines(powerNetwork, htx, hty)
         local nodeSelected = htx == node.tileX and hty == node.tileY
         local x1 = (node.tileX + 0.5) * wtz
         local y1 = (node.tileY + 0.5) * wtz
+        local nodeHasCoords = visibleArea:containsCoords(x1, y1)
 
         for _, other in ipairs(node.connectsPowerNodes) do
-            local alpha = UNHIGHLIGHT_ALPHA
-            if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = HIGHLIGHT_ALPHA
-            end
-            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-
             local _, cat = g.getItemInfo(other.type)
             if cat ~= "powergen" then
-                drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+                local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
+
+                if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
+                    local alpha = UNHIGHLIGHT_ALPHA
+                    if nodeSelected or htx == other.tileX and hty == other.tileY then
+                        alpha = HIGHLIGHT_ALPHA
+                    end
+                    love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+                    drawArrows(x1, y1, x2, y2, 6, t)
+                end
             end
         end
 
         for _, other in ipairs(node.connectsTo) do
-            local alpha = UNHIGHLIGHT_ALPHA
-            if nodeSelected or htx == other.tileX and hty == other.tileY then
-                alpha = HIGHLIGHT_ALPHA
-            end
-            love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-
             local _, cat = g.getItemInfo(other.type)
             if cat ~= "powergen" then
-                drawArrows(x1, y1, (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz, 6, t)
+                local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
+
+                if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
+                    local alpha = UNHIGHLIGHT_ALPHA
+                    if nodeSelected or htx == other.tileX and hty == other.tileY then
+                        alpha = HIGHLIGHT_ALPHA
+                    end
+                    love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
+                    drawArrows(x1, y1, x2, y2, 6, t)
+                end
             end
         end
     end
@@ -1026,6 +1043,13 @@ end
 
 
 function World:_draw()
+    local visibleArea
+    -- Get visible area
+    do
+        local x1, y1 = love.graphics.inverseTransformPoint(0, 0)
+        local x2, y2 = love.graphics.inverseTransformPoint(love.graphics.getDimensions())
+        visibleArea = Kirigami(x1, y1, x2 - x1, y2 - y1)
+    end
     prof_push("world:_draw")
 
     -- Draw the actual world
@@ -1078,6 +1102,7 @@ function World:_draw()
     prof_push("item_draw")
     local center = math.floor(World.TILE_SIZE / 2)
     local worldSize = g.stats.WorldTileSize
+    local visibleAreaPadded = visibleArea:padUnit(-consts.WORLD_TILE_SIZE)
     self.items:foreachInArea(
         center - worldSize,
         center - worldSize,
@@ -1086,38 +1111,41 @@ function World:_draw()
         ---@param itemData g.World.ItemData?
         function(itemData, x, y)
             if itemData then
-                if not itemData.removable then
-                    love.graphics.setColor(0, 0, 0)
-                    love.graphics.draw(NONREMOVABLE_MESH, x * wtz, y * wtz, 0, wtz, wtz)
-                end
+                local cx, cy = (x + 0.5) * wtz, (y + 0.5) * wtz
+                if visibleAreaPadded:containsCoords(cx, cy) then
+                    if not itemData.removable then
+                        love.graphics.setColor(0, 0, 0)
+                        love.graphics.draw(NONREMOVABLE_MESH, x * wtz, y * wtz, 0, wtz, wtz)
+                    end
 
-                local itemInfo, cat = g.getItemInfo(itemData.type)
-                if cat == "server" then
-                    ---@cast itemData g.World.ServerData
-                    local probs = g.getItemProblems(itemData)
-                    local hasError = false
-                    for _, prob in ipairs(probs) do
-                        local probInfo = g.getItemProblemInfo(prob)
-                        if probInfo.error then
-                            hasError = true
-                            break
+                    local itemInfo, cat = g.getItemInfo(itemData.type)
+                    if cat == "server" then
+                        ---@cast itemData g.World.ServerData
+                        local probs = g.getItemProblems(itemData)
+                        local hasError = false
+                        for _, prob in ipairs(probs) do
+                            local probInfo = g.getItemProblemInfo(prob)
+                            if probInfo.error then
+                                hasError = true
+                                break
+                            end
                         end
-                    end
 
-                    if hasError then
-                        love.graphics.setColor(1, 0.3, 0.3)
-                    elseif itemData.currentJob then
-                        love.graphics.setColor(0.3, 1, 0.3)
-                    else
-                        love.graphics.setColor(0.3, 0.3, 1)
-                    end
+                        if hasError then
+                            love.graphics.setColor(1, 0.3, 0.3)
+                        elseif itemData.currentJob then
+                            love.graphics.setColor(0.3, 1, 0.3)
+                        else
+                            love.graphics.setColor(0.3, 0.3, 1)
+                        end
 
-                    love.graphics.draw(STATUS_MESH, (x + 0.5) * wtz, (y + 0.5) * wtz, 0, wtz * 1.1, wtz * 1.1, 0.5, 0.5)
+                        love.graphics.draw(STATUS_MESH, cx, cy, 0, wtz * 1.1, wtz * 1.1, 0.5, 0.5)
+                    end
+                    local trans = gsman.transform(cx, cy)
+                    love.graphics.setColor(1, 1, 1)
+                    itemInfo.draw(itemData)
+                    trans:pop()
                 end
-                local trans = gsman.transform((x + 0.5) * wtz, (y + 0.5) * wtz)
-                love.graphics.setColor(1, 1, 1)
-                itemInfo.draw(itemData)
-                trans:pop()
             end
         end
     )
@@ -1128,7 +1156,7 @@ function World:_draw()
     -- Draw power network connectors
     prof_push("power_draw")
     for _, v in ipairs(self.powerNetworks) do
-        drawPowerLines(v, self.htx, self.hty)
+        drawPowerLines(v, visibleArea, self.htx, self.hty)
     end
     prof_pop() -- prof_push("power_draw")
 
