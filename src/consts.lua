@@ -8,8 +8,6 @@ local consts = {
     EMULATE_TOUCH = os.getenv("INCREMENTAL_GAME_EMULATE_TOUCH") == "1", -- Set later
     IS_MOBILE = false, -- Set later
 
-    PROFILING = false,
-
     ANALYTICS_URL = nil, -- URL, without trailing slash.
     -- How long it should take before sending "update" event to analytics server (in seconds)?
     ANALYTICS_UPDATE_INTERVAL = 60,

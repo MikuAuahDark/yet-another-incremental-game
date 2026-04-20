@@ -1,7 +1,7 @@
 
 local love = require("love")
 
-local heartbeat = nil
+local heartbeat = require("lib.heartbeat.heartbeat")
 
 
 ---@type love.graphics
@@ -80,29 +80,22 @@ _G.FLAGS = require("src.flags")
 
 -- Profiler zones
 local profilerStackCount = 0
-if consts.PROFILING then
-    heartbeat = require("lib.heartbeat.heartbeat")
+local profileThisFrame = false
+---@param name string
+function _G.prof_push(name)
+    profilerStackCount = profilerStackCount + 1
 
-    ---@param name string
-    function _G.prof_push(name)
-        profilerStackCount = profilerStackCount + 1
+    if profileThisFrame then
         return heartbeat:PushNamedScope(name)
     end
+end
 
-    function _G.prof_pop()
-        assert(profilerStackCount > 0, "more pops than pushes")
-        profilerStackCount = profilerStackCount - 1
+function _G.prof_pop()
+    assert(profilerStackCount > 0, "more pops than pushes")
+    profilerStackCount = profilerStackCount - 1
+
+    if profileThisFrame then
         return heartbeat:PopScope()
-    end
-else
-    ---@param name string
-    function _G.prof_push(name)
-        profilerStackCount = profilerStackCount + 1
-    end
-
-    function _G.prof_pop()
-        assert(profilerStackCount > 0, "more pops than pushes")
-        profilerStackCount = profilerStackCount - 1
     end
 end
 
@@ -209,6 +202,7 @@ local User = require("src.user")
 local bgm = require("src.sound.bgm")
 local sfx = require("src.sound.sfx")
 local emulation = nil
+local heartbeatStarted = false
 
 if consts.DEV_MODE then
     emulation = require("src.emulation")
@@ -274,10 +268,6 @@ function love.load(arg)
     SteamInventory.init()
     SteamTicket.init()
     User.init()
-
-    if heartbeat then
-        heartbeat:StartCapture()
-    end
 end
 
 function love.quit()
@@ -300,7 +290,12 @@ function love.update(dt)
         emulation.update(dt)
     end
 
-    if heartbeat then
+    if heartbeat and profileThisFrame then
+        if not heartbeatStarted then
+            heartbeat:StartCapture()
+            heartbeatStarted = true
+        end
+
         heartbeat:HeartbeatStart()
     end
 
@@ -379,14 +374,17 @@ function love.draw()
 
     prof_pop() -- prof_push("love.draw")
 
-    if heartbeat then
+    if heartbeat and profileThisFrame then
         heartbeat:HeartbeatEnd()
     end
-
     assert(profilerStackCount == 0, "more pushes than pops")
 
     if emulation then
         emulation.draw()
+    end
+
+    if profileThisFrame then
+        helper.printTextOutline("PROFILER ACTIVE", g.getThickFont(16), 1, 8, 8, 1000, "left")
     end
 end
 
@@ -428,10 +426,16 @@ end
 
 
 function love.keypressed(key, scancode, isrep)
-    if scancode == "[" then
-        -- toggle show-dev-stuff
-        FLAGS.SHOW_DEV_STUFF = consts.DEV_MODE and (not FLAGS.SHOW_DEV_STUFF)
-    elseif scancode == "return" and love.keyboard.isDown("lalt", "ralt") then
+    if consts.DEV_MODE then
+        if scancode == "[" then
+            -- toggle show-dev-stuff
+            FLAGS.SHOW_DEV_STUFF = not FLAGS.SHOW_DEV_STUFF
+        elseif key == "f10" then
+            -- profiler
+            profileThisFrame = not profileThisFrame
+        end
+    end
+    if scancode == "return" and love.keyboard.isDown("lalt", "ralt") then
         settings.setFullscreen(not settings.isFullscreen())
     end
 
