@@ -488,8 +488,6 @@ function World:_update(dt)
                     self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
                     table.insert(self.boostersInTiles[tindex], booster)
                 end
-            else
-                booster.effectiveness = 1
             end
         else
             -- Radiating booster
@@ -642,13 +640,14 @@ function World:_update(dt)
             if category == "booster" then
                 ---@cast itemData g.World.BoosterData
                 ---@cast itemInfo g.BoosterInfo
+                itemData.effectiveness = itemData.effectiveness * worldutil.getLoadPercentage(itemData)
 
                 if itemInfo.connectable then
                     for _, target in ipairs(itemData.connectsTo) do
                         local reltx = target.tileX - x
                         local relty = target.tileY - y
                         ---@cast itemData g.World.BoosterData
-                        local heat = itemInfo.getTileHeat(reltx, relty) * itemData.effectiveness * worldutil.getLoadPercentage(itemData)
+                        local heat = itemInfo.getTileHeat(reltx, relty) * itemData.effectiveness
                         self.heat:set(target.tileX, target.tileY, self.heat:get(target.tileX, target.tileY) + heat)
                     end
                 else

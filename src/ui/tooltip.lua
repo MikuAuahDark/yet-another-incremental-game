@@ -283,7 +283,6 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     end
     builder:addText(getDPS(dpInfo), attrF, "left")
         :addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
-        :addText(TEXT.WIRE_COUNT({s = #dpData.connectsServers}), attrF, "left")
         :addText(getWireDPS(dpInfo), attrF, "left")
 
     -- Log message
@@ -292,7 +291,7 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     builder:render()
 end
 
----@param boosterData g.World.ItemData
+---@param boosterData g.World.BoosterData
 ---@param mx number
 ---@param my number
 ---@param safeArea kirigami.Region
@@ -320,16 +319,20 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     if boosterData.powerNetwork then
         builder:addText(getPowerNetworkText(boosterData.powerNetwork), attrF, "left")
     end
-    -- Effectivity
-    local loadPercentage = worldutil.getLoadPercentage(boosterData)
-    local effectivity = TEXT.EFFECTIVITY({effectivity = helper.round(loadPercentage * 100, 2)})
-    if loadPercentage < 1 then
-        effectivity = effectivity.." {bolt}"
-        if loadPercentage < 0.75 then
-            effectivity = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, effectivity)
-        elseif loadPercentage < 1 then
-            effectivity = helper.wrapRichtextColor(g.COLORS.UI.WARNING, effectivity)
+    -- Connections
+    if boosterInfo.connectable then
+        local conn = TEXT.WIRE_COUNT({count = #boosterData.connectsTo, max = boosterInfo.connectable.max})
+        if #boosterData.connectsTo > boosterInfo.connectable.max then
+            conn = helper.wrapRichtextColor(g.COLORS.UI.WARNING, conn)
         end
+        builder:addText(conn, attrF, "left")
+    end
+    -- Effectivity
+    local effectivity = TEXT.EFFECTIVITY({effectivity = helper.round(boosterData.effectiveness * 100, 2)})
+    if boosterData.effectiveness < 0.75 then
+        effectivity = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, effectivity)
+    elseif boosterData.effectiveness < 1 then
+        effectivity = helper.wrapRichtextColor(g.COLORS.UI.WARNING, effectivity)
     end
     builder:addText(effectivity, attrF, "left")
 
@@ -372,7 +375,6 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
         }), attrF, "left")
         :addText(TEXT.JOB_QUEUE({job = diInfo.maxJobQueue}), attrF, "left")
         :addText(TEXT.WIRE_RANGE({range = diInfo.wireLength}), attrF, "left")
-        :addText(TEXT.WIRE_COUNT({s = #diData.connectsServers}), attrF, "left")
 
     -- Log message
     addLogMessages(diData, builder)
@@ -409,7 +411,6 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
         builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
     end
     builder:addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
-        :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
 
     -- Log message
     addLogMessages(powerData, builder)
@@ -446,7 +447,6 @@ function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
         builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
     end
     builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
-        :addText(TEXT.WIRE_COUNT({s = #powerData.connectsTo}), attrF, "left")
 
     -- Log message
     addLogMessages(powerData, builder)
@@ -471,6 +471,7 @@ function ItemTooltip.DrawWorldTooltip(itemData, x, y, safeArea)
         ---@cast itemData g.World.DataInputData
         ItemTooltip.DITooltipWorld(itemData, x, y, safeArea)
     elseif cat == "booster" then
+        ---@cast itemData g.World.BoosterData
         ItemTooltip.BoosterTooltipWorld(itemData, x, y, safeArea)
     elseif cat == "powergen" then
         ---@cast itemData g.World.PowerData
