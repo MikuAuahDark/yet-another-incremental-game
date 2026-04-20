@@ -283,6 +283,12 @@ function MainScene:jobCompleted(server, job)
 end
 
 
+function MainScene:perSecondUpdate()
+    local tree = g.getUpgTree()
+    tree.priceBurnout = math.max(tree.priceBurnout * consts.UPGADE_BURNOUT_DECAY, 1)
+end
+
+
 
 function MainScene:_getTilePos()
     local mx, my = self.camera:toWorld(love.mouse.getPosition())

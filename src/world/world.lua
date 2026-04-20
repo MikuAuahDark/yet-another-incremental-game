@@ -987,9 +987,6 @@ function World:_update(dt)
             analytics.send("update")
             self.analyticsSendTime = 0
         end
-
-        local tree = g.getUpgTree()
-        tree.priceBurnout = math.max(tree.priceBurnout * consts.UPGADE_BURNOUT_DECAY, 1)
     end
 
     self.particles:update(dt)
