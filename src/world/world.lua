@@ -169,13 +169,10 @@ local function drawPowerLines(powerNetwork, visibleArea, htx, hty)
             local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
 
             if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                local alpha = UNHIGHLIGHT_ALPHA
                 if nodeSelected or htx == other.tileX and hty == other.tileY then
-                    alpha = HIGHLIGHT_ALPHA
+                    love.graphics.setColor(POWER_COLOR)
+                    drawArrows(x1, y1, x2, y2, 6, t)
                 end
-                love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-
-                drawArrows(x1, y1, x2, y2, 6, t)
             end
         end
 
@@ -185,13 +182,10 @@ local function drawPowerLines(powerNetwork, visibleArea, htx, hty)
                 local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
 
                 if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                    local alpha = UNHIGHLIGHT_ALPHA
                     if nodeSelected or htx == other.tileX and hty == other.tileY then
-                        alpha = HIGHLIGHT_ALPHA
+                        love.graphics.setColor(POWER_COLOR)
+                        drawArrows(x1, y1, x2, y2, 6, t)
                     end
-                    love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-
-                    drawArrows(x1, y1, x2, y2, 6, t)
                 end
             end
         end
@@ -212,12 +206,10 @@ local function drawPowerLines(powerNetwork, visibleArea, htx, hty)
                 local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
 
                 if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                    local alpha = UNHIGHLIGHT_ALPHA
                     if nodeSelected or htx == other.tileX and hty == other.tileY then
-                        alpha = HIGHLIGHT_ALPHA
+                        love.graphics.setColor(POWER_COLOR)
+                        drawArrows(x1, y1, x2, y2, 6, t)
                     end
-                    love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-                    drawArrows(x1, y1, x2, y2, 6, t)
                 end
             end
         end
@@ -228,12 +220,10 @@ local function drawPowerLines(powerNetwork, visibleArea, htx, hty)
                 local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
 
                 if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                    local alpha = UNHIGHLIGHT_ALPHA
                     if nodeSelected or htx == other.tileX and hty == other.tileY then
-                        alpha = HIGHLIGHT_ALPHA
+                        love.graphics.setColor(POWER_COLOR)
+                        drawArrows(x1, y1, x2, y2, 6, t)
                     end
-                    love.graphics.setColor(helper.multiplyAlpha(POWER_COLOR, alpha))
-                    drawArrows(x1, y1, x2, y2, 6, t)
                 end
             end
         end
