@@ -1286,9 +1286,16 @@ function World:_draw()
     -- Draw everything.
     prof_push("entity draw")
     for _, e in ipairs(objlist) do
-        local col = gsman.setColor(1, 1, 1)
-        drawEntity(e)
-        col:pop()
+        local draw = true
+        if e.boundingBox then
+            draw = visibleArea:intersection(Kirigami(e.boundingBox)):exists()
+        end
+
+        if draw then
+            local col = gsman.setColor(1, 1, 1)
+            drawEntity(e)
+            col:pop()
+        end
     end
     prof_pop() -- prof_push("entity draw")
 

@@ -51,21 +51,45 @@ end
 g.defineEntity("TEXT_ANIMATION", {
     drawOrder = 100,
     shadow = false,
-    draw = function(ent)
-        ---@diagnostic disable-next-line
-        local dur = ent._duration
-        ---@diagnostic disable-next-line
-        local text = ent._text
-        ---@diagnostic disable-next-line
-        local moveDistance = ent._moveDistance
+    init = function(ent, text, duration, moveDistance)
+        local f = g.getMainFont(10)
+        ---@diagnostic disable-next-line: inject-field
+        ent._text = text
+        ---@diagnostic disable-next-line: inject-field
+        ent._duration = duration or 1.0
+        ---@diagnostic disable-next-line: inject-field
+        ent._moveDistance = moveDistance or 20
+
+        local f = g.getMainFont(10)
+        local width = richtext.getWidth(text, f)
+        ent.boundingBox = {ent.x - width/2, ent.y, width, f:getHeight()}
+    end,
+    update = function(ent, dt)
+        ---@diagnostic disable-next-line: undefined-field
+        local dur = ent._duration --[[@as number]]
+        ---@diagnostic disable-next-line: undefined-field
+        local text = ent._text --[[@as string]]
+        ---@diagnostic disable-next-line: undefined-field
+        local moveDistance = ent._moveDistance --[[@as number]]
 
         local yOffset = helper.remap(math.max(ent.lifetime*2-dur, 0), dur,0, 0, moveDistance)
-        local alpha = 1
 
-        lg.setColor(1, 1, 1, alpha)
+        ent.boundingBox[1] = ent.x - ent.boundingBox[3]/2
+        ent.boundingBox[2] = ent.y - yOffset
+    end,
+    draw = function(ent)
+        ---@diagnostic disable-next-line: undefined-field
+        local dur = ent._duration --[[@as number]]
+        ---@diagnostic disable-next-line: undefined-field
+        local text = ent._text --[[@as string]]
+        ---@diagnostic disable-next-line: undefined-field
+        local moveDistance = ent._moveDistance --[[@as number]]
+
+        local yOffset = helper.remap(math.max(ent.lifetime*2-dur, 0), dur,0, 0, moveDistance)
+
+        lg.setColor(1, 1, 1, 1)
         local f = g.getMainFont(10)
-        local sc = 1.2
-        richtext.printRichCentered(text, assert(f), ent.x, ent.y - yOffset, 5000, "left", 0, sc)
+        richtext.printRich(text, assert(f), ent.x, ent.y - yOffset, ent.boundingBox[3], "left", 0, 1, 1, ent.boundingBox[3]/2, 0)
     end
 })
 
@@ -78,13 +102,7 @@ function worldutil.spawnText(text, x, y, duration, moveDistance)
     if g.isBeingSimulated() then
         return -- dont spawn text when simulation mode
     end
-    local e = g.spawnEntity("TEXT_ANIMATION", x, y)
-    ---@diagnostic disable-next-line
-    e._text = text
-    ---@diagnostic disable-next-line
-    e._duration = duration or 1.0
-    ---@diagnostic disable-next-line
-    e._moveDistance = moveDistance or 20
+    local e = g.spawnEntity("TEXT_ANIMATION", x, y, text, duration, moveDistance)
     e.lifetime = duration or 1.0
 end
 

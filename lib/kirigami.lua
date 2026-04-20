@@ -39,9 +39,16 @@ local function getXYWH(x,y,w,h)
     if type(x) == "number" then
         return x,y,w,h
     else
+        ---@cast x kirigami.Region|[number,number,number,number]
         assert(type(x) == "table", "Expected x,y,w,h numbers")
-        local region = x
-        return region:get()
+
+        if getmetatable(x) == Region_mt then
+            ---@cast x kirigami.Region
+            return x:get()
+        else
+            ---@cast x [number,number,number,number]
+            return x[1], x[2], x[3], x[4]
+        end
     end
 end
 
@@ -71,6 +78,7 @@ end
 ---@param w number?
 ---@param h number?
 ---@return kirigami.Region
+---@overload fun(region:kirigami.Region|[number,number,number,number]):kirigami.Region
 local function newRegion(x,y,w,h)
     if not x then
         -- default region is empty

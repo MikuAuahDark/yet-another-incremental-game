@@ -2406,6 +2406,7 @@ do
 ---@field x number
 ---@field y number
 ---@field id integer
+---@field boundingBox [number,number,number,number]? (x,y,w,h; must be set on `Entity:init()`!)
 ---@field shadow (false|"shadow_medium"|"shadow_small"|"shadow_big")?
 ---@field sx number?
 ---@field sy number?
