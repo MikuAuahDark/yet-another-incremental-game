@@ -9,14 +9,13 @@
 ---@field safeArea kirigami.Region?
 local TooltipBuilder = objects.Class("ui.TooltipBuilder")
 
-local MAX_TOOLTIP_WIDTH = 200
-
 ---@param x number
 ---@param y number
 ---@param ox number
 ---@param oy number
 ---@param safeArea kirigami.Region?
-function TooltipBuilder:init(x, y, ox, oy, safeArea)
+---@param maxWidth number?
+function TooltipBuilder:init(x, y, ox, oy, safeArea, maxWidth)
     self.blocks = {}
     self.width = 120
     self.height = 0
@@ -25,6 +24,7 @@ function TooltipBuilder:init(x, y, ox, oy, safeArea)
     self.ox = ox
     self.oy = oy
     self.safeArea = safeArea
+    self.maxWidth = maxWidth or 200
 end
 
 if false then
@@ -33,9 +33,10 @@ if false then
     ---@param ox number
     ---@param oy number
     ---@param safeArea kirigami.Region?
+    ---@param maxWidth number?
     ---@return ui.TooltipBuilder
     ---@diagnostic disable-next-line: cast-local-type, missing-return
-    function TooltipBuilder(x, y, ox, oy, safeArea) end
+    function TooltipBuilder(x, y, ox, oy, safeArea, maxWidth) end
 end
 
 ---@param text string|richtext.ParsedText
@@ -43,7 +44,7 @@ end
 ---@param align love.AlignMode?
 ---@param heightOverride number?
 function TooltipBuilder:addText(text, font, align, heightOverride)
-    local w, lines = richtext.getWrap(text, font, MAX_TOOLTIP_WIDTH)
+    local w, lines = richtext.getWrap(text, font, self.maxWidth)
     local h = heightOverride or (lines * font:getHeight())
     table.insert(self.blocks, {
         type = "text",
@@ -53,14 +54,14 @@ function TooltipBuilder:addText(text, font, align, heightOverride)
         w = w,
         h = h
     })
-    self.width = helper.clamp(self.width, w, MAX_TOOLTIP_WIDTH)
+    self.width = helper.clamp(self.width, w, self.maxWidth)
     self.height = self.height + h
     return self
 end
 
 ---@param w number
 function TooltipBuilder:ensureWidth(w)
-    self.width = helper.clamp(self.width, w, MAX_TOOLTIP_WIDTH)
+    self.width = helper.clamp(self.width, w, self.maxWidth)
     return self
 end
 

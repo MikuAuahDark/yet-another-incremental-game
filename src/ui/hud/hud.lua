@@ -86,43 +86,11 @@ local MAX_TOOLTIP_WIDTH = 180
 local function drawTooltipWithDescription(x, y, title, description)
     local titleF = g.getMainFont(16)
     local descF = g.getMainFont(12)
-    local titleFH = titleF:getHeight()
-    local descFH = descF:getHeight()
 
-    -- Compute sizes
-    local width, height = 0, 0
-    -- Title
-    local titleHeight
-    do
-        local w, l = richtext.getWrap(title, titleF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        titleHeight = l * titleFH
-        height = height + titleHeight
-    end
-    -- Description
-    local descriptionHeight = 0
-    do
-        local w, l = richtext.getWrap(description, descF, MAX_TOOLTIP_WIDTH)
-        width = helper.clamp(width, w, MAX_TOOLTIP_WIDTH)
-        descriptionHeight = l * descFH
-        height = height + descriptionHeight
-    end
-
-    -- Generate region now
-    local tdrawableR, tcntR = ui.getTooltipRegion(x - width / 2, y, width, height, ui.getFullScreenRegion())
-    ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
-
-    -- Pass 2: Draw the tooltip
-    height = 0
-    do
-        richtext.printRich(title, titleF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + titleHeight
-    end
-    -- Draw description
-    do
-        richtext.printRich(description, descF, tcntR.x, tcntR.y + height, tcntR.w, "center")
-        height = height + descriptionHeight
-    end
+    ui.TooltipBuilder(x, y, 0.5, 0, ui.getFullScreenRegion(), MAX_TOOLTIP_WIDTH)
+        :addText(title, titleF, "center")
+        :addText(description, descF, "center")
+        :render()
 end
 
 ---@param b boolean?
