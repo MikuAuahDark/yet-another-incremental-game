@@ -53,6 +53,7 @@ function MainScene:draw()
         -- tile indicator
         love.graphics.setColor(0, 0, 0, 1)
         local t = math.sin(love.timer.getTime() * 4) ^ 2
+        local drawItemPreview = nil
         if hud.selectedItem then
             if hud.selectedItem == "" then
                 local item = g.getItem(tx, ty)
@@ -66,6 +67,7 @@ function MainScene:draw()
                 if g.canAfford({money = price}) then
                     if g.canPutItem(tx, ty) and g.canAfford({money = price}) then
                         love.graphics.setColor(0, 1, 0, t)
+                        drawItemPreview = g.getItemInfo(hud.selectedItem)
                     else
                         love.graphics.setColor(1, 0, 0, t)
                     end
@@ -76,6 +78,13 @@ function MainScene:draw()
         end
 
         love.graphics.rectangle("line", tx * wtz, ty * wtz, wtz, wtz)
+
+        if drawItemPreview then
+            local itemR = Kirigami(tx * wtz, ty * wtz, wtz, wtz)
+            local col = gsman.setColor(1, 1, 1, 0.5)
+            drawItemPreview.drawItem(itemR:padRatio(0.25))
+            col:pop()
+        end
     else
         world:_setHoveredTile(nil, nil)
     end
