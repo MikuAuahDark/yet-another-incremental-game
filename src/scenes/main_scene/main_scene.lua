@@ -9,23 +9,21 @@ function MainScene:init()
     local wtz = consts.WORLD_TILE_SIZE
     self.camera:setPos((center + 0.5) * wtz, (center + 0.5) * wtz)
 
-    ---@type g.World.ItemData? pinning item description
-    self.pinItemInfo = nil
-    ---@type [number,g.World.ItemData]?
-    self.targetDrag = nil
-    ---@type [number,g.World.DataOutputData]?
-    self.dpDoubleClickData = nil
+    ---@type [integer,integer]?
+    self.pinPosition = nil
+    ---@type [number,number]?
+    self.lastPan = nil
+
     -- We track our own zoom because our zoom needs to be affected by UI scaling
     self.zoomValue = 0
 
     self.hideHUD = false
-    self.clearJobMode = false
 end
 MainScene.mousemoved = MainScene.defaultMousemoved
 
 function MainScene:enter()
     self.hideHUD = false
-    self.clearJobMode = false
+    g.getHUD().selectedItem = nil
 end
 
 ---@param dt number
@@ -34,25 +32,6 @@ function MainScene:update(dt)
     self:setZoom(z + self.zoomValue)
     self.camera:setViewport(0, 0, love.graphics.getDimensions())
     g.getHUD():update(dt)
-
-    if self.pinItemInfo and self.pinItemInfo.removed then
-        self.pinItemInfo = nil
-    end
-
-    if self.targetDrag then
-        if self.targetDrag[2].removed then
-            self.targetDrag = nil
-        else
-            self.targetDrag[1] = self.targetDrag[1] + dt
-        end
-    end
-
-    if self.dpDoubleClickData then
-        self.dpDoubleClickData[1] = math.max(self.dpDoubleClickData[1] - dt, 0)
-        if self.dpDoubleClickData[1] <= 0 then
-            self.dpDoubleClickData = nil
-        end
-    end
 end
 
 function MainScene:draw()
@@ -64,69 +43,42 @@ function MainScene:draw()
     local world = g.getMainWorld()
     world:_draw()
 
-    -- Dismiss pinned item info if needed
-    if not self.targetDrag then
-        if iml.wasJustClicked(self:_regionFromUIToWorld(safeArea):get()) then
-            self.pinItemInfo = nil
-        end
-    end
-
     local mx, my = iml.getTransformedPointer()
     -- Draw tile selection
     local wtz = consts.WORLD_TILE_SIZE
     local tx, ty = math.floor(mx / wtz), math.floor(my / wtz)
-    local item = nil
-    local beforeActiveDragWorld, currentActiveDragWorld = self.targetDrag, nil
     if world.items:contains(tx, ty) then
         world:_setHoveredTile(tx, ty)
+
         -- tile indicator
+        love.graphics.setColor(0, 0, 0, 1)
         local t = math.sin(love.timer.getTime() * 4) ^ 2
-        if hud.activeDragging and hud.activeDragging[1] >= consts.DRAG_ITEM_DURATION then
-            local price = g.getItemPrice(hud.activeDragging[2])
-            if g.canPutItem(tx, ty) and g.canAfford({money = price}) then
-                love.graphics.setColor(0, 1, 0, t)
-            else
-                love.graphics.setColor(1, 0, 0, t)
-            end
-        elseif self.targetDrag and self.targetDrag[1] >= consts.DRAG_ITEM_DURATION then
-            if (tx == self.targetDrag[2].tileX and ty == self.targetDrag[2].tileY) or g.canPutItem(tx, ty) then
-                love.graphics.setColor(0, 1, 0, t)
-            else
-                love.graphics.setColor(1, 0, 0, t)
-            end
-        else
-            love.graphics.setColor(0, 0, 0, 1)
-        end
-        love.graphics.rectangle("line", tx * wtz, ty * wtz, wtz, wtz)
-
-        item = self.targetDrag and self.targetDrag[2]
-        if not item then
-            item = g.getItem(tx, ty)
-        end
-
-        if item then
-            local x, y = item.tileX * wtz, item.tileY * wtz
-            local drag = item.removable ~= false and iml.consumeDrag(item, x, y, wtz, wtz, 1) or false
-            if drag or iml.isClicked(x, y, wtz, wtz, 1, item) then
-                if not drag then
-                    self.pinItemInfo = item
+        if hud.selectedItem then
+            if hud.selectedItem == "" then
+                local item = g.getItem(tx, ty)
+                if item and item.removable then
+                    love.graphics.setColor(0, 1, 0, t)
+                else
+                    love.graphics.setColor(1, 0, 0, t)
                 end
-
-                if item.removable ~= false then
-                    if self.targetDrag and self.targetDrag[2] ~= item or not self.targetDrag then
-                        self.targetDrag = {0, item}
+            else
+                local price = g.getItemPrice(hud.selectedItem)
+                if g.canAfford({money = price}) then
+                    if g.canPutItem(tx, ty) and g.canAfford({money = price}) then
+                        love.graphics.setColor(0, 1, 0, t)
+                    else
+                        love.graphics.setColor(1, 0, 0, t)
                     end
                 else
-                    self.targetDrag = nil
+                    hud.selectedItem = nil
                 end
-            else
-                self.targetDrag = nil
             end
         end
+
+        love.graphics.rectangle("line", tx * wtz, ty * wtz, wtz, wtz)
     else
         world:_setHoveredTile(nil, nil)
     end
-    currentActiveDragWorld = self.targetDrag
 
     self:resetCamera()
     ui.startUI()
@@ -140,90 +92,98 @@ function MainScene:draw()
         end
     end
 
-    if not self.hideHUD then
-        love.graphics.setColor(0, 0, 0, 1)
-        if world.heat:contains(tx, ty) then
-            love.graphics.print("("..tx..", "..ty..") H: "..world.heat:get(tx, ty), g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 18)
-        else
-            love.graphics.print("("..tx..", "..ty..")", g.getMainFont(16), safeArea.x + 4, safeArea.y + safeArea.h - 18)
-        end
-    end
-
-    if not self.hideHUD and (not currentActiveDragWorld or currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION) and (not hud.activeDragging) then
-        if self.pinItemInfo and world:isWithinWorldLimit(self.pinItemInfo.tileX, self.pinItemInfo.tileY) then
-            -- Draw pinned tooltip
-            ---@type number,number
-            local uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
-                self.camera:toScreen((self.pinItemInfo.tileX + 0.5) * wtz, (self.pinItemInfo.tileY + 0.5) * wtz)
-            )
-            ui.ItemTooltip.DrawWorldTooltip(self.pinItemInfo, uix, uiy, safeArea)
-        end
-        if item and self.pinItemInfo ~= item and world:isWithinWorldLimit(item.tileX, item.tileY) then
-            -- Draw hovered tooltip
-            ui.ItemTooltip.DrawWorldTooltip(item, uimx + 11, uimy + 5, safeArea)
-        end
-    end
-
-    -- Update item dragging (from world)
-    if currentActiveDragWorld then
-        if currentActiveDragWorld[1] < consts.DRAG_ITEM_DURATION then
-            local t = helper.clamp(helper.remap(currentActiveDragWorld[1], 0, consts.DRAG_ITEM_DURATION, 0, 1), 0, 1)
-            ui.arcLoadingBar(uimx, uimy, t)
-        end
-    elseif beforeActiveDragWorld and beforeActiveDragWorld[1] >= consts.DRAG_ITEM_DURATION then
-        -- Move or remove?
-        if safeArea:containsCoords(uimx, uimy) then
-            -- Move if possible
-            if g.canPutItem(tx, ty) then
-                g.moveItem(beforeActiveDragWorld[2], tx, ty)
-            end
-        else
-            -- Remove
-            local itemInfo = g.getItemInfo(beforeActiveDragWorld[2].type)
-            local itemPrice = g.getItemPrice(itemInfo, world.itemCounts[itemInfo.id] - 1)
-            g.removeItem(beforeActiveDragWorld[2])
-            g.addResource("money", itemPrice * 0.5)
-        end
-    end
-
-    -- Update item dragging (from HUD)
-    -- FIXME: Callback-based?
-    local beforeActiveDragHUD = hud.activeDragging
     if self.hideHUD then
-        hud:draw({stats = false, itemList = false, jobQueue = false})
-        if iml.wasJustClicked(ui.getFullScreenRegion():get()) then
-            self.hideHUD = false
-        end
+        hud:draw({stats = false, jobQueue = false, itemList = false, mode = "main"})
     else
-        hud:draw()
+        hud:draw({mode = "main"})
     end
-    local currentActiveDragHUD = hud.activeDragging
 
-    if currentActiveDragHUD then
-        if currentActiveDragHUD[1] < consts.DRAG_ITEM_DURATION then
-            local t = helper.clamp(helper.remap(currentActiveDragHUD[1], 0, consts.DRAG_ITEM_DURATION, 0, 1), 0, 1)
-            ui.arcLoadingBar(uimx, uimy, t)
-        elseif currentActiveDragHUD[3] > 0 then
-            local t = helper.EASINGS.sineOut(math.min(currentActiveDragHUD[3], 1))
-            hud:drawCancelIntuition("cancel", t)
+    if not self.hideHUD then
+        -- Draw tile selection info text
+        love.graphics.setColor(1, 1, 1)
+        if world.heat:contains(tx, ty) then
+            helper.printTextOutlineSimple(
+                "("..tx..", "..ty..") H: "..helper.round(world.heat:get(tx, ty), 2),
+                g.getMainFont(16), 1,
+                safeArea.x + 4,
+                safeArea.y + safeArea.h - 18
+            )
+        else
+            helper.printTextOutlineSimple(
+                "("..tx..", "..ty..")",
+                g.getMainFont(16), 1,
+                safeArea.x + 4,
+                safeArea.y + safeArea.h - 18
+            )
         end
-    elseif beforeActiveDragHUD and beforeActiveDragHUD[1] >= consts.DRAG_ITEM_DURATION then
-        -- Place or put out?
-        if helper.isInsideRect(uimx, uimy, safeArea:get()) then
-            -- Place
-            local itemInfo = g.getItemInfo(beforeActiveDragHUD[2].id)
-            local itemPrice = g.getItemPrice(itemInfo)
-            if g.canPutItem(tx, ty) and g.trySubtractResources({money = itemPrice}) then
-                g.putItem(beforeActiveDragHUD[2].id, tx, ty)
+
+        -- Draw tile selection tooltip
+        local selectedItem = nil
+        if self.pinPosition then
+            local selTx, selTy = self.pinPosition[1], self.pinPosition[2]
+
+            if not world:isWithinWorldLimit(selTx, selTy) then
+                self.pinPosition = nil
+            else
+                selectedItem = g.getItem(selTx, selTx)
             end
         end
-    end
 
-    if currentActiveDragWorld then
-        local t0 = math.min((currentActiveDragWorld[1] - consts.DRAG_ITEM_DURATION) * 2, 1)
-        if t0 > 0 then
-            local t = helper.EASINGS.sineOut(t0)
-            hud:drawCancelIntuition("delete", t)
+        if not selectedItem then
+            if world.items:contains(tx, ty) and world:canPutItem(tx, ty) then
+                selectedItem = g.getItem(tx, ty)
+            end
+        end
+
+        if selectedItem then
+            -- Draw tooltip
+            local uix, uiy
+            if self.pinPosition then
+                local selTx, selTy = self.pinPosition[1], self.pinPosition[2]
+                ---@type number,number
+                uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
+                    self.camera:toScreen((selTx + 0.5) * wtz, (selTy + 0.5) * wtz)
+                )
+            else
+                uix, uiy = uimx + 11, uimy + 5
+            end
+
+            ui.ItemTooltip.DrawWorldTooltip(selectedItem, uix, uiy, safeArea)
+        end
+
+        local drag = ui.region.consumeDrag("moveworld", safeArea, 1)
+        if drag then
+            -- Panning
+            local x, y = ui.getUIScalingTransform():transformPoint(drag.endX, drag.endY)
+            if self.lastPan then
+                local cx, cy = self.camera:getPos() --[[@as number]]
+                local z = self:scaleFromZoom(self._zoomIndex)
+                local dx = x - self.lastPan[1]
+                local dy = y - self.lastPan[2]
+                self.camera:setPos(cx - dx / z, cy - dy / z)
+            end
+            self.lastPan = {x, y}
+        else
+            self.lastPan = nil
+        end
+
+        if hud.selectedItem then
+            if ui.region.wasJustClicked(safeArea, 1, "moveworld") then
+                if hud.selectedItem == "" then
+                    -- Item deletion
+                    local item = g.getItem(tx, ty)
+                    if item and item.removable then
+                        g.removeItem(tx, ty)
+                    end
+                else
+                    -- Item placement
+                    if g.canPutItem(tx, ty) then
+                        g.putItem(hud.selectedItem, tx, ty)
+                    end
+                end
+            elseif ui.region.wasJustClicked(safeArea, 2, "moveworld") then
+                hud.selectedItem = nil
+            end
         end
     end
 
@@ -239,24 +199,23 @@ function MainScene:draw()
         end
     end
 
-    -- Draw item visual
-    local showVisualForItem = nil
-
-    if currentActiveDragWorld and currentActiveDragWorld[1] >= consts.DRAG_ITEM_DURATION then
-        showVisualForItem = g.getItemInfo(currentActiveDragWorld[2].type)
-    elseif currentActiveDragHUD and currentActiveDragHUD[1] >= consts.DRAG_ITEM_DURATION then
-        showVisualForItem = currentActiveDragHUD[2]
-    end
-
-    if showVisualForItem then
-        -- TODO: Visual feedback when placing
-        local col = gsman.setColor(1, 1, 1, 0.5)
+    -- Draw item visual on cursor
+    if hud.selectedItem then
         local t = math.sin(love.timer.getTime() * 5)
         local itemR = Kirigami(uimx + 6, uimy + 6 + t * 3, 48, 48)
-        showVisualForItem.drawItem(itemR)
-        col:pop()
 
-        self.pinItemInfo = nil
+        if hud.selectedItem == "" then
+            -- Delete
+            local col = gsman.setColor(1, 0, 0)
+            g.drawImageContained("delete", itemR:padRatio(0.2):get())
+            col:pop()
+        else
+            -- Place
+            local itemInfo = g.getItemInfo(hud.selectedItem)
+            local col = gsman.setColor(1, 1, 1, 0.5)
+            itemInfo.drawItem(itemR)
+            col:pop()
+        end
     end
 
     -- Check if visibility button was pressed

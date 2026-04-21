@@ -112,10 +112,6 @@ function HUD:init()
     -- Used for building list
     self.botR = Kirigami(0, 0, 1, 1)
     self.activeTab = "server"
-    ---@type [number,g.ItemInfo,number]? when dragging from item list to world.
-    self.activeDragging = nil -- [1] = duration, [2] = item info, [3] = has mouse ever on tiles (-1 = no, >=0 = yes)
-    ---@type [number,number,g.ItemInfo]? for tooltip pinning
-    self.selectedItem = nil
     self.scrollPos = 0
 
     self.wheelX = 0
@@ -123,6 +119,9 @@ function HUD:init()
 
     self.wasVisibilityButtonPressed = false
     self.wasResetCameraButtonPressed = false
+
+    ---@type string? itemID or empty string to delete (nil = no tool)
+    self.selectedItem = nil
 end
 
 if false then
@@ -140,14 +139,6 @@ function HUD:update(dt)
         :set(nil, nil, nil, 112)
         :attachToBottomOf(r)
         :moveRatio(0, -1)
-
-    if self.activeDragging then
-        self.activeDragging[1] = self.activeDragging[1] + dt
-
-        if self.activeDragging[3] >= 0 then
-            self.activeDragging[3] = self.activeDragging[3] + dt * 2
-        end
-    end
 
     self.wasVisibilityButtonPressed = false
     self.wasResetCameraButtonPressed = false
@@ -351,6 +342,7 @@ function HUD:draw(show)
                 -- Input test
                 if iml.wasJustClicked(v[2]:get()) then
                     self.activeTab = k
+                    self.selectedItem = nil
                 end
                 -- Distinct active tab with inactive tabs
                 if self.activeTab == k then
@@ -386,17 +378,22 @@ function HUD:draw(show)
             end
 
             -- Draw item list
-            local itemListR = listR:padUnit(4)
+            local itemListBaseR = listR:padUnit(4)
+            local itemListR, deleteButtonR = helper.splitRegionByExactSizes(
+                itemListBaseR,
+                "horizontal",
+                0,
+                math.min(itemListBaseR.w, itemListBaseR.h)
+            )
             local itemListRectSize = math.min(itemListR.w, itemListR.h)
             local itemListGrid, totalWidth = generateItemListRegion(itemListR, #items, itemListRectSize, 4)
             local scrollSize = math.max(totalWidth - itemListR.w, 0)
             local itemNameF = g.getMainFont(10)
             local showDescriptionOf = nil
-            local gotDrag = nil
 
             if totalWidth > itemListR.w then
                 -- Update scrollbar
-                if listR:containsCoords(ui.getMouse()) then
+                if itemListR:containsCoords(ui.getMouse()) then
                     local dx, dy = iml.consumeWheelMove()
                     if dx and dy then
                         -- Discreteize
@@ -436,7 +433,7 @@ function HUD:draw(show)
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].CARD)
             love.graphics.setStencilMode("draw", 2)
             love.graphics.setColorMask(true, true, true, true)
-            love.graphics.rectangle("fill", listR:get())
+            love.graphics.rectangle("fill", itemListR:get())
             love.graphics.setStencilMode("test", 2)
             love.graphics.setColor(1, 1, 1)
 
@@ -450,20 +447,17 @@ function HUD:draw(show)
                     local itemInfo = items[i]
                     local x, y, w, h = clickAreaR:get()
 
-                    -- Oli: Check drag first for proper behavior!
-                    local drag = iml.consumeDrag(itemInfo, x, y, w, h, 1)
-                    if drag or iml.isClicked(x, y, w, h, 1, itemInfo) then
+                    if iml.isHovered(x, y, w, h, itemInfo) then
+                        love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
+                        love.graphics.rectangle("fill", itemBaseR:get())
                         showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+                    end
 
-                        if self.activeDragging and self.activeDragging[2] ~= itemInfo or not self.activeDragging then
-                            self.activeDragging = {0, itemInfo, -1}
-                        end
-                        gotDrag = self.activeDragging
-                    else
-                        if iml.isHovered(x, y, w, h, itemInfo) then
-                            love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
-                            love.graphics.rectangle("fill", itemBaseR:get())
-                            showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+                    if iml.wasJustClicked(x, y, w, h, 1, itemInfo) then
+                        if self.selectedItem == itemInfo.id then
+                            self.selectedItem = nil
+                        else
+                            self.selectedItem = itemInfo.id
                         end
                     end
 
@@ -484,23 +478,33 @@ function HUD:draw(show)
                 end
             end
 
-            self.activeDragging = gotDrag
             love.graphics.setStencilMode()
-            love.graphics.setColor(1, 1, 1)
 
-            if showDescriptionOf and (not self.activeDragging or self.activeDragging[1] < consts.DRAG_ITEM_DURATION) then
+
+            -- Draw delete or cancel button
+            love.graphics.setColor(1, 0.1, 0.1)
+            local deleteButtonAreaR = deleteButtonR:padRatio(0.3)
+            if self.selectedItem then
+                g.drawImageContained("cancel", deleteButtonAreaR:get())
+            else
+                g.drawImageContained("delete", deleteButtonAreaR:get())
+            end
+            if ui.region.wasJustClicked(deleteButtonR) then
+                if self.selectedItem then
+                    self.selectedItem = nil
+                else
+                    self.selectedItem = ""
+                end
+            end
+
+            love.graphics.setColor(1, 1, 1)
+            if showDescriptionOf then
                 ui.ItemTooltip.DrawHUDTooltip(
                     showDescriptionOf[3],
                     showDescriptionOf[1],
                     showDescriptionOf[2],
                     ui.getFullScreenRegion()
                 )
-            end
-
-            if self.activeDragging then
-                if self.activeDragging[3] == -1 and not self.botR:containsCoords(ui.getMouse()) then
-                    self.activeDragging[3] = 0
-                end
             end
         end
 

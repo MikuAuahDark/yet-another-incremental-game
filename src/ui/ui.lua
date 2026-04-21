@@ -585,6 +585,26 @@ function ui.arcLoadingBar(x, y, t, theme)
 	lw:pop()
 end
 
+---Contains simple IML wrapper that accepts region instead
+ui.region = {}
+
+---@param key any
+---@param reg kirigami.Region
+---@param button integer
+function ui.region.consumeDrag(key, reg, button)
+	local x, y, w, h = reg:get()
+	return iml.consumeDrag(key, x, y, w, h, button)
+end
+
+---@param reg kirigami.Region
+---@param button integer?
+---@param key any?
+function ui.region.wasJustClicked(reg, button, key)
+	local x, y, w, h = reg:get()
+	return iml.wasJustClicked(x, y, w, h, button, key)
+end
+
+
 
 
 -- For UI global scaling
