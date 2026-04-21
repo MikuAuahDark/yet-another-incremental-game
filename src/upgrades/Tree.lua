@@ -397,13 +397,6 @@ function Tree:getUpgradeRequirements(upg)
         end
     end
 
-    -- CPS
-    if upg.cps then
-        local cps = g.getMainWorld().peakCPS
-        local canAfford = FLAGS.INFINITE_MONEY or cps >= upg.cps
-        reqs[#reqs+1] = {g.formatNumber(upg.cps).."{dns}/s", canAfford}
-    end
-
     return reqs
 end
 
@@ -683,6 +676,12 @@ function Tree:isUpgradeHidden(upg)
     if upg.isRoot then
         -- "root" upgrades are always visible
         return false
+    end
+    if upg.cps then
+        -- Upgrades locked behind CPS requirement is always hidden.
+        if upg.cps < g.getMainWorld().peakCPS then
+            return true
+        end
     end
 
     local uinfo = g.getUpgradeInfo(upg.id)
