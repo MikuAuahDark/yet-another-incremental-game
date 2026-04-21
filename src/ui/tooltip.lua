@@ -134,7 +134,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local attrFH = attrF:getHeight()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
+    local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
     builder:addText(serverInfo.name, titleF, "center")
@@ -264,7 +264,7 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
+    local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
     builder:addText(dpInfo.name, titleF, "center")
@@ -302,7 +302,7 @@ function ItemTooltip.BoosterTooltipWorld(boosterData, mx, my, safeArea)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
+    local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
     builder:addText(boosterInfo.name, titleF, "center")
@@ -353,7 +353,7 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("world", mx, my, safeArea)
+    local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
     builder:addText(diInfo.name, titleF, "center")
@@ -399,17 +399,17 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
 end
 
 ---@param powerData g.World.PowerData
----@param x number relative to bottom center
----@param y number relative to bottom center
+---@param mx number
+---@param my number
 ---@param safeArea kirigami.Region
-function ItemTooltip.DrawPowerGenTooltip(powerData, x, y, safeArea)
+function ItemTooltip.DrawPowerGenTooltip(powerData, mx, my, safeArea)
     local powerGenInfo = g.getItemInfo(powerData.type, "powergen")
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("world", x, y, safeArea)
+    local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
     builder:addText(powerGenInfo.name, titleF, "center")
@@ -436,17 +436,17 @@ end
 
 
 ---@param powerData g.World.PowerData
----@param x number relative to bottom center
----@param y number relative to bottom center
+---@param mx number
+---@param my number
 ---@param safeArea kirigami.Region
-function ItemTooltip.DrawPowerRelayTooltip(powerData, x, y, safeArea)
+function ItemTooltip.DrawPowerRelayTooltip(powerData, mx, my, safeArea)
     local powerRelayInfo = g.getItemInfo(powerData.type, "powerrelay")
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("world", x, y, safeArea)
+    local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
     builder:addText(powerRelayInfo.name, titleF, "center")
@@ -514,7 +514,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
 
     -- Title
     builder:addText(serverInfo.name, titleF, "center")
@@ -564,7 +564,7 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
 
     -- Title
     builder:addText(dpInfo.name, titleF, "center")
@@ -603,7 +603,7 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
 
     -- Title
     builder:addText(diInfo.name, titleF, "center")
@@ -660,7 +660,7 @@ function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
 
     -- Title
     builder:addText(boosterInfo.name, titleF, "center")
@@ -693,7 +693,7 @@ function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
 
     -- Title
     builder:addText(powerGenInfo.name, titleF, "center")
@@ -727,7 +727,7 @@ function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y)
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder("hud", x, y)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
 
     -- Title
     builder:addText(powerRelayInfo.name, titleF, "center")

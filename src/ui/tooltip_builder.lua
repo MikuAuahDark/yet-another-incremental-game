@@ -4,34 +4,38 @@
 ---@field height number
 ---@field mx number
 ---@field my number
+---@field ox number
+---@field oy number
 ---@field safeArea kirigami.Region?
----@field isHUD boolean
 local TooltipBuilder = objects.Class("ui.TooltipBuilder")
 
 local MAX_TOOLTIP_WIDTH = 200
 
----@param mode "world"|"hud"
 ---@param x number
 ---@param y number
+---@param ox number
+---@param oy number
 ---@param safeArea kirigami.Region?
-function TooltipBuilder:init(mode, x, y, safeArea)
+function TooltipBuilder:init(x, y, ox, oy, safeArea)
     self.blocks = {}
     self.width = 120
     self.height = 0
     self.mx = x
     self.my = y
-    self.isHUD = mode == "hud"
+    self.ox = ox
+    self.oy = oy
     self.safeArea = safeArea
 end
 
 if false then
-    ---@param mode "world"|"hud"
     ---@param x number
     ---@param y number
+    ---@param ox number
+    ---@param oy number
     ---@param safeArea kirigami.Region?
     ---@return ui.TooltipBuilder
     ---@diagnostic disable-next-line: cast-local-type, missing-return
-    function TooltipBuilder(mode, x, y, safeArea) end
+    function TooltipBuilder(x, y, ox, oy, safeArea) end
 end
 
 ---@param text string|richtext.ParsedText
@@ -83,12 +87,13 @@ function TooltipBuilder:addCustom(h, drawFn)
 end
 
 function TooltipBuilder:render()
-    local tdrawableR, tcntR
-    if self.isHUD then
-        tdrawableR, tcntR = ui.getTooltipRegion(self.mx - self.width / 2, self.my - self.height, self.width, self.height, self.safeArea)
-    else
-        tdrawableR, tcntR = ui.getTooltipRegion(self.mx, self.my, self.width, self.height, self.safeArea)
-    end
+    local tdrawableR, tcntR = ui.getTooltipRegion(
+        self.mx - self.width * self.ox,
+        self.my - self.height * self.oy,
+        self.width,
+        self.height,
+        self.safeArea
+    )
 
     ui.Tooltip(tdrawableR, objects.Color.BLACK, objects.Color.WHITE)
 
