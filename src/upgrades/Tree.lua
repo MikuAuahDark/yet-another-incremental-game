@@ -327,7 +327,7 @@ function Tree:canAffordUpgrade(upg, level)
     level = level or upg.level
 
     if upg.cps then
-        local cps = g.getMainWorld():getAvgCPS()
+        local cps = g.getMainWorld().peakCPS
         if cps < upg.cps then
             return false
         end
@@ -399,7 +399,7 @@ function Tree:getUpgradeRequirements(upg)
 
     -- CPS
     if upg.cps then
-        local cps = g.getMainWorld():getAvgCPS()
+        local cps = g.getMainWorld().peakCPS
         local canAfford = FLAGS.INFINITE_MONEY or cps >= upg.cps
         reqs[#reqs+1] = {g.formatNumber(upg.cps).."{dns}/s", canAfford}
     end

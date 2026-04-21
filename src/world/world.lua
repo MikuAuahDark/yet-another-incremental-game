@@ -329,6 +329,9 @@ function World:init()
 
     ---@type table<string, integer>
     self.itemCounts = setmetatable({}, {__index = function() return 0 end})
+
+    self.averageCPS = 0 -- (read-only)
+    self.peakCPS = 0 -- (read-only)
 end
 
 
@@ -1013,6 +1016,9 @@ function World:_update(dt)
     end
 
     self.particles:update(dt)
+
+    self.averageCPS = self.cpsCollector:getAverage()
+    self.peakCPS = math.max(self.averageCPS, self.peakCPS)
 end
 
 
@@ -1515,10 +1521,6 @@ function World:putItem(itemId, tx, ty, removable)
 
     self.items:set(tx, ty, itemData)
     return itemData
-end
-
-function World:getAvgCPS()
-    return self.cpsCollector:getAverage()
 end
 
 

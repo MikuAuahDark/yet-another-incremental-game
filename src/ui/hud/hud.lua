@@ -549,7 +549,7 @@ function HUD:draw(show)
             end
             drawStats(moneyR, TEXT.MONEY, TEXT.MONEY_DESCRIPTION, "{money}", moneyText)
 
-            local cps = world:getAvgCPS()
+            local cps = world.averageCPS
             if cps >= 1e9 then
                 love.graphics.setColor(g.COLORS.UI.BUFF)
             else
