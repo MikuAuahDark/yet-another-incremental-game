@@ -78,6 +78,33 @@ local UNHIGHLIGHT_ALPHA = 0.2
 local HIGHLIGHT_ALPHA = 1
 
 
+---@param cx number
+---@param cy number
+---@param r number
+---@param marginDeg number
+---@param rng love.RandomGenerator
+local function generateTriangle(cx, cy, r, marginDeg, rng)
+    marginDeg = marginDeg or 20
+    ---@type [number,number][]
+    local vertices = {}
+    local sectorSize = 360 / 3
+
+    for i = 0, 2 do
+        local start = i * sectorSize + marginDeg
+        local finish = (i + 1) * sectorSize - marginDeg
+
+        local angle = rng:random() * (finish - start) + start
+        local angleRad = math.rad(angle)
+
+        local px = cx + r * math.cos(angleRad)
+        local py = cy + r * math.sin(angleRad)
+
+        vertices[#vertices+1] = {px, py}
+    end
+
+    return vertices
+end
+
 ---@param seed integer
 local function generateWorldTexture(seed)
     -- Create tile "texture"
@@ -85,33 +112,15 @@ local function generateWorldTexture(seed)
     ---@type [number,number,number,number,number?,number?,number?,number?][]
     local vertices = {}
     local wtz = consts.WORLD_TILE_SIZE * World.TILE_SIZE
-    for _ = 1, 20000 do
-        local radius = helper.lerp(4, 24, rng:random())
-        local a1 = rng:random() * math.pi * 2
-        local a2 = rng:random() * math.pi * 2
-        local a3 = rng:random() * math.pi * 2
-        -- Sort a1 through a3 to be largest first
-        if a1 < a2 then
-            a1, a2 = a2, a1
-        end
-        if a2 < a3 then
-            a2, a3 = a3, a2
-        end
-        if a1 < a2 then
-            a1, a2 = a2, a1
-        end
-
+    for _ = 1, 5000 do
+        local radius = helper.lerp(4, 24, rng:random()) * 2
         local ox = helper.lerp(radius, wtz - radius, rng:random())
         local oy = helper.lerp(radius, wtz - radius, rng:random())
-        local x = ox + math.cos(a1) * radius
-        local y = oy + math.sin(a1) * radius
-        vertices[#vertices+1] = {x, y, x / wtz, y / wtz, 0.5, 0.5, 0.5, helper.lerp(0.3, 0.7, rng:random())}
-        x = ox + math.cos(a2) * radius
-        y = oy + math.sin(a2) * radius
-        vertices[#vertices+1] = {x, y, x / wtz, y / wtz, 0.5, 0.5, 0.5, helper.lerp(0.3, 0.7, rng:random())}
-        x = ox + math.cos(a3) * radius
-        y = oy + math.sin(a3) * radius
-        vertices[#vertices+1] = {x, y, x / wtz, y / wtz, 0.5, 0.5, 0.5, helper.lerp(0.3, 0.7, rng:random())}
+        local verts = generateTriangle(ox, oy, radius, 20, rng)
+
+        for _, v in ipairs(verts) do
+            vertices[#vertices+1] = {v[1], v[2], v[1]/wtz, v[2]/wtz, 0.5, 0.5, 0.5, helper.lerp(0.3, 0.7, rng:random())}
+        end
     end
 
     return love.graphics.newMesh(vertices, "triangles", "static")
@@ -153,7 +162,7 @@ end
 ---@param dist integer
 local function drawRangeVisualization(tx, ty, algo, dist)
     local t = math.sin((love.timer.getTime() % 1) * math.pi) ^ 2
-    local alpha = helper.remap(t, 0, 1, 0.05, 0.15)
+    local alpha = helper.remap(t, 0, 1, 0.025, 0.1)
 
     local tiles = worldutil.getSpreadTiles(algo, dist)
     local col = gsman.setColor(0, 1, 0, alpha)
@@ -1095,7 +1104,7 @@ function World:_draw()
         -- Draw world area
         love.graphics.setColor(objects.Color("#b0b0b0"))
         love.graphics.rectangle("fill", 0, 0, size, size)
-        love.graphics.setColor(1, 1, 1)
+        love.graphics.setColor(1, 1, 1, 0.3)
         love.graphics.draw(self.worldTexture)
         love.graphics.setStencilMode() -- should be harmless
     end
