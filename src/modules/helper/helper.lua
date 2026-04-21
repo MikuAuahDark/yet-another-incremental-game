@@ -734,8 +734,8 @@ end
 
 ---Do memoize. For simplicity, it only memoize by first argument.
 ---@generic T, U
----@param func fun(arg:T) U
----@return fun(arg:T): U
+---@param func fun(arg:T):U
+---@return fun(arg:T):U
 function helper.memoize(func)
     local cache = {}
     return function(arg)

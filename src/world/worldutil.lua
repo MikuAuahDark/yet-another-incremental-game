@@ -38,10 +38,11 @@ function worldutil.spawnShockwave(x, y, duration, radius, color)
         return -- dont shockwave when simulation mode
     end
     local e = g.spawnEntity("SHOCKWAVE_ANIMATION", x, y)
-    ---@diagnostic disable-next-line
+    ---@diagnostic disable-next-line: inject-field
     e._duration = duration
-    ---@diagnostic disable-next-line
+    ---@diagnostic disable-next-line: inject-field
     e._maxRad = radius or 20
+    ---@diagnostic disable-next-line: inject-field
     e._color = color or objects.Color.WHITE
     e.lifetime = duration
 end
@@ -302,7 +303,6 @@ function worldutil.drawDataOutShape(r, col)
 end
 
 ---@param r kirigami.Region
----@param col objects.Color
 ---@param half boolean
 local function drawDIShape(r, half)
     local cx, cy = r:getCenter()

@@ -147,6 +147,26 @@ local function drawArrows(x1, y1, x2, y2, spacing, offset)
     end
 end
 
+---@param tx integer
+---@param ty integer
+---@param algo g.RadiateAlgorithm
+---@param dist integer
+local function drawRangeVisualization(tx, ty, algo, dist)
+    local t = math.sin((love.timer.getTime() % 1) * math.pi) ^ 2
+    local alpha = helper.remap(t, 0, 1, 0.05, 0.15)
+
+    local tiles = worldutil.getSpreadTiles(algo, dist)
+    local col = gsman.setColor(0, 1, 0, alpha)
+    for _, tile in ipairs(tiles) do
+        local absTx = tile[1] + tx
+        local absTy = tile[2] + ty
+        local x = (absTx) * consts.WORLD_TILE_SIZE
+        local y = (absTy) * consts.WORLD_TILE_SIZE
+        love.graphics.rectangle("fill", x, y, consts.WORLD_TILE_SIZE, consts.WORLD_TILE_SIZE)
+    end
+    col:pop()
+end
+
 
 local POWER_COLOR = objects.Color("#83d6d3")
 
@@ -248,7 +268,9 @@ end
 
 function World:init()
     self.entities = objects.BufferedSet()
+    ---@type objects.Grid<g.World.ItemData?>
     self.items = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
+    ---@type objects.Grid<number>
     self.heat = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
     ---@type g.Job[]
     self.jobQueue = {}
@@ -725,12 +747,14 @@ function World:_update(dt)
         local diInfo = g.getItemInfo(diData.type, "indata")
         table.clear(diData.connectsServers)
 
-        -- Connect servers which are in range
-        local range = diInfo.wireLength
-        for dx = -range, range do
-            for dy = -range, range do
-                local tx, ty = diData.tileX + dx, diData.tileY + dy
-                if self:isWithinWorldLimit(diData.tileX, diData.tileY) and self:isWithinWorldLimit(tx, ty) then
+        -- Connect servers which are in range (chessboard pattern)
+        if self:isWithinWorldLimit(diData.tileX, diData.tileY) then
+            local range = diInfo.wireLength
+
+            for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", range)) do
+                local tx, ty = diData.tileX + tile[1], diData.tileY + tile[2]
+
+                if self:isWithinWorldLimit(tx, ty) then
                     local item = self.items:get(tx, ty)
                     if item and not item.removed then
                         local itemInfo, category = g.getItemInfo(item.type)
@@ -1078,7 +1102,6 @@ function World:_draw()
 
     -- Draw tile heat
     local wtz = consts.WORLD_TILE_SIZE
-    ---@param heat number
     self.heat:foreach(function(heat, tx, ty)
         local heatmul = helper.round(heat / 10)
         if heatmul ~= 0 then
@@ -1089,6 +1112,21 @@ function World:_draw()
             love.graphics.rectangle("fill", x, y, wtz, wtz)
         end
     end)
+
+    -- Draw tile highlight
+    if self.htx and self.hty then
+        local itemData = self.items:get(self.htx, self.hty)
+        if itemData then
+            local itemInfo, cat = g.getItemInfo(itemData.type)
+            if cat == "booster" then
+                ---@cast itemInfo g.BoosterInfo
+                drawRangeVisualization(self.htx, self.hty, itemInfo.radiateAlgorithm, itemInfo.radiate)
+            elseif cat == "data" or cat == "indata" or cat == "powergen" or cat == "powerrelay" then
+                ---@cast itemInfo g.PowerGenInfo|g.PowerRelayInfo|g.DataOutInfo|g.DataInInfo
+                drawRangeVisualization(self.htx, self.hty, "chessboard", itemInfo.wireLength)
+            end
+        end
+    end
 
     ---@type g.Entity[]
     local objlist = {}
@@ -1135,6 +1173,16 @@ function World:_draw()
                         end
 
                         love.graphics.draw(STATUS_MESH, cx, cy, 0, wtz * 1.1, wtz * 1.1, 0.5, 0.5)
+                    end
+
+                    if self.htx == x and self.hty == y then
+                        if cat == "booster" then
+                            ---@cast itemInfo g.BoosterInfo
+                            drawRangeVisualization(x, y, itemInfo.radiateAlgorithm, itemInfo.radiate)
+                        elseif cat == "data" or cat == "indata" or cat == "powergen" or cat == "powerrelay" then
+                            ---@cast itemInfo g.PowerGenInfo|g.PowerRelayInfo|g.DataOutInfo|g.DataInInfo
+                            drawRangeVisualization(x, y, "chessboard", itemInfo.wireLength)
+                        end
                     end
                     local trans = gsman.transform(cx, cy)
                     love.graphics.setColor(1, 1, 1)
