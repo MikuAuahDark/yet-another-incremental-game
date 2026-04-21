@@ -508,13 +508,14 @@ end
 ---@param serverInfo g.ServerInfo
 ---@param x number relative to bottom center
 ---@param y number relative to bottom center
-function ItemTooltip.ServerTooltipHUD(serverInfo, x, y)
+---@param safeArea kirigami.Region?
+function ItemTooltip.ServerTooltipHUD(serverInfo, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
     builder:addText(serverInfo.name, titleF, "center")
@@ -558,13 +559,14 @@ end
 ---@param dpInfo g.DataOutInfo
 ---@param x number
 ---@param y number
-function ItemTooltip.DPTooltipHUD(dpInfo, x, y)
+---@param safeArea kirigami.Region?
+function ItemTooltip.DPTooltipHUD(dpInfo, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
     builder:addText(dpInfo.name, titleF, "center")
@@ -597,13 +599,14 @@ end
 ---@param diInfo g.DataInInfo
 ---@param x number relative to bottom center
 ---@param y number relative to bottom center
-function ItemTooltip.DITooltipHUD(diInfo, x, y)
+---@param safeArea kirigami.Region?
+function ItemTooltip.DITooltipHUD(diInfo, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
     builder:addText(diInfo.name, titleF, "center")
@@ -654,13 +657,14 @@ end
 ---@param boosterInfo g.BoosterInfo
 ---@param x number
 ---@param y number
-function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y)
+---@param safeArea kirigami.Region?
+function ItemTooltip.BoosterTooltipHUD(boosterInfo, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
     builder:addText(boosterInfo.name, titleF, "center")
@@ -687,13 +691,14 @@ end
 ---@param powerGenInfo g.PowerGenInfo
 ---@param x number
 ---@param y number
-function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y)
+---@param safeArea kirigami.Region?
+function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
     builder:addText(powerGenInfo.name, titleF, "center")
@@ -721,13 +726,14 @@ end
 ---@param powerRelayInfo g.PowerRelayInfo
 ---@param x number
 ---@param y number
-function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y)
+---@param safeArea kirigami.Region?
+function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y, safeArea)
     local titleF = ItemTooltip.getTitleFont()
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
 
-    local builder = ui.TooltipBuilder(x, y, 0.5, 1)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
     builder:addText(powerRelayInfo.name, titleF, "center")
@@ -754,26 +760,27 @@ end
 ---@param itemInfo g.ItemInfo
 ---@param x number
 ---@param y number
-function ItemTooltip.DrawHUDTooltip(itemInfo, x, y)
+---@param safeArea kirigami.Region?
+function ItemTooltip.DrawHUDTooltip(itemInfo, x, y, safeArea)
     local col = gsman.setColor(1, 1, 1)
     if itemInfo.category == "server" then
         ---@cast itemInfo g.ServerInfo
-        ItemTooltip.ServerTooltipHUD(itemInfo, x, y)
+        ItemTooltip.ServerTooltipHUD(itemInfo, x, y, safeArea)
     elseif itemInfo.category == "data" then
         ---@cast itemInfo g.DataOutInfo
-        ItemTooltip.DPTooltipHUD(itemInfo, x, y)
+        ItemTooltip.DPTooltipHUD(itemInfo, x, y, safeArea)
     elseif itemInfo.category == "indata" then
         ---@cast itemInfo g.DataInInfo
-        ItemTooltip.DITooltipHUD(itemInfo, x, y)
+        ItemTooltip.DITooltipHUD(itemInfo, x, y, safeArea)
     elseif itemInfo.category == "booster" then
         ---@cast itemInfo g.BoosterInfo
-        ItemTooltip.BoosterTooltipHUD(itemInfo, x, y)
+        ItemTooltip.BoosterTooltipHUD(itemInfo, x, y, safeArea)
     elseif itemInfo.category == "powergen" then
         ---@cast itemInfo g.PowerGenInfo
-        ItemTooltip.PowerGenTooltipHUD(itemInfo, x, y)
+        ItemTooltip.PowerGenTooltipHUD(itemInfo, x, y, safeArea)
     elseif itemInfo.category == "powerrelay" then
         ---@cast itemInfo g.PowerRelayInfo
-        ItemTooltip.PowerRelayTooltipHUD(itemInfo, x, y)
+        ItemTooltip.PowerRelayTooltipHUD(itemInfo, x, y, safeArea)
     else
         error("unreachable category")
     end

@@ -521,7 +521,12 @@ function HUD:draw(show)
             love.graphics.setColor(1, 1, 1)
 
             if showDescriptionOf and (not self.activeDragging or self.activeDragging[1] < consts.DRAG_ITEM_DURATION) then
-                ui.ItemTooltip.DrawHUDTooltip(showDescriptionOf[3], showDescriptionOf[1], showDescriptionOf[2])
+                ui.ItemTooltip.DrawHUDTooltip(
+                    showDescriptionOf[3],
+                    showDescriptionOf[1],
+                    showDescriptionOf[2],
+                    ui.getFullScreenRegion()
+                )
             end
 
             if self.activeDragging then
