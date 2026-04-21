@@ -60,6 +60,10 @@ local text = {
         context = "How many load is used and power available across the whole power network? %{s} will be replaced by `load/total`."}),
     LEVEL_TOOLTIP = interp("Level: %{level}/%{maxLevel}", {
         context = "Denotes the level of an upgrade."}),
+    JOB_FREQUENCY_MODIFIER = interp("+%{modifier}s %{jobtype} tasks.", {
+        context = "Denotes the job frequency modifier of a data input."}),
+    JOB_FREQUENCY_MULTIPLIER = interp("%{multiplier}% %{jobtype} tasks.", {
+        context = "Denotes the job frequency multiplier of a data input."}),
 
     MENU_CONTINUE = loc("Continue", nil, {
         context = "A button to continue the game from title screen"}),

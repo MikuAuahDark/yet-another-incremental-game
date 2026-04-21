@@ -365,6 +365,22 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
         builder:addPadding(descFH / 4)
     end
 
+    -- Buffs
+    if diInfo.jobFrequencyModifier > 0 then
+        local t = TEXT.JOB_FREQUENCY_MODIFIER({
+            modifier = g.formatNumber(diInfo.jobFrequencyModifier),
+            jobtype = g.getJobCategoryName(diInfo.queuesJob)
+        })
+        builder:addText(helper.wrapRichtextColor(g.COLORS.UI.BUFF, t), attrF, "left")
+    end
+    if diInfo.jobFrequencyMultiplier > 1 then
+        local t = TEXT.JOB_FREQUENCY_MULTIPLIER({
+            multiplier = helper.round(diInfo.jobFrequencyMultiplier * 100, 2),
+            jobtype = g.getJobCategoryName(diInfo.queuesJob)
+        })
+        builder:addText(helper.wrapRichtextColor(g.COLORS.UI.BUFF, t), attrF, "left")
+    end
+
     -- Attributes
     builder:addText(getItemLoadText(diInfo, diData), attrF, "left")
     if diData.powerNetwork then
@@ -597,6 +613,22 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y)
         builder:addPadding(descFH / 4)
         builder:addText(diInfo.description, descF, "center")
         builder:addPadding(descFH / 4)
+    end
+
+    -- Buffs
+    if diInfo.jobFrequencyModifier > 0 then
+        local t = TEXT.JOB_FREQUENCY_MODIFIER({
+            modifier = g.formatNumber(diInfo.jobFrequencyModifier),
+            jobtype = g.getJobCategoryName(diInfo.queuesJob)
+        })
+        builder:addText(helper.wrapRichtextColor(g.COLORS.UI.BUFF, t), attrF, "left")
+    end
+    if diInfo.jobFrequencyMultiplier > 1 then
+        local t = TEXT.JOB_FREQUENCY_MULTIPLIER({
+            modifier = helper.round(diInfo.jobFrequencyMultiplier * 100, 2),
+            jobtype = g.getJobCategoryName(diInfo.queuesJob)
+        })
+        builder:addText(helper.wrapRichtextColor(g.COLORS.UI.BUFF, t), attrF, "left")
     end
 
     -- Attributes
