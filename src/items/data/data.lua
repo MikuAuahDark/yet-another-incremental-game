@@ -55,7 +55,6 @@ g.defineDataOutput("basic_data", "Basic Data Output", {
         col:pop()
     end,
 })
-g.PREUNLOCKED_ITEMS:add("basic_data")
 
 g.defineDataOutput("normal_data", "Data Output", {
     price = 150,

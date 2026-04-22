@@ -54,7 +54,6 @@ g.defineDataInput("basic_indata", "Basic Data Input", {
         col:pop()
     end,
 })
-g.PREUNLOCKED_ITEMS:add("basic_indata")
 
 g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
     price = 25,

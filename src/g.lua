@@ -1699,15 +1699,13 @@ function g.getItemInfo(itemid, assertCategory)
     return itemInfo, itemInfo.category
 end
 
-g.PREUNLOCKED_ITEMS = objects.Set()
-
 ---@param itemid string
 function g.isItemUnlocked(itemid)
     if not g.isValidItem(itemid) then
         error("unknown item id '"..itemid.."'")
     end
 
-    return FLAGS.UNLOCK_ALL_ITEMS or g.PREUNLOCKED_ITEMS:contains(itemid) or g.ask("isItemUnlocked", itemid)
+    return FLAGS.UNLOCK_ALL_ITEMS or g.ask("isItemUnlocked", itemid)
 end
 
 ---@param itemid string

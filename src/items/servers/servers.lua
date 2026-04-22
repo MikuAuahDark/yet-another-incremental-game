@@ -59,7 +59,6 @@ g.defineServer("basic_server", "Basic Server", {
         col:pop()
     end,
 })
-g.PREUNLOCKED_ITEMS:add("basic_server")
 
 local _tier1Server = makeLineDrawerForServer(2)
 g.defineServer("normal_server", "Server (Tier 1)", {

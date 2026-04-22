@@ -760,6 +760,14 @@ function upgscene:draw()
     lg.setColor(1,1,1)
 
     self:setCamera()
+    if self.dev_editMode then
+        -- Draw white on center for guide
+        love.graphics.setColor(1, 1, 1)
+        local x, y = getUpgradeGridCoords(0, 0)
+        local sz = consts.UPGRADE_IMAGE_SIZE
+        -- subtract by half the dimensions
+        love.graphics.rectangle("fill", x - sz / 2, y - sz / 2, sz, sz)
+    end
     do
         local x, y = self.camera:toWorld(0, 0) --[[@as number]]
         local x2, y2 = self.camera:toWorld(love.graphics.getDimensions())
