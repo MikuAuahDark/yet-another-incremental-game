@@ -60,7 +60,7 @@ function TitleScene:draw()
         newGameText = "{wavy}"..newGameText.."{/wavy}"
     end
     if ui.Button2(newGameText, f, BUTTON_COLORS.NEW_GAME, newGameButtonR) then
-        g.newSession().tree = g.loadTree("playtest0")
+        g.newSession().tree = g.loadTree("playtest1")
         g.gotoScene("main_scene")
     end
 

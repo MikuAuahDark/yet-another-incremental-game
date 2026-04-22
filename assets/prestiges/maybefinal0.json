@@ -1,0 +1,1051 @@
+{
+	"upgrades": {
+		"0": {
+			"id": "money_limit",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": 0,
+			"isRoot": true,
+			"maxLevelOverride": 7
+		},
+		"6": {
+			"id": "basic_server",
+			"level": 1,
+			"startLevel": 1,
+			"basePrice": {},
+			"x": -2,
+			"y": 0
+		},
+		"9": {
+			"id": "basic_indata_unlock",
+			"level": 1,
+			"startLevel": 1,
+			"basePrice": {},
+			"x": 0,
+			"y": -2,
+			"isRoot": true
+		},
+		"10": {
+			"id": "piped_water_cooler_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": 0,
+			"isRoot": true
+		},
+		"14": {
+			"id": "world_size_1",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": 2,
+			"isRoot": true,
+			"maxLevelOverride": 20
+		},
+		"24": {
+			"id": "ai_server",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": -2
+		},
+		"28": {
+			"id": "basic_server_unlock",
+			"level": 1,
+			"startLevel": 1,
+			"basePrice": {},
+			"x": -4,
+			"y": 0,
+			"isRoot": true
+		},
+		"31": {
+			"id": "basic_data_unlock",
+			"level": 1,
+			"startLevel": 1,
+			"basePrice": {},
+			"x": 2,
+			"y": -2,
+			"isRoot": true
+		},
+		"32": {
+			"id": "advanced_server",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": 2
+		},
+		"35": {
+			"id": "basic_indata",
+			"level": 1,
+			"startLevel": 1,
+			"basePrice": {},
+			"x": 0,
+			"y": -4
+		},
+		"36": {
+			"id": "piped_ice_cooler_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": 0
+		},
+		"40": {
+			"id": "basic_generator_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": 2,
+			"isRoot": true
+		},
+		"44": {
+			"id": "video_encode_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": 4,
+			"maxLevelOverride": 2147483647
+		},
+		"58": {
+			"id": "ai_server_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": -2
+		},
+		"62": {
+			"id": "ai_indata_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": -4
+		},
+		"66": {
+			"id": "webhost",
+			"level": 5,
+			"startLevel": 5,
+			"basePrice": {},
+			"x": -6,
+			"y": 0
+		},
+		"69": {
+			"id": "basic_data",
+			"level": 1,
+			"startLevel": 1,
+			"basePrice": {},
+			"x": 4,
+			"y": -2
+		},
+		"70": {
+			"id": "advanced_server_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": 2
+		},
+		"73": {
+			"id": "video_indata_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": -4
+		},
+		"74": {
+			"id": "video_encode",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": 4,
+			"maxLevelOverride": 5
+		},
+		"77": {
+			"id": "indata_tier1_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": -6
+		},
+		"78": {
+			"id": "pfc_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 6,
+			"y": 0,
+			"isRoot": true
+		},
+		"82": {
+			"id": "piped_water_cooler",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": 2
+		},
+		"86": {
+			"id": "basic_generator",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": 4
+		},
+		"90": {
+			"id": "video_encode_money",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": 6,
+			"maxLevelOverride": 2147483647
+		},
+		"108": {
+			"id": "physics_simulation",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": -2
+		},
+		"112": {
+			"id": "ai_server_t2",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": -4
+		},
+		"116": {
+			"id": "ai_indata_t2_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": -6
+		},
+		"120": {
+			"id": "webhost_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": 0
+		},
+		"123": {
+			"id": "data_compression",
+			"level": 0,
+			"basePrice": {},
+			"x": 6,
+			"y": -2
+		},
+		"124": {
+			"id": "normal_server_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": 2
+		},
+		"127": {
+			"id": "normal_data_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": -4
+		},
+		"128": {
+			"id": "video2_server",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": 4
+		},
+		"131": {
+			"id": "video_indata_t2_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": -6
+		},
+		"132": {
+			"id": "livestream_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": 6,
+			"maxLevelOverride": 2147483647
+		},
+		"135": {
+			"id": "indata_tier1",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": -8
+		},
+		"136": {
+			"id": "selective_tweaks_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 8,
+			"y": 0
+		},
+		"140": {
+			"id": "piped_ice_cooler",
+			"level": 0,
+			"basePrice": {},
+			"x": 6,
+			"y": 2
+		},
+		"144": {
+			"id": "advanced_generator_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": 4
+		},
+		"148": {
+			"id": "basic_relay_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": 6
+		},
+		"152": {
+			"id": "advanced_relay",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": 8
+		},
+		"174": {
+			"id": "physics_simulation_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": -2
+		},
+		"178": {
+			"id": "ai_server_t2_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": -4
+		},
+		"182": {
+			"id": "ai_indata",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": -6
+		},
+		"186": {
+			"id": "ai_indata_t2",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": -8
+		},
+		"190": {
+			"id": "webhost_money",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": 0
+		},
+		"194": {
+			"id": "normal_server",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": 2
+		},
+		"197": {
+			"id": "normal_data",
+			"level": 0,
+			"basePrice": {},
+			"x": 6,
+			"y": -4
+		},
+		"198": {
+			"id": "video2_server_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": 4
+		},
+		"201": {
+			"id": "video_indata",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": -6
+		},
+		"202": {
+			"id": "livestream",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": 6,
+			"maxLevelOverride": 5
+		},
+		"205": {
+			"id": "video_mod",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": -8
+		},
+		"206": {
+			"id": "livestream_money",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": 8,
+			"maxLevelOverride": 2147483647
+		},
+		"209": {
+			"id": "indata_tier2_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 0,
+			"y": -10
+		},
+		"214": {
+			"id": "pfc",
+			"level": 0,
+			"basePrice": {},
+			"x": 8,
+			"y": 2
+		},
+		"218": {
+			"id": "advanced_generator",
+			"level": 0,
+			"basePrice": {},
+			"x": 6,
+			"y": 4
+		},
+		"222": {
+			"id": "basic_relay",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": 6
+		},
+		"226": {
+			"id": "advanced_relay_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": 8
+		},
+		"256": {
+			"id": "physics_simulation_money",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": -2
+		},
+		"260": {
+			"id": "research_model",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": -4
+		},
+		"264": {
+			"id": "ai_server_t3",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": -6
+		},
+		"268": {
+			"id": "ai_mod",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": -8
+		},
+		"272": {
+			"id": "indata_tier2",
+			"level": 0,
+			"basePrice": {},
+			"x": -2,
+			"y": -10
+		},
+		"280": {
+			"id": "cdn",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": 2
+		},
+		"283": {
+			"id": "higher_dps",
+			"level": 0,
+			"basePrice": {},
+			"x": 8,
+			"y": -4
+		},
+		"284": {
+			"id": "tier2_server_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": 4
+		},
+		"287": {
+			"id": "advanced_data_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 6,
+			"y": -6
+		},
+		"288": {
+			"id": "video3_server_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": 6
+		},
+		"291": {
+			"id": "video_indata_t2",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": -8
+		},
+		"292": {
+			"id": "video3_server",
+			"level": 0,
+			"basePrice": {},
+			"x": -4,
+			"y": 8
+		},
+		"295": {
+			"id": "general_mod",
+			"level": 0,
+			"basePrice": {},
+			"x": 2,
+			"y": -10
+		},
+		"304": {
+			"id": "selective_tweaks",
+			"level": 0,
+			"basePrice": {},
+			"x": 10,
+			"y": 2
+		},
+		"312": {
+			"id": "datacenter_load_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": 6,
+			"y": 6,
+			"isRoot": false
+		},
+		"316": {
+			"id": "max_load_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": 4,
+			"y": 8
+		},
+		"358": {
+			"id": "research_model_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": -4
+		},
+		"362": {
+			"id": "ai_server_t3_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": -6
+		},
+		"366": {
+			"id": "llm_money",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": -8
+		},
+		"382": {
+			"id": "cdn_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -12,
+			"y": 2
+		},
+		"385": {
+			"id": "quantum_data",
+			"level": 0,
+			"basePrice": {},
+			"x": 10,
+			"y": -4
+		},
+		"386": {
+			"id": "tier2_server",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": 4
+		},
+		"389": {
+			"id": "advanced_data",
+			"level": 0,
+			"basePrice": {},
+			"x": 8,
+			"y": -6
+		},
+		"390": {
+			"id": "image_processing",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": 6
+		},
+		"394": {
+			"id": "video_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -6,
+			"y": 8
+		},
+		"472": {
+			"id": "research_model_money",
+			"level": 0,
+			"basePrice": {},
+			"x": -12,
+			"y": -4
+		},
+		"476": {
+			"id": "ai_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": -6
+		},
+		"480": {
+			"id": "llm",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": -8
+		},
+		"504": {
+			"id": "cdn_money",
+			"level": 0,
+			"basePrice": {},
+			"x": -12,
+			"y": 4
+		},
+		"507": {
+			"id": "quantum_data_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 10,
+			"y": -6
+		},
+		"508": {
+			"id": "tier3_server_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": 6
+		},
+		"511": {
+			"id": "he_data_unlock",
+			"level": 0,
+			"basePrice": {},
+			"x": 8,
+			"y": -8
+		},
+		"512": {
+			"id": "image_processing_money",
+			"level": 0,
+			"basePrice": {},
+			"x": -8,
+			"y": 8
+		},
+		"610": {
+			"id": "llm_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": -8
+		},
+		"642": {
+			"id": "tier3_server",
+			"level": 0,
+			"basePrice": {},
+			"x": -12,
+			"y": 6
+		},
+		"645": {
+			"id": "he_data",
+			"level": 0,
+			"basePrice": {},
+			"x": 10,
+			"y": -8
+		},
+		"646": {
+			"id": "image_processing_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -10,
+			"y": 8
+		},
+		"796": {
+			"id": "general_mul",
+			"level": 0,
+			"basePrice": {},
+			"x": -12,
+			"y": 8
+		}
+	},
+	"connections": [
+		[
+			6,
+			28
+		],
+		[
+			9,
+			73
+		],
+		[
+			10,
+			82
+		],
+		[
+			24,
+			58
+		],
+		[
+			28,
+			66
+		],
+		[
+			31,
+			69
+		],
+		[
+			31,
+			127
+		],
+		[
+			32,
+			70
+		],
+		[
+			35,
+			9
+		],
+		[
+			36,
+			10
+		],
+		[
+			36,
+			140
+		],
+		[
+			40,
+			86
+		],
+		[
+			40,
+			144
+		],
+		[
+			40,
+			312
+		],
+		[
+			44,
+			74
+		],
+		[
+			58,
+			28
+		],
+		[
+			58,
+			108
+		],
+		[
+			62,
+			9
+		],
+		[
+			66,
+			190
+		],
+		[
+			70,
+			28
+		],
+		[
+			70,
+			74
+		],
+		[
+			73,
+			131
+		],
+		[
+			77,
+			9
+		],
+		[
+			77,
+			135
+		],
+		[
+			78,
+			136
+		],
+		[
+			78,
+			214
+		],
+		[
+			90,
+			74
+		],
+		[
+			108,
+			174
+		],
+		[
+			112,
+			178
+		],
+		[
+			116,
+			62
+		],
+		[
+			116,
+			268
+		],
+		[
+			120,
+			66
+		],
+		[
+			124,
+			28
+		],
+		[
+			124,
+			194
+		],
+		[
+			127,
+			123
+		],
+		[
+			128,
+			198
+		],
+		[
+			131,
+			205
+		],
+		[
+			131,
+			291
+		],
+		[
+			132,
+			202
+		],
+		[
+			136,
+			304
+		],
+		[
+			144,
+			218
+		],
+		[
+			144,
+			316
+		],
+		[
+			148,
+			40
+		],
+		[
+			178,
+			58
+		],
+		[
+			178,
+			260
+		],
+		[
+			182,
+			62
+		],
+		[
+			186,
+			116
+		],
+		[
+			197,
+			127
+		],
+		[
+			198,
+			70
+		],
+		[
+			198,
+			202
+		],
+		[
+			201,
+			73
+		],
+		[
+			202,
+			206
+		],
+		[
+			209,
+			77
+		],
+		[
+			209,
+			272
+		],
+		[
+			209,
+			295
+		],
+		[
+			222,
+			148
+		],
+		[
+			226,
+			148
+		],
+		[
+			226,
+			152
+		],
+		[
+			256,
+			108
+		],
+		[
+			260,
+			358
+		],
+		[
+			260,
+			472
+		],
+		[
+			264,
+			362
+		],
+		[
+			280,
+			284
+		],
+		[
+			284,
+			124
+		],
+		[
+			284,
+			386
+		],
+		[
+			287,
+			127
+		],
+		[
+			287,
+			283
+		],
+		[
+			287,
+			389
+		],
+		[
+			287,
+			511
+		],
+		[
+			288,
+			198
+		],
+		[
+			288,
+			394
+		],
+		[
+			292,
+			288
+		],
+		[
+			362,
+			178
+		],
+		[
+			362,
+			476
+		],
+		[
+			362,
+			480
+		],
+		[
+			366,
+			480
+		],
+		[
+			382,
+			280
+		],
+		[
+			390,
+			508
+		],
+		[
+			480,
+			610
+		],
+		[
+			504,
+			280
+		],
+		[
+			507,
+			385
+		],
+		[
+			507,
+			511
+		],
+		[
+			508,
+			284
+		],
+		[
+			508,
+			642
+		],
+		[
+			512,
+			390
+		],
+		[
+			645,
+			511
+		],
+		[
+			646,
+			390
+		]
+	],
+	"unboundUpgrades": []
+}
