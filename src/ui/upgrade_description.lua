@@ -21,8 +21,8 @@ local function description(upgrade, tree, x, y, safeArea)
         builder:addText(descriptionText, descF, "center")
     end
 
-    -- Attributes (if kind == "UNLOCKS")
-    if uinfo.kind == "UNLOCKS" and uinfo.targetItem then
+    -- Attributes (if kind == "UNLOCKS" or "INVENTORY")
+    if (uinfo.kind == "UNLOCKS" or uinfo.kind == "INVENTORY") and uinfo.targetItem then
         local attrF = ui.ItemTooltip.getAttrFont()
         local itemInfo, category = g.getItemInfo(uinfo.targetItem)
         local world = g.getMainWorld()

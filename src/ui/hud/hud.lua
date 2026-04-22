@@ -466,7 +466,7 @@ function HUD:draw(show)
                         end
                         col = gsman.setColor(1, 1, 1)
                     else
-                        col = gsman.setColor(0.6, 0.6, 0.6, 0.7)
+                        col = gsman.setColor(0.5, 0.5, 0.5)
                     end
 
                     -- Draw actual item
