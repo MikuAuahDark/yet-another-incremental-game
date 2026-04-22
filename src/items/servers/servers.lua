@@ -45,12 +45,8 @@ end
 
 local _basicServerDecor = makeLineDrawerForServer(1)
 g.defineServer("basic_server", "Basic Server", {
-    description = "First one is free for startups.",
     price = 1,
-    getPriceMultiplier = function(count)
-        if count < 1 then return 0 end -- first 1 is free
-        return (count - 1) / 10 + 1
-    end,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     computePerSecond = 1,
     computePreference = {"general"},
     load = 1,

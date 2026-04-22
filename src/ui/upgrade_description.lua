@@ -8,7 +8,7 @@ local function description(upgrade, tree, x, y, safeArea)
     local titleF = ui.ItemTooltip.getTitleFont()
     local descF = ui.ItemTooltip.getDescFont()
     local priceF = g.getThickFont(16)
-    local builder = ui.TooltipBuilder("hud", x, y, safeArea)
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
     builder:addText(uinfo.name, titleF, "center")
@@ -77,10 +77,11 @@ local function description(upgrade, tree, x, y, safeArea)
     builder:addPadding(descF:getHeight())
 
     -- Level
-    builder:addText(TEXT.LEVEL_TOOLTIP({
-        level = upgrade.level,
-        maxLevel = maxLevel
-    }), descF, "center")
+    local levelText = tostring(upgrade.level)
+    if maxLevel < g.UPGRADE_INFINITE_LEVEL then
+        levelText = levelText.."/"..maxLevel
+    end
+    builder:addText(TEXT.LEVEL_TOOLTIP({level = levelText}), descF, "center")
 
     -- Price
     if upgrade.level < maxLevel then

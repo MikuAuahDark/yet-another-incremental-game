@@ -700,6 +700,7 @@ g.stats.WorldTileSize = g.defineStat("WorldTileSize", 2, "World Size") -- maxed 
 
 ---@return integer
 ---@return integer
+---@deprecated
 function g.getWorldTileDimensions()
     -- the size of dimensions in TILES.
     local sze = g.stats.WorldTileSize
@@ -711,6 +712,7 @@ end
 
 ---@return number
 ---@return number
+---@deprecated
 function g.getWorldDimensions()
     local wtw,wth = g.getWorldTileDimensions()
     local w = math.floor(wtw * consts.WORLD_TILE_SIZE)
@@ -739,6 +741,7 @@ end
 ---@enum (key) g.UpgradeKind
 local UPGRADE_KINDS = {
     UNLOCKS=true,
+    INVENTORY=true,
     JOB=true,
     EFFICIENCY=true,
     MISC=true
@@ -1141,6 +1144,8 @@ local SPECIAL_FUNCTIONS = {
     getPriceMultiplier = true,
 }
 
+g.UPGRADE_INFINITE_LEVEL = 2147483647
+
 
 ---@param id string
 ---@param name string
@@ -1463,23 +1468,25 @@ g.CATEGORIES = {
     powerrelay = true
 }
 
----@class g.ItemDefinition: g._MixinHasNameDefinition
+---@generic T: g.World.ItemData
+---@class g.ItemDefinition<T>: g._MixinHasNameDefinition
 ---@field public category g.ItemCategory
 ---@field public tags string[]?
 ---@field public price number
 ---@field public load number
 ---@field public drawItem fun(r: kirigami.Region) (not translated)
----@field public draw (fun(itemData: g.World.ItemData))? (already translated to center of tile)
+---@field public draw (fun(itemData: T))? (already translated to center of tile)
 ---@field public getPriceMultiplier (fun(count:integer):number)?
 
----@class g.ItemInfo: g._MixinHasNameInfo
+---@generic T: g.World.ItemData
+---@class g.ItemInfo<T>: g._MixinHasNameInfo
 ---@field public id string
 ---@field public category g.ItemCategory
 ---@field public tags objects.Set<string>
 ---@field public price number
 ---@field public load number
 ---@field public drawItem fun(r: kirigami.Region) (not translated)
----@field public draw fun(itemData: g.World.ItemData) (already translated to center of tile)
+---@field public draw fun(itemData: T) (already translated to center of tile)
 ---@field public getPriceMultiplier fun(count:integer):number
 
 
@@ -1492,41 +1499,41 @@ g.CATEGORIES = {
 ---@field public heatTolerance [number, number]
 ---@field public heat number
 
----@class g.ServerInfo: g.ItemInfo, g._ServerInfoCommon
+---@class g.ServerInfo: g.ItemInfo<g.World.ServerData>, g._ServerInfoCommon
 ---@field public heatRadiate integer
 ---@field public heatRadiateAlgorithm g.RadiateAlgorithm
 
----@class g.ServerDefinition: g.ItemDefinition, g._ServerInfoCommon
+---@class g.ServerDefinition: g.ItemDefinition<g.World.ServerData>, g._ServerInfoCommon
 ---@field public heatRadiate integer? 1 is default
 ---@field public heatRadiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
 
 
----@class g._DataInfoCommon: g.ItemInfo
+---@class g._DataInfoCommon: g.ItemInfo<g.World.DataOutputData>
 ---@field public category "data"
 ---@field public dataPerSecond number
 ---@field public wireLength integer
 ---@field public wireDPS number
 
----@class g.DataOutInfo: g.ItemInfo, g._DataInfoCommon
----@class g.DataOutDefinition: g.ItemDefinition, g._DataInfoCommon
+---@class g.DataOutInfo: g.ItemInfo<g.World.DataOutputData>, g._DataInfoCommon
+---@class g.DataOutDefinition: g.ItemDefinition<g.World.DataOutputData>, g._DataInfoCommon
 
 
----@class g._DataInInfoCommon: g.ItemInfo
+---@class g._DataInInfoCommon: g.ItemInfo<g.World.DataInputData>
 ---@field public category "indata"
 ---@field public queuesJob g.JobCategory
 ---@field public maxJobQueue integer
 ---@field public wireLength integer
 
----@class g.DataInInfo: g.ItemInfo, g._DataInInfoCommon
+---@class g.DataInInfo: g.ItemInfo<g.World.DataInputData>, g._DataInInfoCommon
 ---@field public jobFrequencyModifier number
 ---@field public jobFrequencyMultiplier number
 
----@class g.DataInDefinition: g.ItemDefinition, g._DataInInfoCommon
+---@class g.DataInDefinition: g.ItemDefinition<g.World.DataInputData>, g._DataInInfoCommon
 ---@field public jobFrequencyModifier number?
 ---@field public jobFrequencyMultiplier number?
 
 
----@class g.BoosterInfo: g.ItemInfo
+---@class g.BoosterInfo: g.ItemInfo<g.World.BoosterData>
 ---@field public category "booster"
 ---@field public radiate integer
 ---@field public radiateAlgorithm g.RadiateAlgorithm
@@ -1536,7 +1543,7 @@ g.CATEGORIES = {
 ---@field public getPerformanceMultiplier fun(reltx:integer,relty:integer):number
 ---@field public getLoadMultiplier fun(reltx:integer,relty:integer):number
 
----@class g.BoosterDefinition: g.ItemDefinition
+---@class g.BoosterDefinition: g.ItemDefinition<g.World.BoosterData>
 ---@field public category "booster"
 ---@field public radiate integer? 1 is default
 ---@field public radiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
@@ -1547,30 +1554,30 @@ g.CATEGORIES = {
 ---@field public getLoadMultiplier (fun(reltx:integer,relty:integer):number)?
 
 
----@class g.PowerGenInfo: g.ItemInfo
+---@class g.PowerGenInfo: g.ItemInfo<g.World.PowerData>
 ---@field public category "powergen"
 ---@field public power number
 ---@field public wireLength integer
 
----@class g.PowerGenDefinition: g.ItemDefinition
+---@class g.PowerGenDefinition: g.ItemDefinition<g.World.PowerData>
 ---@field public load? integer (forced to 0)
 ---@field public category "powergen"
 ---@field public power number
 ---@field public wireLength integer? (defaults to 1)
 
 
----@class g.PowerRelayInfo: g.ItemInfo
+---@class g.PowerRelayInfo: g.ItemInfo<g.World.PowerData>
 ---@field public category "powerrelay"
 ---@field public wireLength integer
 
----@class g.PowerRelayDefinition: g.ItemDefinition
+---@class g.PowerRelayDefinition: g.ItemDefinition<g.World.PowerData>
 ---@field public load? integer (forced to 0)
 ---@field public category "powerrelay"
 ---@field public wireLength integer? (defaults to 1)
 
 ---@type string[]
 g.ITEMS = {}
----@type table<string, g.ItemInfo>
+---@type table<string, g.ItemInfo<g.World.ItemData>>
 local itemList = {}
 
 local function return0() return 0 end
@@ -1672,7 +1679,7 @@ end
 
 ---@param itemid string
 ---@param assertCategory g.ItemCategory?
----@return g.ItemInfo, g.ItemCategory
+---@return g.ItemInfo<g.World.ItemData>, g.ItemCategory
 ---@overload fun(itemid: string, assertCategory: "server"):(g.ServerInfo, "server")
 ---@overload fun(itemid: string, assertCategory: "data"):(g.DataOutInfo, "data")
 ---@overload fun(itemid: string, assertCategory: "indata"):(g.DataInInfo, "indata")
@@ -1700,7 +1707,7 @@ function g.isItemUnlocked(itemid)
         error("unknown item id '"..itemid.."'")
     end
 
-    return g.ask("isItemUnlocked", itemid) or g.PREUNLOCKED_ITEMS:contains(itemid) or FLAGS.UNLOCK_ALL_ITEMS
+    return FLAGS.UNLOCK_ALL_ITEMS or g.PREUNLOCKED_ITEMS:contains(itemid) or g.ask("isItemUnlocked", itemid)
 end
 
 ---@param itemid string
@@ -1708,19 +1715,17 @@ function g.isValidItem(itemid)
     return not not itemList[itemid]
 end
 
----@param itemid string|g.ItemInfo
----@param count integer?
-function g.getItemPrice(itemid, count)
-    if type(itemid) == "string" then
-        itemid = g.getItemInfo(itemid)
+---@param itemid string
+function g.getItemInventoryCount(itemid)
+    assert(g.isValidItem(itemid))
+
+    if FLAGS.UNLOCK_ALL_ITEMS then
+        return 1
     end
 
-    if not count then
-        local world = g.getMainWorld()
-        count = world.itemCounts[itemid.id]
-    end
-
-    return itemid.price * itemid.getPriceMultiplier(math.max(count, 0))
+    local world = g.getMainWorld()
+    local total = world:getItemTotalInventory_NOTABUS(itemid)
+    return math.max(total - world.itemCounts[itemid], 0)
 end
 
 
@@ -1729,38 +1734,23 @@ end
 
 local drawLockOpen = helper.genDrawUIIntuition("lock_open", "theme", "theme")
 
----@class g._CommonSpecificItemDef
----@field nameContext string?
----@field rawDescription string?
----@field description string?
----@field descriptionContext string?
----@field tags string[]?
----@field color objects.Color
----@field price number
----@field getPriceMultiplier (fun(count:integer):number)?
----@field load number
-
----@class g._ServerDef: g._CommonSpecificItemDef
----@field computePerSecond number
----@field computePreference string[]
----@field heatTolerance [number, number]
----@field heat number
----@field draw fun(r:kirigami.Region,itemData:g.World.ServerData?)?
-
+---@generic T
 ---@param id string
 ---@param name string
----@param def g._ServerDef
-function g.defineServer(id, name, def)
-    g.defineUpgrade(id, name, {
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        getPriceOverride = function() return {money = def.price} end,
+---@param shape fun(r:kirigami.Region,col:objects.Color):kirigami.Region
+---@param def g._CommonSpecificItemDef<T>
+---@param pricemul number?
+local function defineItemUpgrades(id, name, shape, def, pricemul)
+    pricemul = pricemul or 1
+    g.defineUpgrade(id.."_unlock", "Unlock "..name, {
+        description = "Unlocks "..name,
+        descriptionContext = "Upgrade that unlock an item.",
         kind = "UNLOCKS",
         targetItem = id,
         maxLevel = 1,
         drawUI = function(uinfo, level, r)
             -- Draw server
-            local r2 = worldutil.drawServerShape(r:padRatio(0.125), def.color)
+            local r2 = shape(r:padRatio(0.125), def.color)
             if def.draw then
                 def.draw(r2)
             end
@@ -1770,6 +1760,49 @@ function g.defineServer(id, name, def)
             return iid == id
         end
     })
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "INVENTORY",
+        targetItem = id,
+        maxLevel = g.UPGRADE_INFINITE_LEVEL,
+        drawUI = function(uinfo, level, r)
+            -- Draw server
+            local r2 = shape(r:padRatio(0.125), def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end,
+        getItemTotalInventory = function(uinfo, level, iid)
+            return iid == id and level or 0
+        end
+    })
+end
+
+---@class g._CommonSpecificItemDef<T>
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field draw fun(r:kirigami.Region,itemData:T?)?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field getPriceMultiplier (fun(count:integer):number)?
+---@field load number
+
+---@class g._ServerDef: g._CommonSpecificItemDef<g.World.ServerData>
+---@field computePerSecond number
+---@field computePreference string[]
+---@field heatTolerance [number, number]
+---@field heat number
+
+---@param id string
+---@param name string
+---@param def g._ServerDef
+function g.defineServer(id, name, def)
+    defineItemUpgrades(id, name, worldutil.drawServerShape, def)
+
     return g.defineItem(id, {
         category = "server",
         name = name,
@@ -1803,35 +1836,17 @@ function g.defineServer(id, name, def)
     })
 end
 
----@class g._DataDef: g._CommonSpecificItemDef
+---@class g._DataDef: g._CommonSpecificItemDef<g.World.DataOutputData>
 ---@field dataPerSecond number
 ---@field wireLength integer
 ---@field wireDPS number? (defaults to dataPerSecond / 4)
----@field draw fun(r:kirigami.Region,itemData:g.World.DataOutputData?)
 
 ---@param id string
 ---@param name string
 ---@param def g._DataDef
 function g.defineDataOutput(id, name, def)
-    g.defineUpgrade(id, name, {
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        getPriceOverride = function() return {money = def.price} end,
-        kind = "UNLOCKS",
-        targetItem = id,
-        maxLevel = 1,
-        drawUI = function(uinfo, level, r)
-            -- Draw data output
-            local r2 = worldutil.drawDataOutShape(r:padRatio(0.125), def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-            drawLockOpen(uinfo, level, r)
-        end,
-        isItemUnlocked = function(uinfo, level, iid)
-            return iid == id
-        end
-    })
+    defineItemUpgrades(id, name, worldutil.drawDataOutShape, def)
+
     return g.defineItem(id, {
         category = "data",
         name = name,
@@ -1864,37 +1879,19 @@ function g.defineDataOutput(id, name, def)
     })
 end
 
----@class g._DataInDef: g._CommonSpecificItemDef
+---@class g._DataInDef: g._CommonSpecificItemDef<g.World.DataInputData>
 ---@field queuesJob g.JobCategory
 ---@field maxJobQueue integer
 ---@field jobFrequencyModifier number?
 ---@field jobFrequencyMultiplier number?
 ---@field wireLength integer
----@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
 ---@param id string
 ---@param name string
 ---@param def g._DataInDef
 function g.defineDataInput(id, name, def)
-    g.defineUpgrade(id, name, {
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        getPriceOverride = function() return {money = def.price * 2} end,
-        kind = "UNLOCKS",
-        targetItem = id,
-        maxLevel = 1,
-        drawUI = function(uinfo, level, r)
-            -- Draw data input (same shape as output for now)
-            local r2 = worldutil.drawDataInShape(r:padRatio(0.125), def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-            drawLockOpen(uinfo, level, r)
-        end,
-        isItemUnlocked = function(uinfo, level, iid)
-            return iid == id
-        end
-    })
+    defineItemUpgrades(id, name, worldutil.drawDataInShape, def, 2)
+
     return g.defineItem(id, {
         category = "indata",
         name = name,
@@ -1912,7 +1909,7 @@ function g.defineDataInput(id, name, def)
         jobFrequencyMultiplier = def.jobFrequencyMultiplier,
         wireLength = def.wireLength,
         draw = function(itemData)
-            ---@cast itemData g.World.ItemData
+            ---@cast itemData g.World.DataInputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
             local r2 = worldutil.drawDataInShape(r, def.color)
@@ -1929,11 +1926,10 @@ function g.defineDataInput(id, name, def)
     })
 end
 
----@class g._BoosterDef: g._CommonSpecificItemDef
+---@class g._BoosterDef: g._CommonSpecificItemDef<g.World.BoosterData>
 ---@field radiate integer
 ---@field radiateAlgorithm g.RadiateAlgorithm
 ---@field connectable {max:integer,target:g.ItemCategory}?
----@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)
 ---@field getTileHeat (fun(reltx:integer,relty:integer):number)?
 ---@field getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
 ---@field getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
@@ -1943,25 +1939,8 @@ end
 ---@param name string
 ---@param def g._BoosterDef
 function g.defineBooster(id, name, def)
-    g.defineUpgrade(id, name, {
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        getPriceOverride = function() return {money = def.price * 3} end,
-        kind = "UNLOCKS",
-        targetItem = id,
-        maxLevel = 1,
-        drawUI = function(uinfo, level, r)
-            -- Draw data output
-            local r2 = worldutil.drawBoosterShape(r:padRatio(0.125), def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-            drawLockOpen(uinfo, level, r)
-        end,
-        isItemUnlocked = function(uinfo, level, iid)
-            return iid == id
-        end
-    })
+    defineItemUpgrades(id, name, worldutil.drawBoosterShape, def, 3)
+
     return g.defineItem(id, {
         category = "booster",
         name = name,
@@ -1982,7 +1961,7 @@ function g.defineBooster(id, name, def)
         getLoadMultiplier = def.getLoadMultiplier,
 
         draw = function(itemData)
-            ---@cast itemData g.World.ItemData
+            ---@cast itemData g.World.BoosterData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
             local r2 = worldutil.drawBoosterShape(r, def.color)
@@ -1999,35 +1978,17 @@ function g.defineBooster(id, name, def)
     })
 end
 
----@class g._PowerGenDef: g._CommonSpecificItemDef
+---@class g._PowerGenDef: g._CommonSpecificItemDef<g.World.PowerData>
 ---@field load number? (always 0)
 ---@field power number
 ---@field wireLength integer
----@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
 ---@param id string
 ---@param name string
 ---@param def g._PowerGenDef
 function g.definePowerGenerator(id, name, def)
-    g.defineUpgrade(id, name, {
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        getPriceOverride = function() return {money = def.price} end,
-        kind = "UNLOCKS",
-        targetItem = id,
-        maxLevel = 1,
-        drawUI = function(uinfo, level, r)
-            -- Draw power generator
-            local r2 = worldutil.drawPowerGenShape(r:padRatio(0.125), def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-            drawLockOpen(uinfo, level, r)
-        end,
-        isItemUnlocked = function(uinfo, level, iid)
-            return iid == id
-        end
-    })
+    defineItemUpgrades(id, name, worldutil.drawPowerGenShape, def)
+
     return g.defineItem(id, {
         category = "powergen",
         name = name,
@@ -2042,7 +2003,7 @@ function g.definePowerGenerator(id, name, def)
         power = def.power,
         wireLength = def.wireLength,
         draw = function(itemData)
-            ---@cast itemData g.World.ItemData
+            ---@cast itemData g.World.PowerData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
             local r2 = worldutil.drawPowerGenShape(r, def.color)
@@ -2059,34 +2020,16 @@ function g.definePowerGenerator(id, name, def)
     })
 end
 
----@class g._PowerRelayDef: g._CommonSpecificItemDef
+---@class g._PowerRelayDef: g._CommonSpecificItemDef<g.World.PowerData>
 ---@field load number? (always 0)
 ---@field wireLength integer
----@field draw fun(r:kirigami.Region,itemData:g.World.ItemData?)?
 
 ---@param id string
 ---@param name string
 ---@param def g._PowerRelayDef
 function g.definePowerRelay(id, name, def)
-    g.defineUpgrade(id, name, {
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        getPriceOverride = function() return {money = def.price / 2} end,
-        kind = "UNLOCKS",
-        targetItem = id,
-        maxLevel = 1,
-        drawUI = function(uinfo, level, r)
-            -- Draw power relay
-            local r2 = worldutil.drawPowerRelayShape(r:padRatio(0.125), def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-            drawLockOpen(uinfo, level, r)
-        end,
-        isItemUnlocked = function(uinfo, level, iid)
-            return iid == id
-        end
-    })
+    defineItemUpgrades(id, name, worldutil.drawPowerRelayShape, def, 0.5)
+
     return g.defineItem(id, {
         category = "powerrelay",
         name = name,
@@ -2100,7 +2043,7 @@ function g.definePowerRelay(id, name, def)
         load = 0,
         wireLength = def.wireLength,
         draw = function(itemData)
-            ---@cast itemData g.World.ItemData
+            ---@cast itemData g.World.PowerData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
             local r2 = worldutil.drawPowerRelayShape(r, def.color)
@@ -2672,6 +2615,7 @@ g.COLORS = {
 
     UPGRADE_KINDS = {
         UNLOCKS = objects.Color("#43b4e8"),
+        INVENTORY = objects.Color("FF6F43E8"),
         JOB = objects.Color("#61d4b1"),
         MISC = objects.Color("#c4d14d"),
         FALLBACK = objects.Color.WHITE,

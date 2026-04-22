@@ -389,6 +389,7 @@ function HUD:draw(show)
             local itemListGrid, totalWidth = generateItemListRegion(itemListR, #items, itemListRectSize, 4)
             local scrollSize = math.max(totalWidth - itemListR.w, 0)
             local itemNameF = g.getMainFont(10)
+            local inventoryF = g.getThickFont(14)
             local showDescriptionOf = nil
 
             if totalWidth > itemListR.w then
@@ -446,6 +447,7 @@ function HUD:draw(show)
                     local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
                     local itemInfo = items[i]
                     local x, y, w, h = clickAreaR:get()
+                    local inventory = g.getItemInventoryCount(itemInfo.id)
 
                     if iml.isHovered(x, y, w, h, itemInfo) then
                         love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
@@ -453,19 +455,43 @@ function HUD:draw(show)
                         showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
                     end
 
-                    if iml.wasJustClicked(x, y, w, h, 1, itemInfo) then
-                        if self.selectedItem == itemInfo.id then
-                            self.selectedItem = nil
-                        else
-                            self.selectedItem = itemInfo.id
+                    local col
+                    if inventory > 0 then
+                        if iml.wasJustClicked(x, y, w, h, 1, itemInfo) then
+                            if self.selectedItem == itemInfo.id then
+                                self.selectedItem = nil
+                            else
+                                self.selectedItem = itemInfo.id
+                            end
                         end
+                        col = gsman.setColor(1, 1, 1)
+                    else
+                        col = gsman.setColor(0.6, 0.6, 0.6, 0.7)
                     end
 
                     -- Draw actual item
-                    local col = gsman.setColor(1, 1, 1)
                     local itemR = itemPlacementR:padRatio(0.1):shrinkToAspectRatio(1, 1):center(itemPlacementR)
                     itemInfo.drawItem(itemR)
                     col:pop()
+
+                    -- Draw inventory quantity
+                    do
+                        if inventory > 0 then
+                            col = gsman.setColor(0.1, 0.7, 0)
+                        else
+                            col = gsman.setColor(0.7, 0.1, 0.1)
+                        end
+
+                        local txt = tostring(inventory)
+                        local invW = inventoryF:getWidth(txt)
+                        helper.printTextOutlineSimple(
+                            txt,
+                            inventoryF, 0.7,
+                            itemPlacementR.x + itemPlacementR.w - invW - 4,
+                            itemPlacementR.y + itemPlacementR.h - inventoryF:getHeight()
+                        )
+                        col:pop()
+                    end
 
                     -- Draw item name
                     do

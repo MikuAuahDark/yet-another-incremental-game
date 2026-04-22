@@ -41,12 +41,8 @@ end
 
 
 g.defineDataOutput("basic_data", "Basic Data Output", {
-    description = "First one is free for startups.",
     price = 1,
-    getPriceMultiplier = function(count)
-        if count < 1 then return 0 end -- first 1 is free
-        return (count - 1) / 10 + 1
-    end,
+    getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 1,
     dataPerSecond = 10,
     wireLength = 2,

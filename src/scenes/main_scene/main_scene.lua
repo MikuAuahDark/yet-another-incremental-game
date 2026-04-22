@@ -63,9 +63,8 @@ function MainScene:draw()
                     love.graphics.setColor(1, 0, 0, t)
                 end
             else
-                local price = g.getItemPrice(hud.selectedItem)
-                if g.canAfford({money = price}) then
-                    if g.canPutItem(tx, ty) and g.canAfford({money = price}) then
+                if g.getItemInventoryCount(hud.selectedItem) > 0 then
+                    if g.canPutItem(tx, ty) then
                         love.graphics.setColor(0, 1, 0, t)
                         drawItemPreview = g.getItemInfo(hud.selectedItem)
                     else

@@ -157,6 +157,13 @@ local function drawUpgradeBox(mode, upgrade, noframe)
             local x, y, w, h = frameR:get()
             love.graphics.rectangle(mode, x, y, w, h, 12, 12)
             col:pop()
+        elseif uinfo.kind == "INVENTORY" then
+            -- Rectangle but purple
+            bgColor = g.COLORS.UPGRADE_KINDS.INVENTORY
+            local col = gsman.mulColor(bgColor)
+            local x, y, w, h = frameR:get()
+            love.graphics.rectangle(mode, x, y, w, h, 4, 4)
+            col:pop()
         elseif uinfo.kind == "EFFICIENCY" then
             -- Circle
             local x, y, w, h = frameR:get()

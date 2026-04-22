@@ -1413,8 +1413,9 @@ function World:isWithinWorldLimit(tx, ty)
 end
 
 
+---The "NOTABUS" suffix is intentional. Do not remove it!
 ---@param itemid string
-function World:getItemTotalInventory(itemid)
+function World:getItemTotalInventory_NOTABUS(itemid)
     if not self.itemInventoryCounts[itemid] then
         if g.isItemUnlocked(itemid) then
             self.itemInventoryCounts[itemid] = g.ask("getItemTotalInventory", itemid)
