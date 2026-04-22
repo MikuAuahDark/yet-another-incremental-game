@@ -329,6 +329,8 @@ function World:init()
 
     ---@type table<string, integer>
     self.itemCounts = setmetatable({}, {__index = function() return 0 end})
+    ---@type table<string, integer?> Putting it in world for caching
+    self.itemInventoryCounts = {}
 
     self.averageCPS = 0 -- (read-only)
     self.peakCPS = 0 -- (read-only)
@@ -433,6 +435,7 @@ function World:_update(dt)
     table.clear(self.powerRelays)
     table.clear(self.powerNetworks)
     table.clear(self.itemCounts)
+    table.clear(self.itemInventoryCounts)
     ---@param item g.World.ItemData?
     self.items:foreach(function(item, x, y)
         if item then
@@ -1407,6 +1410,20 @@ function World:isWithinWorldLimit(tx, ty)
     local center = math.floor(World.TILE_SIZE / 2)
     local worldSize = g.stats.WorldTileSize
     return math.abs(tx - center) <= worldSize and math.abs(ty - center) <= worldSize
+end
+
+
+---@param itemid string
+function World:getItemTotalInventory(itemid)
+    if not self.itemInventoryCounts[itemid] then
+        if g.isItemUnlocked(itemid) then
+            self.itemInventoryCounts[itemid] = g.ask("getItemTotalInventory", itemid)
+        else
+            self.itemInventoryCounts[itemid] = 0
+        end
+    end
+
+    return self.itemInventoryCounts[itemid]
 end
 
 

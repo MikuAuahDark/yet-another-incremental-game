@@ -15,6 +15,7 @@ g.defineProperty("getDataThroughput") -- arguments: g.DataOutInfo
 g.defineProperty("getWireThroughput") -- arguments: g.DataOutInfo
 g.defineQuestion("isItemUnlocked", reducers.OR, false) -- arguments: string (item ID)
 g.defineQuestion("isJobUnlocked", reducers.OR, false) -- arguments: string (job ID)
+g.defineQuestion("getItemTotalInventory", reducers.ADD, 0) -- arguments: string (item ID)
 
 g.defineProperty("getJobFrequency") -- arguements: string (job ID)
 g.defineProperty("getJobOutputData") -- arguements: string (job ID)
