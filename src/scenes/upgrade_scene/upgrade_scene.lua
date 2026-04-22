@@ -517,59 +517,29 @@ local function drawDevEditModeUI(self, treeUpgrades)
         tree:finalize()
     end
 
-    local treeURL = "file://" .. (love.filesystem.getSaveDirectory() .. consts.FILE_SEP .. consts.DEV_UPGRADE_TREE_PATH)
-    if ui.DefaultButton("Open Folder", regs[4]) then
-        love.filesystem.createDirectory(consts.DEV_UPGRADE_TREE_PATH)
-        love.system.openURL(treeURL)
-    end
-
-    if ui.Button("NEW TREE", objects.Color.LIME, objects.Color.DARK_GREEN, regs[5]) then
-        love.filesystem.createDirectory(consts.DEV_UPGRADE_TREE_PATH)
-        for i=1,100 do
-            local fname = "NEW_TREE_"..i..".json"
-            local fpath = consts.DEV_UPGRADE_TREE_PATH..consts.FILE_SEP..fname
-            if not love.filesystem.getInfo(fpath) then
-                local ok,er = love.filesystem.write(fpath, "{}")
-                log.debug("writing file:",ok,er)
-                love.system.openURL(treeURL)
-                local sn = g.getSn()
-                sn.tree = Tree()
-                sn.tree._filename = fname
-                break
-            end
+    if ui.Button("NEW TREE", objects.Color.LIME, objects.Color.DARK_GREEN, regs[4]) then
+        if love.window.showMessageBox("New tree?", "The current tree in this save will be recreated!", {"Yes", "No"}, "warning") == 1 then
+            local sn = g.getSn()
+            sn.tree = Tree()
         end
     end
 
-    if ui.Button("SAVE TREE", objects.Color.AQUA,objects.Color.BLACK, regs[6]) then
-        local serializedTree = g.getUpgTree():serialize()
-        love.window.showFileDialog("savefile", function(files, filtername, errorstring)
-            if files and files[1] then
-                local f, err = love.filesystem.openNativeFile(files[1], "w")
-                if f then
-                    f:write(json.encode(serializedTree))
-                    f:close()
-                else
-                    log.error("Failed to save tree: ", err)
-                end
-            elseif errorstring then
-                log.error("Failed to save tree: ", errorstring)
-            end
-        end, {filters = {["JavaScript Object Notation (*.json)"] = "json"}})
-    end
-
-    if ui.Button("EXPORT TREE", objects.Color.AQUA,objects.Color.BLACK, regs[7]) then
+    if ui.Button("EXPORT TREE", objects.Color.AQUA,objects.Color.BLACK, regs[5]) then
         local serializedTree = g.getUpgTree():export()
+        local treejson = json.encode(serializedTree)
         love.window.showFileDialog("savefile", function(files, filtername, errorstring)
             if files and files[1] then
                 local f, err = love.filesystem.openNativeFile(files[1], "w")
                 if f then
-                    f:write(json.encode(serializedTree))
+                    f:write(treejson)
                     f:close()
                 else
                     log.error("Failed to export tree: ", err)
                 end
             elseif errorstring then
                 log.error("Failed to export tree: ", errorstring)
+                -- Dump tree to stdout for fallback
+                print(treejson)
             end
         end, {filters = {["JavaScript Object Notation (*.json)"] = "json"}})
     end
@@ -757,7 +727,7 @@ end
 local function drawDevUI(self)
     local region = ui.getScreenRegion()
         :padUnit(0, g.getHUD().topR.h, 0, 0)
-    local header, body,editname = region:splitVertical(2,9,1)
+    local header, _,_ = region:splitVertical(2,9,1)
     local _
     _,header,_ = header:splitHorizontal(1,2,1)
     local _, editButton, _ = header:padRatio(0.2):splitHorizontal(1,1,1)
@@ -767,13 +737,6 @@ local function drawDevUI(self)
     end
     local tree = g.getUpgTree()
     local font=g.getMainFont(16)
-    if tree and tree._filename then
-        richtext.printRichContained("{o}EDITING: {c r=1 g=1 b=0}" .. tree._filename, font, editname:padRatio(-0.2):get())
-    elseif not tree._filename then
-        richtext.printRichContained("{o}{c r=1 g=0 b=0}No file open.{/c}\n(Drag file onto screen to open)", font,
-            editname:padRatio(-0.5):moveRatio(0,-0.5):get()
-        )
-    end
 
     local treeUpgrades = tree:getUpgradesOnTree()
     local numUpgs = #treeUpgrades
