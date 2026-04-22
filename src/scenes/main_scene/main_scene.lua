@@ -103,11 +103,27 @@ function MainScene:draw()
 
     if self.hideHUD then
         hud:draw({stats = false, jobQueue = false, itemList = false, mode = "main"})
-    else
-        hud:draw({mode = "main"})
-    end
 
-    if not self.hideHUD then
+        local r = ui.getFullScreenRegion()
+        local drag = ui.region.consumeDrag("moveworld", r, 1)
+        if drag then
+            -- Panning
+            local x, y = ui.getUIScalingTransform():transformPoint(drag.endX, drag.endY)
+            if self.lastPan then
+                local cx, cy = self.camera:getPos() --[[@as number]]
+                local z = self:scaleFromZoom(self._zoomIndex)
+                local dx = x - self.lastPan[1]
+                local dy = y - self.lastPan[2]
+                self.camera:setPos(cx - dx / z, cy - dy / z)
+            end
+            self.lastPan = {x, y}
+        else
+            self.lastPan = nil
+            if ui.region.wasJustClicked(r, 1, "moveworld") then
+                self.hideHUD = false
+            end
+        end
+    else
         -- Draw tile selection info text
         love.graphics.setColor(1, 1, 1)
         if world.heat:contains(tx, ty) then
@@ -139,10 +155,12 @@ function MainScene:draw()
         end
 
         if not selectedItem then
-            if world.items:contains(tx, ty) and world:canPutItem(tx, ty) then
+            if world.items:contains(tx, ty) then
                 selectedItem = g.getItem(tx, ty)
             end
         end
+
+        hud:draw({mode = "main"})
 
         if selectedItem then
             -- Draw tooltip
