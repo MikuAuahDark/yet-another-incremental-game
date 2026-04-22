@@ -115,6 +115,26 @@ local function getGeneratorOutput(powerGenInfo)
     return powerText
 end
 
+-- TODO: Move this somewhere probably?
+local TASKTYPE_SHAPE = {
+    general = "change_history_fill_20dp",
+    video = "crop_square_fill_20dp",
+    ai = "circle_fill_20dp"
+}
+
+---@param info g.ServerInfo|g.DataInInfo
+local function getServerDataInputDisplayName(info)
+    local ctype
+    if info.computePreference then
+        ctype = info.computePreference[1]
+    else
+        ctype = info.queuesJob
+    end
+    local ctypeup = ctype:upper()
+    local symbol = "{TYPE_"..ctypeup.."}{"..TASKTYPE_SHAPE[ctype].."}{/TYPE_"..ctypeup.."}"
+    return symbol..info.name..symbol
+end
+
 -- Putting this here so font sizes can be changed in one place
 function ItemTooltip.getTitleFont() return g.getMainFont(16) end
 function ItemTooltip.getAttrFont() return g.getMainFont(13) end
@@ -137,17 +157,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
-    builder:addText(serverInfo.name, titleF, "center")
-
-    -- Category
-    local computeNames = {}
-    for _, jcname in ipairs(serverInfo.computePreference) do
-        computeNames[#computeNames+1] = g.getJobCategoryName(jcname)
-    end
-    local categoryText = TEXT.CATEGORY_LIST({
-        categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
-    })
-    builder:addText(categoryText, descF, "center")
+    builder:addText(getServerDataInputDisplayName(serverInfo), titleF, "center")
 
     -- Description
     if serverInfo.description then
@@ -356,7 +366,7 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
     local builder = ui.TooltipBuilder(mx, my, 0, 0, safeArea)
 
     -- Title
-    builder:addText(diInfo.name, titleF, "center")
+    builder:addText(getServerDataInputDisplayName(diInfo), titleF, "center")
 
     -- Description
     if diInfo.description then
@@ -518,17 +528,7 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y, safeArea)
     local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
-    builder:addText(serverInfo.name, titleF, "center")
-
-    -- Category
-    local computeNames = {}
-    for _, jcname in ipairs(serverInfo.computePreference) do
-        computeNames[#computeNames+1] = g.getJobCategoryName(jcname)
-    end
-    local categoryText = TEXT.CATEGORY_LIST({
-        categories = table.concat(computeNames, TEXT.HORIZONTAL_LIST_SEPARATOR)
-    })
-    builder:addText(categoryText, descF, "center")
+    builder:addText(getServerDataInputDisplayName(serverInfo), titleF, "center")
 
     -- Description
     if serverInfo.description then
@@ -609,7 +609,7 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y, safeArea)
     local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
 
     -- Title
-    builder:addText(diInfo.name, titleF, "center")
+    builder:addText(getServerDataInputDisplayName(diInfo), titleF, "center")
 
     -- Description
     if diInfo.description then

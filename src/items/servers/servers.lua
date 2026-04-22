@@ -74,7 +74,7 @@ g.defineServer("normal_server", "Server (Tier 1)", {
     load = 4,
     heatTolerance = {40, 60},
     heat = 40,
-    color = objects.Color("#ebe883"),
+    color = g.COLORS.TYPE_GENERAL,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         _tier1Server(r)
@@ -91,7 +91,7 @@ g.defineServer("tier2_server", "Server (Tier 2)", {
     load = 6,
     heatTolerance = {30, 70},
     heat = 40,
-    color = objects.Color("#ebe883"),
+    color = g.COLORS.TYPE_GENERAL,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         _tier2Server(r)
@@ -108,7 +108,7 @@ g.defineServer("tier3_server", "Server (Tier 3)", {
     load = 10,
     heatTolerance = {20, 90},
     heat = 40,
-    color = objects.Color("#ebe883"),
+    color = g.COLORS.TYPE_GENERAL,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         _tier3Server(r)
@@ -126,7 +126,7 @@ g.defineServer("advanced_server", "Video Server (Tier 1)", {
     load = 5,
     heatTolerance = {40, 60},
     heat = 50,
-    color = objects.Color("#12aae6"),
+    color = g.COLORS.TYPE_VIDEO,
     draw = function(r)
         local col = gsman.setColor(0, 0, 0)
         g.drawImageContained("movie", _tier1Server(r):get())
@@ -142,7 +142,7 @@ g.defineServer("video2_server", "Video Server (Tier 2)", {
     load = 12,
     heatTolerance = {30, 70},
     heat = 40,
-    color = objects.Color("#12aae6"),
+    color = g.COLORS.TYPE_VIDEO,
     draw = function(r)
         local col = gsman.setColor(0, 0, 0)
         g.drawImageContained("movie", _tier2Server(r):get())
@@ -158,7 +158,7 @@ g.defineServer("video3_server", "Video Server (Tier 3)", {
     load = 20,
     heatTolerance = {30, 70},
     heat = 30,
-    color = objects.Color("#12aae6"),
+    color = g.COLORS.TYPE_VIDEO,
     draw = function(r)
         local col = gsman.setColor(0, 0, 0)
         local centerR = _tier3Server(r)
@@ -178,7 +178,7 @@ g.defineServer("ai_server", "AI Server (Tier 1)", {
     load = 50,
     heatTolerance = {30, 70},
     heat = 50,
-    color = objects.Color("#e37036"),
+    color = g.COLORS.TYPE_AI,
     draw = function(r)
         local col = gsman.setColor(0, 0, 0)
         local centerR = _aiServer1(r)
@@ -197,7 +197,7 @@ g.defineServer("ai_server_t2", "AI Server (Tier 2)", {
     load = 74,
     heatTolerance = {20, 75},
     heat = 55,
-    color = objects.Color("#e37036"),
+    color = g.COLORS.TYPE_AI,
     draw = function(r)
         local col = gsman.setColor(0, 0, 0)
         local centerR = _aiServer2(r)
@@ -215,7 +215,7 @@ g.defineServer("ai_server_t3", "AI Server (Tier 3)", {
     load = 110,
     heatTolerance = {20, 75},
     heat = 60,
-    color = objects.Color("#e37036"),
+    color = g.COLORS.TYPE_AI,
     draw = function(r)
         local col = gsman.setColor(0, 0, 0)
         local centerR = _aiServer3(r)

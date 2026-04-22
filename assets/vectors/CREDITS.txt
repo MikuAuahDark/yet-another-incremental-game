@@ -1,4 +1,4 @@
 All SVGs are from Material Icons by Google, licensed under Apache 2.0 license.
 * https://fonts.google.com/icons
 * It retains the original icon filename as it appears in Material Icons.
-* It's downloaded as SVG with Size set to 32 and color set to white.
+* It's downloaded as SVG with Size set to 40 (unless noted otherwise) and color set to white.

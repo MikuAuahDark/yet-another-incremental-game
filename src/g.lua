@@ -2725,16 +2725,19 @@ g.COLORS = {
 
     TILE_HOT = objects.Color("7fD63900"),
     TILE_COLD = objects.Color("7fabeeff"),
+
+    TYPE_GENERAL = objects.Color("#ebe883"),
+    TYPE_VIDEO = objects.Color("#12aae6"),
+    TYPE_AI = objects.Color("#f16053"),
 }
 
 do
 for k,v in pairs(g.COLORS) do
     if getmetatable(v) == objects.Color then
         richtext.defineEffect(k, function (args, x,y, context, next)
-            local r,gg,b,a = lg.getColor()
-            lg.setColor(v)
+            local col = gsman.setColor(v)
             next(context.textOrDrawable, x,y)
-            lg.setColor(r,gg,b,a)
+            col:pop()
         end)
     end
 end

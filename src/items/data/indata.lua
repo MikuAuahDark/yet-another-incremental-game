@@ -68,7 +68,7 @@ g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
     queuesJob = "general",
     maxJobQueue = 5,
     wireLength = 3,
-    color = objects.Color("#ebe883"),
+    color = g.COLORS.TYPE_GENERAL,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         drawDataInputDecorator(r, 2, 0.2, 0.4, 0.08)
@@ -85,7 +85,7 @@ g.defineDataInput("indata_tier2", "General Data Input (Tier 2)", {
     queuesJob = "general",
     maxJobQueue = 7,
     wireLength = 5,
-    color = objects.Color("#ebe883"),
+    color = g.COLORS.TYPE_GENERAL,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         drawDataInputDecorator(r, 3, 0.2, 0.5, 0.08)
@@ -103,7 +103,7 @@ g.defineDataInput("video_indata", "Video Data Input (Tier 1)", {
     queuesJob = "video",
     maxJobQueue = 5,
     wireLength = 3,
-    color = objects.Color("#12aae6"),
+    color = g.COLORS.TYPE_VIDEO,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         g.drawImageContained("movie", drawDataInputDecorator(r, 2, 0.2, 0.4, 0.08):get())
@@ -120,7 +120,7 @@ g.defineDataInput("video_indata_t2", "Video Data Input (Tier 2)", {
     queuesJob = "video",
     maxJobQueue = 8,
     wireLength = 6,
-    color = objects.Color("#12aae6"),
+    color = g.COLORS.TYPE_VIDEO,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         g.drawImageContained("movie", drawDataInputDecorator(r, 3, 0.2, 0.5, 0.08):get())
@@ -138,7 +138,7 @@ g.defineDataInput("ai_indata", "AI Data Input", {
     queuesJob = "ai",
     maxJobQueue = 5,
     wireLength = 4,
-    color = objects.Color("#e37036"),
+    color = g.COLORS.TYPE_AI,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         g.drawImageContained("network_intelligence", drawDataInputDecorator(r, 2, 0.2, 0.4, 0.08):get())
@@ -155,7 +155,7 @@ g.defineDataInput("ai_indata_t2", "AI Data Input (Tier 2)", {
     queuesJob = "ai",
     maxJobQueue = 8,
     wireLength = 6,
-    color = objects.Color("#e37036"),
+    color = g.COLORS.TYPE_AI,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
         g.drawImageContained("network_intelligence", drawDataInputDecorator(r, 3, 0.2, 0.5, 0.08):get())
