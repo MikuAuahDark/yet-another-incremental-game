@@ -526,7 +526,8 @@ local TOOLTIP_TEXT_MAX_WIDTH = 200
 ---@param y number
 ---@param ox number?
 ---@param oy number?
-function helper.tooltip(text, x, y, ox, oy)
+---@param safeArea kirigami.Region?
+function helper.tooltip(text, x, y, ox, oy, safeArea)
     ox = ox or 0
     oy = oy or 0
     local font = g.getMainFont(16)

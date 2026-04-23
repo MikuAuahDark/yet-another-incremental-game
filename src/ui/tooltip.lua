@@ -113,8 +113,8 @@ local TASKTYPE_SHAPE = {
 ---@param info g.ServerInfo|g.DataInInfo
 local function getServerDataInputDisplayName(info)
     local ctype
-    if info.computePreference then
-        ctype = info.computePreference[1]
+    if info.computeType then
+        ctype = info.computeType
     else
         ctype = info.queuesJob
     end

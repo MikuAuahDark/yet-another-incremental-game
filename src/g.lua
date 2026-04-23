@@ -1495,7 +1495,7 @@ g.CATEGORIES = {
 ---@class g._ServerInfoCommon
 ---@field public category "server"
 ---@field public computePerSecond number
----@field public computePreference string[]
+---@field public computeType string
 ---@field public heatTolerance [number, number]
 ---@field public heat number
 
@@ -1634,10 +1634,8 @@ function g.defineItem(id, def)
         }
         def.heatRadiate = def.heatRadiate or 1
         def.heatRadiateAlgorithm = def.heatRadiateAlgorithm or "chessboard"
-        assert(#def.computePreference > 0)
-        for _, jobCategory in ipairs(def.computePreference) do
-            g.getJobCategoryName(jobCategory) -- just for assertion purpose
-        end
+        assert(def.computeType, "invalid computeType")
+        g.getJobCategoryName(def.computeType)
     elseif def.category == "data" then
         ---@cast def g.DataOutInfo
         assert(def.dataPerSecond, "invalid dps")
@@ -1791,7 +1789,7 @@ end
 
 ---@class g._ServerDef: g._CommonSpecificItemDef<g.World.ServerData>
 ---@field computePerSecond number
----@field computePreference string[]
+---@field computeType string
 ---@field heatTolerance [number, number]
 ---@field heat number
 
@@ -1813,7 +1811,7 @@ function g.defineServer(id, name, def)
         price = def.price,
         getPriceMultiplier = def.getPriceMultiplier,
         computePerSecond = def.computePerSecond,
-        computePreference = def.computePreference,
+        computeType = def.computeType,
         heatTolerance = def.heatTolerance,
         heat = def.heat,
         draw = function(itemData)
@@ -2140,9 +2138,9 @@ end
 ---@param server g.World.ServerData
 ---@param dp g.World.DataOutputData
 function g.disconnectDataWire(server, dp)
-    for i, s in ipairs(dp.connectsServers) do
+    for i, s in ipairs(dp.connects) do
         if s == server then
-            table.remove(dp.connectsServers, i)
+            table.remove(dp.connects, i)
             return
         end
     end
@@ -2165,7 +2163,7 @@ end
 ---@param server g.World.ServerData
 ---@param dp g.World.DataOutputData
 function g.connectDataWire(server, dp)
-    if helper.index(dp.connectsServers, server) then
+    if helper.index(dp.connects, server) then
         error("already connected")
     end
 
@@ -2173,7 +2171,7 @@ function g.connectDataWire(server, dp)
         error("cannot connect data wire")
     end
 
-    dp.connectsServers[#dp.connectsServers+1] = server
+    dp.connects[#dp.connects+1] = server
 end
 
 ---@param tx integer
@@ -2314,13 +2312,13 @@ function g.getItemProblems(itemData)
     elseif category == "data" then
         ---@cast itemData g.World.DataOutputData
         ---@cast itemInfo g.DataOutInfo
-        if #itemData.connectsServers == 0 then
+        if #itemData.connects == 0 then
             result[#result+1] = "no_connection"
         end
     elseif category == "indata" then
         ---@cast itemData g.World.DataInputData
         ---@cast itemInfo g.DataInInfo
-        if #itemData.connectsServers == 0 then
+        if #itemData.connects == 0 then
             result[#result+1] = "input_not_connected"
         end
     end
