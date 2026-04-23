@@ -2,7 +2,7 @@
 local ItemTooltip = {}
 
 
----@param itemInfo g.ItemInfo
+---@param itemInfo g.ItemInfo<any>
 ---@param itemData g.World.ItemData?
 local function getItemLoadText(itemInfo, itemData)
     local baseLoad = itemInfo.load
@@ -54,7 +54,8 @@ local function getPowerNetworkText(powerNetwork)
     return TEXT.TOTAL_LOAD_TOOLTIP({s = s})
 end
 
----@param itemInfo g.ItemInfo
+---@param itemInfo g.ItemInfo<any>
+---@deprecated
 local function getItemPrice(itemInfo)
     return nil
 end
@@ -103,13 +104,6 @@ local function getGeneratorOutput(powerGenInfo)
     return powerText
 end
 
--- TODO: Move this somewhere probably?
-local TASKTYPE_SHAPE = {
-    general = "change_history_fill_20dp",
-    video = "crop_square_fill_20dp",
-    ai = "circle_fill_20dp"
-}
-
 ---@param info g.ServerInfo|g.DataInInfo
 local function getServerDataInputDisplayName(info)
     local ctype
@@ -119,7 +113,7 @@ local function getServerDataInputDisplayName(info)
         ctype = info.queuesJob
     end
     local ctypeup = ctype:upper()
-    local symbol = "{TYPE_"..ctypeup.."}{"..TASKTYPE_SHAPE[ctype].."}{/TYPE_"..ctypeup.."}"
+    local symbol = "{TYPE_"..ctypeup.."}{"..g.getJobCategoryInfo(ctype).symbol.."}{/TYPE_"..ctypeup.."}"
     return symbol..info.name..symbol
 end
 
@@ -240,7 +234,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
             ui.printRichInRegion(dps, descF, dpsR, true, "center")
             curY = curY + descFH
 
-            local p = serverData.jobProgress / job.computePower
+            local p = serverData.dataTotalEmitted / job.computePower
             love.graphics.printf(math.abs(helper.round(p * 100, 1)) .. "%", descF, x, curY, w, "center")
             curY = curY + descFH
 
@@ -745,7 +739,7 @@ function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y, safeArea)
     builder:render()
 end
 
----@param itemInfo g.ItemInfo
+---@param itemInfo g.ItemInfo<g.World.ItemData>
 ---@param x number
 ---@param y number
 ---@param safeArea kirigami.Region?

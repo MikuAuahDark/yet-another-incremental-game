@@ -1277,7 +1277,7 @@ end
 do
 
 ---Key is the ID, value is the name
----@type table<string, [string,string]>
+---@type table<string, g.JobCategoryInfo>
 g.VALID_JOB_CATEGORIES = {}
 ---@type g.JobCategory[]
 g.JOB_CATEGORIES = {}
@@ -1291,27 +1291,54 @@ g.JOB_CATEGORIES = {}
 ---@field public resource g.Bundle
 ---@field public timeout number If not taken for this seconds, remove from queue.
 
+---@class g.JobCategoryDefinition
+---@field public nameContext string?
+---@field public startingStatValue number
+---@field public symbol string image
+---@field public color objects.Color
+
+---@class g.JobCategoryInfo
+---@field public name string
+---@field public nameRaw string
+---@field public symbol string image
+---@field public color objects.Color
+
 ---@param id string
 ---@param name string
----@param def {nameContext:string?,startingStatValue:number}
+---@param def g.JobCategoryDefinition
 function g.defineJobCategory(id, name, def)
     assert(not g.VALID_JOB_CATEGORIES[id], "Redefined job category!")
-    local ctx = def.nameContext
-    if not ctx then ctx = nil end
+
     g.JOB_CATEGORIES[#g.JOB_CATEGORIES+1] = id
-    g.VALID_JOB_CATEGORIES[id] = {name, loc(name, nil, {context = ctx})}
+    g.VALID_JOB_CATEGORIES[id] = {
+        name = loc(name, nil, {context = def.nameContext}),
+        nameRaw = name,
+        symbol = def.symbol,
+        color = def.color
+    }
     return g.defineStat(name.."JobFrequency", def.startingStatValue, name.." Job Spawn Frequency")
+end
+
+---@param jobCategory g.JobCategory
+function g.getJobCategoryInfo(jobCategory)
+    if not g.VALID_JOB_CATEGORIES[jobCategory] then
+        error("unknown job category '"..jobCategory.."'")
+    end
+
+    return g.VALID_JOB_CATEGORIES[jobCategory]
 end
 
 ---@param jobCategory g.JobCategory
 ---@param raw boolean?
 ---@return string
+---@deprecated use `g.getJobCategoryInfo(jobCategory).name` instead.
 function g.getJobCategoryName(jobCategory, raw)
-    local info = g.VALID_JOB_CATEGORIES[jobCategory]
-    if not info then
-        error("unknown job category '"..jobCategory.."'")
+    local info = g.getJobCategoryInfo(jobCategory)
+    if raw then
+        return info.nameRaw
+    else
+        return info.name
     end
-    return info[raw and 2 or 1]
 end
 
 ---@alias g.JobCategory
@@ -1323,13 +1350,22 @@ end
 ---| "ai"
 g.stats.GeneralJobFrequency = g.defineJobCategory("general", "General", {
     startingStatValue = 0.1,
-    nameContext = "General computer processing job"})
+    nameContext = "General computer processing job",
+    color = objects.Color("#ebe883"),
+    symbol = "change_history_fill_20dp"
+})
 g.stats.VideoJobFrequency = g.defineJobCategory("video", "Video", {
     startingStatValue = 0,
-    nameContext = "Video processing job for computer (e.g. transcoding)"})
+    nameContext = "Video processing job for computer (e.g. transcoding)",
+    color = objects.Color("#12aae6"),
+    symbol = "crop_square_fill_20dp"
+})
 g.stats.AIJobFrequency = g.defineJobCategory("ai", "AI", {
     startingStatValue = 0,
-    nameContext = "AI processing job for computer (e.g. inferencing or training)"})
+    nameContext = "AI processing job for computer (e.g. inferencing or training)",
+    color = objects.Color("#f16053"),
+    symbol = "circle_fill_20dp"
+})
 
 end
 
@@ -1364,7 +1400,7 @@ function g.defineJob(id, name, category, def)
     if g.VALID_JOBS[id] then
         error("job '"..id.."' already defined")
     end
-    g.getJobCategoryName(category) -- for assertion
+    g.getJobCategoryInfo(category) -- for assertion
 
     local dc, dd, dm
     if type(def.compute) == "number" then
@@ -1420,19 +1456,6 @@ function g.genJob(id)
     }
     g.call("jobCreated", job)
     return job
-end
-
----@param job g.Job
-function g.queueJob(job)
-    local world = g.getMainWorld()
-
-    if world.jobQueueCounts[job.category] >= world.maxJobQueues[job.category] then
-        return false
-    end
-
-    world.jobQueue[#world.jobQueue+1] = job
-    world.jobQueueCounts[job.category] = world.jobQueueCounts[job.category] + 1
-    return true
 end
 
 end
@@ -1495,7 +1518,7 @@ g.CATEGORIES = {
 ---@class g._ServerInfoCommon
 ---@field public category "server"
 ---@field public computePerSecond number
----@field public computeType string
+---@field public computeType g.JobCategory
 ---@field public heatTolerance [number, number]
 ---@field public heat number
 
@@ -2100,15 +2123,16 @@ function g.removeItem(item) end
 ---@diagnostic disable-next-line: duplicate-set-field
 function g.removeItem(tx, ty)
     local world = g.getMainWorld()
-    local item
+    local item = nil
     if type(tx) == "table" then
-        ---@cast tx g.World.ItemData
-        item = tx
+        item = tx --[[@as g.World.ItemData]]
         tx, ty = item.tileX, item.tileY
         assert(world.items:get(tx, ty) == item, "position source of truth violation")
     else
         item = world.items:get(tx, ty)
     end
+
+    -- TODO: Remove connections
 
     local ok = false
     if item then
@@ -2119,40 +2143,34 @@ function g.removeItem(tx, ty)
     return ok
 end
 
----@param targetItem g.World.ItemData
----@param tx integer
----@param ty integer
-function g.moveItem(targetItem, tx, ty)
-    if not g.canPutItem(tx, ty) then
-        error("unable to put item at "..tx..","..ty)
-    end
-
-    local world = g.getMainWorld()
-    assert(world.items:get(targetItem.tileX, targetItem.tileY) == targetItem, "position source of truth violation")
-    world.items:set(targetItem.tileX, targetItem.tileY, nil)
-    world.items:set(tx, ty, targetItem)
-    targetItem.tileX = tx
-    targetItem.tileY = ty
-end
-
 ---@param server g.World.ServerData
----@param dp g.World.DataOutputData
+---@param dp g.World.DataOutputData|g.World.DataInputData
 function g.disconnectDataWire(server, dp)
-    for i, s in ipairs(dp.connects) do
-        if s == server then
+    local _, cat = g.getItemInfo(dp.type)
+    assert(cat == "data" or cat == "indata")
+
+    for i, wire in ipairs(dp.connects) do
+        if wire.server == server then
             table.remove(dp.connects, i)
-            return
+
+            local t = cat == "data" and server.connectedOutputs or server.connectedInputs
+            local si = helper.index(t, wire)
+            assert(si, "source of truth violation")
+            table.remove(t, si)
+            return true
         end
     end
 
-    error("not connected")
+    return false
 end
 
 ---This only checks the server position and DP wire length/count
 ---@param server g.World.ServerData
----@param dp g.World.DataOutputData
+---@param dp g.World.DataOutputData|g.World.DataInputData
 function g.canConnectDataWire(server, dp)
-    local dpInfo = g.getItemInfo(dp.type, "data")
+    local dpInfo, cat = g.getItemInfo(dp.type)
+    assert(cat == "data" or cat == "indata")
+    ---@cast dpInfo g.DataInInfo|g.DataOutInfo
     if worldutil.getDistance("chessboard", server.tileX - dp.tileX, server.tileY - dp.tileY) > dpInfo.wireLength then
         return false
     end
@@ -2161,17 +2179,40 @@ function g.canConnectDataWire(server, dp)
 end
 
 ---@param server g.World.ServerData
----@param dp g.World.DataOutputData
+---@param dp g.World.DataOutputData|g.World.DataInputData
 function g.connectDataWire(server, dp)
-    if helper.index(dp.connects, server) then
-        error("already connected")
+    local _, cat = g.getItemInfo(dp.type)
+    assert(cat == "data" or cat == "indata")
+
+    for _, wire in ipairs(dp.connects) do
+        if wire.server == server then
+            -- already connected
+            return false
+        end
     end
 
     if not g.canConnectDataWire(server, dp) then
-        error("cannot connect data wire")
+        -- not connectable
+        return false
     end
 
-    dp.connects[#dp.connects+1] = server
+    ---@type g.World.DataInputWire|g.World.DataOutputWire
+    local wire = {
+        source = dp,
+        server = server,
+        objects = {},
+        positions = {},
+    }
+
+    dp.connects[#dp.connects+1] = wire
+    if cat == "data" then
+        ---@cast dp g.World.DataOutputData
+        server.connectedOutputs[#server.connectedOutputs+1] = wire
+    else
+        server.connectedInputs[#server.connectedInputs+1] = wire
+    end
+
+    return true
 end
 
 ---@param tx integer
@@ -2298,7 +2339,7 @@ function g.getItemProblems(itemData)
             result[#result+1] = "no_input_connection"
         end
 
-        if itemData.currentJob and not itemData.activeOutput then
+        if itemData.currentJob and not itemData.hasSent then
             result[#result+1] = "no_suitable_output"
         end
 
@@ -2666,9 +2707,10 @@ g.COLORS = {
     TILE_HOT = objects.Color("7fD63900"),
     TILE_COLD = objects.Color("7fabeeff"),
 
-    TYPE_GENERAL = objects.Color("#ebe883"),
-    TYPE_VIDEO = objects.Color("#12aae6"),
-    TYPE_AI = objects.Color("#f16053"),
+    -- FIXME: Register the color in `g.defineJobCategory`?
+    TYPE_GENERAL = g.getJobCategoryInfo("general").color,
+    TYPE_VIDEO = g.getJobCategoryInfo("video").color,
+    TYPE_AI = g.getJobCategoryInfo("ai").color,
 }
 
 do

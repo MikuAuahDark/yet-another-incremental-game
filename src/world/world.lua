@@ -35,24 +35,28 @@ end
 
 ---@class g.World.ServerData: g.World.ItemData
 ---@field currentJob g.Job?
----@field jobProgress number
----@field connectedOutputs g.World.DataOutputData[] (readonly; connected data outputs, quick lookup only)
----@field connectedInputs g.World.DataInputData[] (readonly; connected data inputs, quick lookup only)
----@field activeOutput g.World.DataOutputData? (readonly; the data output used this frame)
+---@field dataTotalEmitted number (readwrite; if same as currentJob.dataOutput then done)
+---@field connectedOutputs g.World.DataOutputWire[] (readonly; connected data outputs, quick lookup only)
+---@field connectedInputs g.World.DataInputWire[] (readonly; connected data inputs, quick lookup only)
 ---@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
+---@field nextInput integer (wraparound, 0-based)
+---@field nextOutput integer (wraparound, 0-based)
 ---@field dataBottlenecked boolean
----@field package desiredDPS number
----@field package animationDataInput number (1 = moving, 0 = stationary, decrementing from 1 to 0)
----@field package animationDataInputTime number (duration cycles)
----@field package animationDataOutput number (duration cycles)
+---@field hasSent boolean
 
 ---@class g.World.DataInputData: g.World.ItemData
----@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
+---@field wireDPS number (readonly; updated every frame)
+---@field connects g.World.DataInputWire[] (readwrite; connects to this server, source of truth)
+---@field next integer (wraparound, 0-based)
 
 ---@class g.World.DataOutputData: g.World.ItemData
----@field connectsServers g.World.ServerData[] (readwrite; connects to this server, source of truth)
+---@field connects g.World.DataOutputWire[] (readwrite; connects to this server, source of truth)
 ---@field dataPerSecond number (readonly; updated every frame)
 ---@field wireDPS number (readonly; updated every frame)
+---@field dataRemaining number
+---@field reward number
+---@field rewardToShow number
+---@field next integer (wraparound, 0-based)
 ---@field package requestedLoad number
 ---@field package dataScale number
 
@@ -67,6 +71,16 @@ end
 ---@field consumers g.World.ItemData[]
 ---@field totalPower number (readonly; updated every frame)
 ---@field totalLoad number (readonly; updated every frame)
+
+---@generic U, T: g.World.ItemData
+---@class g.World.Wire<T, U>
+---@field source T
+---@field server g.World.ServerData
+---@field objects U[]
+---@field positions number[] normalized [0, 1]
+
+---@alias g.World.DataInputWire g.World.Wire<g.World.DataInputData, g.Job>
+---@alias g.World.DataOutputWire g.World.Wire<g.World.DataOutputData, number>
 
 
 ---@class g.World: objects.Class
@@ -275,6 +289,68 @@ local function drawLine(x1, y1, x2, y2, thickness)
 end
 
 
+local PHYSICAL_DATA_SIZE = 5
+
+---@param wire g.World.Wire<g.World.ItemData, any>
+local function getWireLength(wire)
+    return helper.magnitude(
+        wire.server.tileX - wire.source.tileX,
+        wire.server.tileY - wire.source.tileY
+    ) * consts.WORLD_TILE_SIZE
+end
+
+---@param lp number
+---@param wdps number
+---@param dt number
+---@param wire g.World.Wire<g.World.ItemData, any>
+local function updateWire(lp, wdps, dt, wire)
+    local lp2 = math.max(worldutil.getLoadPercentage(wire.server), lp)
+    local wireLength = getWireLength(wire)
+    local padding = PHYSICAL_DATA_SIZE / wireLength
+    local ndt = (wdps * dt * lp2) / wireLength
+
+    for i = #wire.positions, 1, -1 do
+        local wall
+        if wire.positions[i + 1] then
+            wall = wire.positions[i + 1] - padding
+        else
+            wall = 1 -- Make sure exact value
+        end
+
+        wire.positions[i] = helper.clamp(wire.positions[i] + ndt, 0, wall)
+    end
+end
+
+---@param category g.JobCategory
+local function makeDataInputFilter(category)
+    ---@param item g.World.ItemData
+    return function(item)
+        local itemInfo, cat = g.getItemInfo(item.type)
+        if cat == "indata" then
+            ---@cast itemInfo g.DataInInfo
+            if itemInfo.queuesJob == category then
+                ---@cast item g.World.DataInputData
+                for _, wire in ipairs(item.connects) do
+                    local maxWireCap = math.floor(getWireLength(wire) / PHYSICAL_DATA_SIZE)
+                    if #wire.objects < maxWireCap then
+                        return true
+                    end
+                end
+            end
+        end
+
+        return false
+    end
+end
+
+---@type table<g.JobCategory, fun(g.World.ItemData):boolean>
+local DATA_INPUT_CYCLE_FILTER = {
+    general = makeDataInputFilter("general"),
+    video = makeDataInputFilter("video"),
+    ai = makeDataInputFilter("ai")
+}
+
+
 function World:init()
     self.entities = objects.BufferedSet()
     ---@type objects.Grid<g.World.ItemData?>
@@ -317,8 +393,12 @@ function World:init()
     self.cpsCollector = DataCollector(60)
     ---@type table<string, {dirty:boolean,modifier:number,multiplier:number}>
     self.loadModifiers = {}
-    ---@type table<string, [number,number]> 1st value is current time, 2nd value is spawn time
+    -- 1st value is current time, 2nd value is spawn time, 3rd value is coordinate cycle
+    ---@type table<string, [number,number,number]>
     self.jobPoller = {}
+    for jobType in pairs(g.VALID_JOBS) do
+        self.jobPoller[jobType] = {0, 0, 1}
+    end
 
     self.worldTexture = generateWorldTexture(12345)
 
@@ -465,9 +545,10 @@ function World:_update(dt)
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
-                item.animationDataInput = math.max(0, item.animationDataInput - dt / 3)
-                item.animationDataInputTime = (item.animationDataInputTime + dt * item.animationDataInput) % 1
                 item.dataBottlenecked = false
+                item.hasSent = false
+                table.clear(item.connectedInputs)
+                table.clear(item.connectedOutputs)
             elseif category == "powergen" then
                 ---@cast item g.World.PowerData
                 self.powerGens[index] = item
@@ -710,25 +791,6 @@ function World:_update(dt)
     -- Run data output update
     for _, dpData in pairs(self.dataProcessors) do
         local dpInfo = g.getItemInfo(dpData.type, "data")
-        table.clear(dpData.connectsServers)
-
-        -- Connect servers which are in range
-        local range = dpInfo.wireLength
-        for dx = -range, range do
-            for dy = -range, range do
-                local tx, ty = dpData.tileX + dx, dpData.tileY + dy
-                if self:isWithinWorldLimit(dpData.tileX, dpData.tileY) and self:isWithinWorldLimit(tx, ty) then
-                    local item = self.items:get(tx, ty)
-                    if item and not item.removed then
-                        local _, category = g.getItemInfo(item.type)
-                        if category == "server" then
-                            ---@cast item g.World.ServerData
-                            dpData.connectsServers[#dpData.connectsServers+1] = item
-                        end
-                    end
-                end
-            end
-        end
 
         --- Compute booster
         local boosterMod = 0
@@ -748,64 +810,64 @@ function World:_update(dt)
         end
 
         --- Compute DPS
+        local loadPercentage = worldutil.getLoadPercentage(dpData)
         dpData.dataPerSecond = g.getProperty(
             "getDataThroughput",
             dpInfo.dataPerSecond + boosterMod,
-            worldutil.getLoadPercentage(dpData) * boosterMul,
+            loadPercentage * boosterMul,
             dpInfo
         )
         dpData.wireDPS = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
+
+        --- Update data output wires
+        if loadPercentage > 0 then
+            for _, wire in ipairs(dpData.connects) do
+                table.insert(wire.server.connectedOutputs, wire)
+                updateWire(loadPercentage, dpData.wireDPS, dt, wire)
+            end
+        end
+
+        --- Update data output
+        local dataToProcess = dpData.dataPerSecond * dt
+        local remaining = dpData.dataRemaining - dataToProcess
+        dpData.rewardToShow = 0
+        if remaining <= 0 then
+            dataToProcess = -remaining
+            dpData.dataRemaining = 0
+            dpData.rewardToShow = dpData.rewardToShow + dpData.reward
+            g.addResource("money", dpData.reward)
+
+            -- Poll wire
+            for j = 1, #dpData.connects do
+                local i = (j + dpData.next) % #dpData.connects + 1
+                local wire = dpData.connects[i]
+                local last = helper.index(wire.positions, 1)
+                if last then
+                    table.remove(wire.positions)
+                    dpData.reward = table.remove(wire.objects)
+                    dpData.dataRemaining = 1
+                    dpData.next = i
+                    break
+                end
+            end
+        else
+            dpData.dataRemaining = remaining
+        end
     end
 
     -- Run data input update
     for _, diData in pairs(self.dataInputs) do
         local diInfo = g.getItemInfo(diData.type, "indata")
-        table.clear(diData.connectsServers)
+        local loadPercentage = worldutil.getLoadPercentage(diData)
+        -- TODO: Data input wire DPS?
+        local DI_WIRE_DPS = 5
+        diData.wireDPS = g.getProperty("getWireThroughput", DI_WIRE_DPS, 1, diInfo)
 
-        -- Connect servers which are in range (chessboard pattern)
-        if self:isWithinWorldLimit(diData.tileX, diData.tileY) then
-            local range = diInfo.wireLength
-
-            for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", range)) do
-                local tx, ty = diData.tileX + tile[1], diData.tileY + tile[2]
-
-                if self:isWithinWorldLimit(tx, ty) then
-                    local item = self.items:get(tx, ty)
-                    if item and not item.removed then
-                        local itemInfo, category = g.getItemInfo(item.type)
-                        if category == "server" then
-                            ---@cast itemInfo g.ServerInfo
-                            if helper.index(itemInfo.computePreference, diInfo.queuesJob) then
-                                ---@cast item g.World.ServerData
-                                diData.connectsServers[#diData.connectsServers+1] = item
-                            end
-                        end
-                    end
-                end
+        if loadPercentage > 0 then
+            for _, wire in ipairs(diData.connects) do
+                table.insert(wire.server.connectedInputs, wire)
+                updateWire(loadPercentage, diData.wireDPS, dt, wire)
             end
-        end
-
-        -- Sync connectedInputs for quick lookup
-        for _, serverData in ipairs(diData.connectsServers) do
-            if not helper.index(serverData.connectedInputs, diData) then
-                serverData.connectedInputs[#serverData.connectedInputs+1] = diData
-            end
-        end
-    end
-
-    -- Clear connectedOutputs/Inputs first to be rebuild
-    for _, serverData in pairs(self.servers) do
-        table.clear(serverData.connectedOutputs)
-        table.clear(serverData.connectedInputs)
-    end
-    for _, dpData in pairs(self.dataProcessors) do
-        for _, serverData in ipairs(dpData.connectsServers) do
-            serverData.connectedOutputs[#serverData.connectedOutputs+1] = dpData
-        end
-    end
-    for _, diData in pairs(self.dataInputs) do
-        for _, serverData in ipairs(diData.connectsServers) do
-            serverData.connectedInputs[#serverData.connectedInputs+1] = diData
         end
     end
 
@@ -816,35 +878,18 @@ function World:_update(dt)
     for _, serverData in pairs(self.servers) do
         local serverInfo = g.getItemInfo(serverData.type, "server")
 
-        if #serverData.connectedOutputs > 0 and #serverData.connectedInputs > 0 then
-            -- Pull job queue
-            if not serverData.currentJob then
-                local candidateIndex = nil
-                local candidatePrio = math.huge
-                for i, v in ipairs(self.jobQueue) do
-                    -- Check if any connected input can handle this job category
-                    local canHandle = false
-                    for _, diData in ipairs(serverData.connectedInputs) do
-                        local diInfo = g.getItemInfo(diData.type, "indata")
-                        if diInfo.queuesJob == v.category then
-                            canHandle = true
-                            break
-                        end
-                    end
-
-                    if canHandle then
-                        local indices = helper.index(serverInfo.computePreference, v.category)
-                        if indices and indices < candidatePrio then
-                            candidateIndex = i
-                            candidatePrio = indices
-                        end
-                    end
-                end
-
-                if candidateIndex then
-                    serverData.currentJob = table.remove(self.jobQueue, candidateIndex)
-                    serverData.jobProgress = 0
-                    serverData.animationDataInput = 1
+        if #serverData.connectedOutputs > 0 and #serverData.connectedInputs > 0 and not serverData.currentJob then
+            -- Pull job queue from data input wires
+            for j = 1, #serverData.connectedInputs do
+                local i = (j + serverData.nextInput) % #serverData.connectedInputs + 1
+                local wire = serverData.connectedInputs[i]
+                local last = helper.index(wire.positions, 1)
+                if last then
+                    table.remove(wire.positions)
+                    serverData.currentJob = table.remove(wire.objects)
+                    serverData.dataTotalEmitted = 0
+                    serverData.nextInput = i
+                    break
                 end
             end
         end
@@ -888,69 +933,43 @@ function World:_update(dt)
         serverData.computePerSecond = math.max(finalMod, 0) * finalMul
     end
     -- Pass 2: Data transmit logic (bottlenecking & proportional scaling)
-    for _, dpData in pairs(self.dataProcessors) do
-        dpData.requestedLoad = 0
-    end
-    -- Pass 2.1: Assign servers to outputs and accumulate load
     for _, serverData in pairs(self.servers) do
-        serverData.activeOutput = nil
         local job = serverData.currentJob
         if job and #serverData.connectedOutputs > 0 then
-            local requiredDPS = serverData.computePerSecond * job.outputData / job.computePower
-            -- Try to find the output that can provide the best capacity/load ratio
-            local bestDP = nil
-            local bestScale = -1
+            -- Process job
+            local reward = job.resource.money / job.outputData
+            local maxDataEmit = job.outputData - serverData.dataTotalEmitted
+            local dataEmitted = math.min(serverData.computePerSecond * job.outputData * dt / job.computePower, maxDataEmit)
+            -- Get fractional from the totalDataEmitted and add it
+            dataEmitted = dataEmitted + (serverData.dataTotalEmitted % 1)
+            cps = cps + dataEmitted * serverData.computePerSecond / job.outputData
+            serverData.dataTotalEmitted = math.floor(serverData.dataTotalEmitted) + dataEmitted
 
-            for _, dpData in ipairs(serverData.connectedOutputs) do
-                local desired = math.min(requiredDPS, dpData.wireDPS)
-                local capacity = dpData.dataPerSecond
+            local dataEmittedInt = math.floor(dataEmitted)
+            for j = 1, #serverData.connectedOutputs do
+                local i = (j + serverData.nextOutput) % #serverData.connectedOutputs + 1
+                local wire = serverData.connectedOutputs[i]
+                local maxSend = math.floor(getWireLength(wire) / PHYSICAL_DATA_SIZE)
+                for _ = 1, math.min(maxSend, dataEmittedInt) do
+                    table.insert(wire.objects, reward)
+                    table.insert(wire.positions, 0)
+                    dataEmittedInt = dataEmittedInt - 1
+                    serverData.hasSent = true
+                end
 
-                local projectedScale = capacity / (dpData.requestedLoad + desired)
-                if projectedScale > bestScale then
-                    bestScale = projectedScale
-                    bestDP = dpData
+                serverData.nextOutput = i
+
+                if dataEmittedInt == 0 then
+                    break
                 end
             end
 
-            if bestDP then
-                serverData.activeOutput = bestDP
-                serverData.desiredDPS = math.min(requiredDPS, bestDP.wireDPS)
-                bestDP.requestedLoad = bestDP.requestedLoad + serverData.desiredDPS
-            end
-        end
-    end
-
-    -- Pass 2.2: Compute scaling factors and finalize server performance
-    for _, dpData in pairs(self.dataProcessors) do
-        dpData.dataScale = math.min(dpData.dataPerSecond / dpData.requestedLoad, 1)
-    end
-
-    for _, serverData in pairs(self.servers) do
-        local job = serverData.currentJob
-        if serverData.activeOutput and job then
-            local requiredOriginal = serverData.computePerSecond * job.outputData / job.computePower
-            local actualDPS = serverData.desiredDPS * serverData.activeOutput.dataScale
-
-            if actualDPS < requiredOriginal then
+            if dataEmittedInt > 0 then
+                serverData.dataTotalEmitted = serverData.dataTotalEmitted - dataEmittedInt
                 serverData.dataBottlenecked = true
-            end
-
-            -- Downscale server performance based on actual throughput
-            serverData.computePerSecond = actualDPS * job.computePower / job.outputData
-
-            local speed = math.max(0.5, math.log(math.max(1, actualDPS), 10))
-            serverData.animationDataOutput = (serverData.animationDataOutput + dt * speed) % 1
-        end
-    end
-    -- Pass 3: Update job progress
-    for _, serverData in pairs(self.servers) do
-        local job = serverData.currentJob
-        if job and serverData.activeOutput then
-            serverData.jobProgress = serverData.jobProgress + serverData.computePerSecond * dt
-            cps = cps + serverData.computePerSecond * dt
-            if serverData.jobProgress >= job.computePower then
+            elseif serverData.dataTotalEmitted >= job.outputData then
+                -- Job done
                 g.call("jobCompleted", serverData, job)
-                g.addResources(job.resource)
                 serverData.currentJob = nil
             end
         end
@@ -959,16 +978,13 @@ function World:_update(dt)
 
     -- Run job poll
     for k, ji in pairs(g.VALID_JOBS) do
-        if not self.jobPoller[k] then
-            self.jobPoller[k] = {0, 0}
-        end
         local jpinfo = self.jobPoller[k]
 
         if g.ask("isJobUnlocked", k) then
-            local catname = g.getJobCategoryName(ji.category, true)
+            local info = g.getJobCategoryInfo(ji.category)
             -- Yea these stat name and evbus name is MSOT.
             -- Is there a better way?
-            local stat = g.VALID_STATS[catname.."JobFrequency"]
+            local stat = g.VALID_STATS[info.nameRaw.."JobFrequency"]
             -- TODO: Cache this
             local jobFreqMod = g.ask(stat.addQuestion)
             local jobFreqMul = g.ask(stat.multQuestion)
@@ -979,12 +995,12 @@ function World:_update(dt)
                 jpinfo[1] = jpinfo[1] + dt
 
                 while jpinfo[1] >= time do
-                    if self.jobQueueCounts[ji.category] < self.maxJobQueues[ji.category] then
-                        local job = g.genJob(k)
-                        g.queueJob(job)
-                    end
-
                     jpinfo[1] = jpinfo[1] - time
+
+                    local job = g.genJob(k)
+                    if not self:_queueJob(job) then
+                        break
+                    end
                 end
             else
                 jpinfo[1] = 0
@@ -1159,7 +1175,6 @@ function World:_draw()
         center - worldSize,
         center + worldSize,
         center + worldSize,
-        ---@param itemData g.World.ItemData?
         function(itemData, x, y)
             if itemData then
                 local cx, cy = (x + 0.5) * wtz, (y + 0.5) * wtz
@@ -1204,6 +1219,7 @@ function World:_draw()
                     end
                     local trans = gsman.transform(cx, cy)
                     love.graphics.setColor(1, 1, 1)
+                    ---@cast itemInfo g.ItemInfo<g.World.ItemData>
                     itemInfo.draw(itemData)
                     trans:pop()
                 end
@@ -1229,18 +1245,28 @@ function World:_draw()
         local dpSelected = self.htx == x and self.hty == y
         local dpx, dpy = (x + 0.5) * wtz, (y + 0.5) * wtz
         local dpVisible = visibleAreaPadded:containsCoords(dpx, dpy)
-        for _, svr in ipairs(itemData.connectsServers) do
+        for _, wire in ipairs(itemData.connects) do
+            local svr = wire.server
             local svrx, svry = (svr.tileX + 0.5) * wtz, (svr.tileY + 0.5) * wtz
             if dpVisible or visibleAreaPadded:containsCoords(svrx, svry) then
                 local alpha = UNHIGHLIGHT_ALPHA
                 if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
                     alpha = HIGHLIGHT_ALPHA
                 end
+
+                -- Draw wire
                 love.graphics.setColor(0, 0, 0, alpha)
-                if svr.activeOutput == itemData then
-                    drawArrows(svrx, svry, dpx, dpy, 6, svr.animationDataOutput)
-                else
-                    drawLine(svrx, svry, dpx, dpy, 3)
+                drawLine(svrx, svry, dpx, dpy, 3)
+
+                -- Draw physical data
+                local svrInfo = g.getItemInfo(svr.type, "server")
+                local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
+                love.graphics.setColor(helper.multiplyAlpha(catinfo.color, alpha))
+                for _, pos in ipairs(wire.positions) do
+                    local objx = helper.lerp(svrx, dpx, pos)
+                    local objy = helper.lerp(svry, dpy, pos)
+                    -- TODO: rotation
+                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.5, 0.5)
                 end
             end
         end
@@ -1253,18 +1279,28 @@ function World:_draw()
         local diSelected = self.htx == x and self.hty == y
         local dix, diy = (x + 0.5) * wtz, (y + 0.5) * wtz
         local diVisible = visibleAreaPadded:containsCoords(dix, diy)
-        for _, svr in ipairs(itemData.connectsServers) do
+        for _, wire in ipairs(itemData.connects) do
+            local svr = wire.server
             local svrx, svry = (svr.tileX + 0.5) * wtz, (svr.tileY + 0.5) * wtz
             if diVisible or visibleAreaPadded:containsCoords(svrx, svry) then
                 local alpha = UNHIGHLIGHT_ALPHA
                 if diSelected or self.htx == svr.tileX and self.hty == svr.tileY then
                     alpha = HIGHLIGHT_ALPHA
                 end
+
+                -- Draw wire
                 love.graphics.setColor(0, 0, 0, alpha)
-                if svr.animationDataInput > 0 then
-                    drawArrows(dix, diy, svrx, svry, 6, svr.animationDataInputTime)
-                else
-                    drawLine(dix, diy, svrx, svry, 3)
+                drawLine(dix, diy, svrx, svry, 3)
+
+                -- Draw physical data
+                local svrInfo = g.getItemInfo(svr.type, "server")
+                local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
+                love.graphics.setColor(helper.multiplyAlpha(catinfo.color, alpha))
+                for _, pos in ipairs(wire.positions) do
+                    local objx = helper.lerp(dix, svrx, pos)
+                    local objy = helper.lerp(diy, svry, pos)
+                    -- TODO: rotation
+                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.5, 0.5)
                 end
             end
         end
@@ -1384,7 +1420,7 @@ end
 
 
 
----@param itemInfo g.ItemInfo
+---@param itemInfo g.ItemInfo<any>
 ---@param mod number?
 ---@param mul number?
 function World:computeLoadModifier(itemInfo, mod, mul)
@@ -1467,19 +1503,17 @@ function World:putItem(itemId, tx, ty, removable)
             tileX = tx,
             tileY = ty,
             removed = false,
+            removable = removable,
             load = itemInfo.load,
             currentJob = nil,
-            jobProgress = 0,
+            dataTotalEmitted = 0,
             connectedOutputs = {},
             connectedInputs = {},
-            activeOutput = nil,
+            nextInput = 0,
+            nextOutput = 0,
             computePerSecond = 0,
-            removable = removable,
-            animationDataInput = 0,
-            animationDataInputTime = 0,
-            animationDataOutput = 0,
             dataBottlenecked = false,
-            desiredDPS = 0,
+            hasSent = false,
         }
     elseif category == "data" then
         ---@type g.World.DataOutputData
@@ -1488,11 +1522,15 @@ function World:putItem(itemId, tx, ty, removable)
             tileX = tx,
             tileY = ty,
             removed = false,
+            removable = removable,
             load = itemInfo.load,
-            connectsServers = {},
+            connects = {},
+            dataRemaining = 0,
+            reward = 0,
+            rewardToShow = 0,
+            next = 0,
             dataPerSecond = 0,
             wireDPS = 0,
-            removable = removable,
             requestedLoad = 0,
             dataScale = 1,
         }
@@ -1503,8 +1541,8 @@ function World:putItem(itemId, tx, ty, removable)
             tileX = tx,
             tileY = ty,
             removed = false,
-            load = itemInfo.load,
             removable = removable,
+            load = itemInfo.load,
             connectsTo = {},
             effectiveness = 1,
             animationTime = 0,
@@ -1516,9 +1554,11 @@ function World:putItem(itemId, tx, ty, removable)
             tileX = tx,
             tileY = ty,
             removed = false,
-            load = itemInfo.load,
-            connectsServers = {},
             removable = removable,
+            load = itemInfo.load,
+            connects = {},
+            next = 0,
+            wireDPS = 0,
         }
     elseif category == "powergen" or category == "powerrelay" then
         ---@type g.World.PowerData
@@ -1527,17 +1567,18 @@ function World:putItem(itemId, tx, ty, removable)
             tileX = tx,
             tileY = ty,
             removed = false,
+            removable = removable,
             load = itemInfo.load,
             power = 0,
             connectsTo = {},
             connectsPowerNodes = {},
-            removable = removable,
         }
     else
         error("fixme category "..category)
     end
 
     self.items:set(tx, ty, itemData)
+    -- TODO: Auto-wire server and data I/O
     return itemData
 end
 
@@ -1555,6 +1596,58 @@ function World:_setupPlaceables()
         self:putItem("sub_power", center-i, center+i, false)
         self:putItem("sub_power", center-i, center-i, false)
     end
+end
+
+
+
+
+---@generic T
+---@param counterVal integer
+---@param criteria fun(t:g.World.ItemData):boolean
+function World:_cycleNextItem(counterVal, criteria)
+    local sz = self.items.width * self.items.height
+    for j = 1, sz do
+        local i = (counterVal + j) % sz + 1
+        local x, y = self.items:indexToCoords(i)
+        local val = self.items:get(x, y)
+        if val and self:isWithinWorldLimit(val.tileX, val.tileY) and criteria(val) then
+            return i, val
+        end
+    end
+    return counterVal, nil
+end
+
+---@param job g.Job
+function World:_queueJob(job)
+    local jpinfo = self.jobPoller[job.type]
+    local targetIndata
+    jpinfo[3], targetIndata = self:_cycleNextItem(jpinfo[3], DATA_INPUT_CYCLE_FILTER[job.category])
+    if not targetIndata then
+        return false
+    end
+    ---@cast targetIndata g.World.DataInputData
+
+    -- Find a wire that has space
+    ---@type g.World.DataInputWire|nil
+    local wire = nil
+    for j = 1, #targetIndata.connects do
+        local i = (j + targetIndata.next) % #targetIndata.connects + 1
+        local w = targetIndata.connects[i]
+        local maxWireCap = math.floor(getWireLength(w) / PHYSICAL_DATA_SIZE)
+        if #w.objects < maxWireCap then
+            wire = w
+            targetIndata.next = i - 1
+            break
+        end
+    end
+
+    if not wire then
+        return false
+    end
+
+    table.insert(wire.objects, 1, job)
+    table.insert(wire.positions, 1, 0)
+    return true
 end
 
 
