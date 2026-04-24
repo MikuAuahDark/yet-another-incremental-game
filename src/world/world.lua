@@ -404,11 +404,11 @@ function World:init()
     self.cpsCollector = DataCollector(60)
     ---@type table<string, {dirty:boolean,modifier:number,multiplier:number}>
     self.loadModifiers = {}
-    -- 1st value is current time, 2nd value is spawn time, 3rd value is coordinate cycle
+    -- 1st value is current time, 2nd value is spawn time, 3rd value is coordinate cycle (0-based)
     ---@type table<string, [number,number,number]>
     self.jobPoller = {}
     for jobType in pairs(g.VALID_JOBS) do
-        self.jobPoller[jobType] = {0, 0, 1}
+        self.jobPoller[jobType] = {0, 0, 0}
     end
 
     self.worldTexture = generateWorldTexture(12345)
@@ -570,7 +570,6 @@ function World:_update(dt)
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
                 item.dataBottlenecked = false
-                item.canSend = false
                 table.clear(item.connectedInputs)
                 table.clear(item.connectedOutputs)
             elseif category == "powergen" then
@@ -869,14 +868,14 @@ function World:_update(dt)
 
         if dpData.dataRemaining <= 0 then
             -- Poll wire
-            for j = 1, #dpData.connects do
-                local i = (j + dpData.next) % #dpData.connects + 1
+            for _ = 1, #dpData.connects do
+                local i = (dpData.next + 1) % #dpData.connects + 1
+                dpData.next = i - 1
                 local wire = dpData.connects[i]
                 if #wire.positions > 0 and wire.positions[#wire.positions] >= 1 then
                     table.remove(wire.positions)
                     dpData.reward = table.remove(wire.objects)
                     dpData.dataRemaining = 1
-                    dpData.next = i
                     break
                 end
             end
@@ -908,14 +907,14 @@ function World:_update(dt)
 
         if #serverData.connectedOutputs > 0 and #serverData.connectedInputs > 0 and not serverData.currentJob then
             -- Pull job queue from data input wires
-            for j = 1, #serverData.connectedInputs do
-                local i = (j + serverData.nextInput) % #serverData.connectedInputs + 1
+            for _ = 1, #serverData.connectedInputs do
+                local i = (serverData.nextInput + 1) % #serverData.connectedInputs + 1
+                serverData.nextInput = i - 1
                 local wire = serverData.connectedInputs[i]
                 if #wire.positions > 0 and wire.positions[#wire.positions] >= 1 then
                     table.remove(wire.positions)
                     serverData.currentJob = table.remove(wire.objects)
                     serverData.dataTotalEmitted = 0
-                    serverData.nextInput = i
                     break
                 end
             end
@@ -1322,7 +1321,13 @@ function World:_draw()
         end
 
         if itemData.rewardToShow > 0 then
-            worldutil.spawnText("{o}+{money}"..g.formatNumber(itemData.rewardToShow).."{/o}", x, y, 0.3, 15)
+            worldutil.spawnText(
+                "{o}+{money}"..g.formatNumber(itemData.rewardToShow).."{/o}",
+                (x + 0.5) * wtz,
+                (y + 0.5) * wtz,
+                0.3,
+                15
+            )
             itemData.rewardToShow = 0
         end
     end
@@ -1694,12 +1699,15 @@ end
 ---@param criteria fun(t:g.World.ItemData):boolean
 function World:_cycleNextItem(counterVal, criteria)
     local sz = self.items.width * self.items.height
-    for j = 1, sz do
-        local i = (counterVal + j) % sz + 1
+    local j = counterVal
+    for _ = 1, sz do
+        local i = (j + 1) % sz + 1
+        j = i - 1
+
         local x, y = self.items:indexToCoords(i)
         local val = self.items:get(x, y)
         if val and self:isWithinWorldLimit(val.tileX, val.tileY) and criteria(val) then
-            return i, val
+            return j, val
         end
     end
     return counterVal, nil
