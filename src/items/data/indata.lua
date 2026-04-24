@@ -46,7 +46,7 @@ g.defineDataInput("basic_indata", "Basic Data Input", {
     load = 1,
     queuesJob = "general",
     maxJobQueue = 1,
-    wireLength = 2,
+    wireLength = 1,
     color = objects.Color("#ebe8c1"), -- Color-coded
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
@@ -62,7 +62,7 @@ g.defineDataInput("indata_tier1", "General Data Input (Tier 1)", {
     load = 4,
     queuesJob = "general",
     maxJobQueue = 5,
-    wireLength = 3,
+    wireLength = 2,
     color = g.COLORS.TYPE_GENERAL,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
@@ -79,7 +79,7 @@ g.defineDataInput("indata_tier2", "General Data Input (Tier 2)", {
     load = 7,
     queuesJob = "general",
     maxJobQueue = 7,
-    wireLength = 5,
+    wireLength = 2,
     color = g.COLORS.TYPE_GENERAL,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
@@ -97,7 +97,7 @@ g.defineDataInput("video_indata", "Video Data Input (Tier 1)", {
     load = 6,
     queuesJob = "video",
     maxJobQueue = 5,
-    wireLength = 3,
+    wireLength = 2,
     color = g.COLORS.TYPE_VIDEO,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
@@ -114,7 +114,7 @@ g.defineDataInput("video_indata_t2", "Video Data Input (Tier 2)", {
     load = 10,
     queuesJob = "video",
     maxJobQueue = 8,
-    wireLength = 6,
+    wireLength = 3,
     color = g.COLORS.TYPE_VIDEO,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
@@ -132,7 +132,7 @@ g.defineDataInput("ai_indata", "AI Data Input", {
     load = 25,
     queuesJob = "ai",
     maxJobQueue = 5,
-    wireLength = 4,
+    wireLength = 3,
     color = g.COLORS.TYPE_AI,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)
@@ -149,7 +149,7 @@ g.defineDataInput("ai_indata_t2", "AI Data Input (Tier 2)", {
     load = 36,
     queuesJob = "ai",
     maxJobQueue = 8,
-    wireLength = 6,
+    wireLength = 4,
     color = g.COLORS.TYPE_AI,
     draw = function(r)
         local col = gsman.mulColor(0, 0, 0)

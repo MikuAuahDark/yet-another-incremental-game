@@ -91,20 +91,20 @@ end
 defJob("webhost", "Web Hosting", "general", {
     image = "language",
     compute = {2,5},
-    data = {2,5},
-    money = {1,3},
+    data = {1,3},
+    money = {1,5},
 })
 defJob("cdn", "CDN", "general", {
     image = "host",
     compute = {3,7},
-    data = {18,45},
-    money = {3,5},
+    data = {5,15},
+    money = {3,8},
 })
 defJob("image_processing", "Image Processing", "general", {
     image = "blur_on",
     compute = {13,32},
     data = {3,6},
-    money = {3,8},
+    money = {4,8},
 })
 
 --------
@@ -112,15 +112,15 @@ defJob("image_processing", "Image Processing", "general", {
 --------
 defJob("video_encode", "Video Encode", "video", {
     image = "movie_edit",
-    compute = 160,
+    compute = {30, 50},
     data = {30, 60},
-    money = {45, 100}
+    money = {15, 45}
 })
 defJob("livestream", "Livestream", "video", {
     image = "camera_video",
-    compute = {70, 500},
-    data = {30, 100},
-    money = {40, 150},
+    compute = 80,
+    data = {30, 120},
+    money = {20, 60},
 })
 
 -------------
@@ -128,19 +128,19 @@ defJob("livestream", "Livestream", "video", {
 -------------
 defJob("physics_simulation", "Physics Simulation", "ai", {
     image = "draw_abstract",
-    compute = {5000, 7000},
-    data = 3500,
-    money = {12000, 50000},
+    compute = {150, 500},
+    data = {100, 350},
+    money = {120, 500},
 })
 defJob("research_model", "Research Model", "ai", {
     image = "batch_prediction",
-    compute = {3500, 5000},
-    data = {1000, 5000},
-    money = {10000, 50000},
+    compute = {350, 800},
+    data = {175, 500},
+    money = {105, 500},
 })
 defJob("llm", "LLM", "ai", {
     image = "article_shortcut",
-    compute = {10000, 50000},
-    data = {45000, 60000},
-    money = {80000, 950000},
+    compute = {700, 2000},
+    data = {350, 1000},
+    money = {460, 1000},
 })

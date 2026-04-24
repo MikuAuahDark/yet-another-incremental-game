@@ -1858,7 +1858,7 @@ end
 ---@class g._DataDef: g._CommonSpecificItemDef<g.World.DataOutputData>
 ---@field dataPerSecond number
 ---@field wireLength integer
----@field wireDPS number? (defaults to dataPerSecond / 4)
+---@field wireDPS number? (defaults to 20)
 
 ---@param id string
 ---@param name string
@@ -1879,7 +1879,7 @@ function g.defineDataOutput(id, name, def)
         load = def.load,
         dataPerSecond = def.dataPerSecond,
         wireLength = def.wireLength,
-        wireDPS = def.wireDPS or (def.dataPerSecond / 4),
+        wireDPS = def.wireDPS or 20,
         draw = function(itemData)
             ---@cast itemData g.World.DataOutputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75

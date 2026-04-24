@@ -44,9 +44,9 @@ g.defineDataOutput("basic_data", "Basic Data Output", {
     price = 1,
     getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 1,
-    dataPerSecond = 10,
+    dataPerSecond = 4,
     wireLength = 2,
-    wireDPS = 5,
+    wireDPS = 10,
     color = objects.Color("#ebc965"),
     draw = function(r)
         -- Draw decor
@@ -60,7 +60,7 @@ g.defineDataOutput("normal_data", "Data Output", {
     price = 150,
     getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 2,
-    dataPerSecond = 500,
+    dataPerSecond = 45,
     wireLength = 2,
     color = objects.Color("FFBAEB65"),
     draw = function(r)
@@ -75,8 +75,9 @@ g.defineDataOutput("advanced_data", "Advanced Data Output", {
     price = 1000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.2, 1),
     load = 10,
-    dataPerSecond = 5000,
+    dataPerSecond = 150,
     wireLength = 3,
+    wireDPS = 50,
     color = objects.Color("#95c9c7"),
     draw = function(r)
         -- Draw decor
@@ -90,8 +91,9 @@ g.defineDataOutput("he_data", "High-End Data Output", {
     price = 6000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.3, 1),
     load = 30,
-    dataPerSecond = 30000,
+    dataPerSecond = 750,
     wireLength = 4,
+    wireDPS = 100,
     color = objects.Color("#E13B49"),
     draw = function(r)
         -- Draw decor
@@ -105,8 +107,9 @@ g.defineDataOutput("quantum_data", "Quantum Data Output", {
     price = 20000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.5, 1),
     load = 50,
-    dataPerSecond = 1000000,
+    dataPerSecond = 4000,
     wireLength = 6,
+    wireDPS = 100,
     color = objects.Color("#DAB5C1"),
     draw = function(r)
         -- Draw decor
