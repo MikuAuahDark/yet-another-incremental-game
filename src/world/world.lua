@@ -42,7 +42,6 @@ end
 ---@field nextInput integer (wraparound, 0-based)
 ---@field nextOutput integer (wraparound, 0-based)
 ---@field dataBottlenecked boolean
----@field hasSent boolean
 
 ---@class g.World.DataInputData: g.World.ItemData
 ---@field wireDPS number (readonly; updated every frame)
@@ -343,6 +342,18 @@ local function makeDataInputFilter(category)
     end
 end
 
+---@param grid objects.Grid<g.World.ItemData[]>
+---@param item g.World.ItemData
+---@param length integer
+local function markExistInArea(grid, item, length)
+    for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", length)) do
+        local tx, ty = tile[1] + item.tileX, tile[2] + item.tileY
+        if grid:contains(tx, ty) then
+            table.insert(grid:get(tx, ty), item)
+        end
+    end
+end
+
 ---@type table<g.JobCategory, fun(g.World.ItemData):boolean>
 local DATA_INPUT_CYCLE_FILTER = {
     general = makeDataInputFilter("general"),
@@ -546,13 +557,7 @@ function World:_update(dt)
                 ---@cast item g.World.DataOutputData
                 ---@cast itemInfo g.DataOutInfo
                 self.dataProcessors[index] = item
-
-                for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
-                    local tx, ty = tile[1] + x, tile[2] + y
-                    if self.doAreaAutoConnect:contains(tx, ty) then
-                        table.insert(self.doAreaAutoConnect:get(tx, ty), item)
-                    end
-                end
+                markExistInArea(self.doAreaAutoConnect, item, itemInfo.wireLength)
             elseif category == "indata" then
                 ---@cast item g.World.DataInputData
                 ---@cast itemInfo g.DataInInfo
@@ -560,18 +565,12 @@ function World:_update(dt)
                 self.maxJobQueues[itemInfo.queuesJob] = self.maxJobQueues[itemInfo.queuesJob] + itemInfo.maxJobQueue
                 self.jobFreqModByCategory[itemInfo.queuesJob] = self.jobFreqModByCategory[itemInfo.queuesJob] + itemInfo.jobFrequencyModifier
                 self.jobFreqMulByCategory[itemInfo.queuesJob] = self.jobFreqMulByCategory[itemInfo.queuesJob] * itemInfo.jobFrequencyMultiplier
-
-                for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
-                    local tx, ty = tile[1] + x, tile[2] + y
-                    if self.diAreaAutoConnect:contains(tx, ty) then
-                        table.insert(self.diAreaAutoConnect:get(tx, ty), item)
-                    end
-                end
+                markExistInArea(self.diAreaAutoConnect, item, itemInfo.wireLength)
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
                 item.dataBottlenecked = false
-                item.hasSent = false
+                item.canSend = false
                 table.clear(item.connectedInputs)
                 table.clear(item.connectedOutputs)
             elseif category == "powergen" then
@@ -853,21 +852,27 @@ function World:_update(dt)
         end
 
         --- Update data output
-        local dataToProcess = dpData.dataPerSecond * dt
-        local remaining = dpData.dataRemaining - dataToProcess
-        dpData.rewardToShow = 0
-        if remaining <= 0 then
-            dataToProcess = -remaining
-            dpData.dataRemaining = 0
-            dpData.rewardToShow = dpData.rewardToShow + dpData.reward
-            g.addResource("money", dpData.reward)
+        if dpData.dataRemaining > 0 then
+            local dataToProcess = dpData.dataPerSecond * dt
+            local remaining = dpData.dataRemaining - dataToProcess
+            dpData.rewardToShow = 0
+            if remaining <= 0 then
+                dataToProcess = -remaining
+                g.addResource("money", dpData.reward)
+                dpData.dataRemaining = 0
+                dpData.rewardToShow = dpData.rewardToShow + dpData.reward
+                dpData.reward = 0
+            else
+                dpData.dataRemaining = remaining
+            end
+        end
 
+        if dpData.dataRemaining <= 0 then
             -- Poll wire
             for j = 1, #dpData.connects do
                 local i = (j + dpData.next) % #dpData.connects + 1
                 local wire = dpData.connects[i]
-                local last = helper.index(wire.positions, 1)
-                if last then
+                if #wire.positions > 0 and wire.positions[#wire.positions] >= 1 then
                     table.remove(wire.positions)
                     dpData.reward = table.remove(wire.objects)
                     dpData.dataRemaining = 1
@@ -875,8 +880,6 @@ function World:_update(dt)
                     break
                 end
             end
-        else
-            dpData.dataRemaining = remaining
         end
     end
 
@@ -885,7 +888,7 @@ function World:_update(dt)
         local diInfo = g.getItemInfo(diData.type, "indata")
         local loadPercentage = worldutil.getLoadPercentage(diData)
         -- TODO: Data input wire DPS?
-        local DI_WIRE_DPS = 5
+        local DI_WIRE_DPS = 25
         diData.wireDPS = g.getProperty("getWireThroughput", DI_WIRE_DPS, 1, diInfo)
 
         if loadPercentage > 0 then
@@ -908,8 +911,7 @@ function World:_update(dt)
             for j = 1, #serverData.connectedInputs do
                 local i = (j + serverData.nextInput) % #serverData.connectedInputs + 1
                 local wire = serverData.connectedInputs[i]
-                local last = helper.index(wire.positions, 1)
-                if last then
+                if #wire.positions > 0 and wire.positions[#wire.positions] >= 1 then
                     table.remove(wire.positions)
                     serverData.currentJob = table.remove(wire.objects)
                     serverData.dataTotalEmitted = 0
@@ -963,34 +965,55 @@ function World:_update(dt)
         if job and #serverData.connectedOutputs > 0 then
             -- Process job
             local reward = job.resource.money / job.outputData
-            local maxDataEmit = job.outputData - serverData.dataTotalEmitted
+            local stagedDataTotalEmitted = serverData.dataTotalEmitted
+            local maxDataEmit = job.outputData - stagedDataTotalEmitted
             local dataEmitted = math.min(serverData.computePerSecond * job.outputData * dt / job.computePower, maxDataEmit)
             -- Get fractional from the totalDataEmitted and add it
-            dataEmitted = dataEmitted + (serverData.dataTotalEmitted % 1)
-            cps = cps + dataEmitted * serverData.computePerSecond / job.outputData
-            serverData.dataTotalEmitted = math.floor(serverData.dataTotalEmitted) + dataEmitted
+            dataEmitted = dataEmitted + (stagedDataTotalEmitted % 1)
+            stagedDataTotalEmitted = math.floor(stagedDataTotalEmitted)
 
             local dataEmittedInt = math.floor(dataEmitted)
-            for j = 1, #serverData.connectedOutputs do
-                local i = (j + serverData.nextOutput) % #serverData.connectedOutputs + 1
-                local wire = serverData.connectedOutputs[i]
-                local maxSend = math.floor(getWireLength(wire) / PHYSICAL_DATA_SIZE)
-                for _ = 1, math.min(maxSend, dataEmittedInt) do
-                    table.insert(wire.objects, reward)
-                    table.insert(wire.positions, 0)
-                    dataEmittedInt = dataEmittedInt - 1
-                    serverData.hasSent = true
-                end
+            local hasSent = false
+            if dataEmittedInt > 0 then
+                for _ = 1, #serverData.connectedOutputs do
+                    local i = (serverData.nextOutput + 1) % #serverData.connectedOutputs + 1
+                    serverData.nextOutput = i - 1
 
-                serverData.nextOutput = i
+                    local wire = serverData.connectedOutputs[i]
+                    local maxSend = math.floor(getWireLength(wire) / PHYSICAL_DATA_SIZE) - #wire.objects
 
-                if dataEmittedInt == 0 then
-                    break
+                    if maxSend > 0 then
+                        hasSent = true
+
+                        for _ = 1, math.min(maxSend, dataEmittedInt) do
+                            -- Push data to wire
+                            table.insert(wire.objects, 1, reward)
+                            table.insert(wire.positions, 1, 0)
+                            dataEmittedInt = dataEmittedInt - 1
+                            dataEmitted = dataEmitted - 1
+                            stagedDataTotalEmitted = stagedDataTotalEmitted + 1
+                        end
+                    end
+
+                    if dataEmittedInt == 0 then
+                        break
+                    end
                 end
+            else
+                -- Actually there's none but "virtually" fraction of the data is being processed
+                hasSent = true
+            end
+
+            serverData.dataBottlenecked = not hasSent
+            if hasSent then
+                -- (dataEmitted - dataEmittedInt) will only contain the fractional part
+                local newDataTotalEmitted = stagedDataTotalEmitted + (dataEmitted - dataEmittedInt)
+                local dd = newDataTotalEmitted - serverData.dataTotalEmitted
+                serverData.dataTotalEmitted = newDataTotalEmitted
+                cps = cps + dd * serverData.computePerSecond / job.outputData
             end
 
             if dataEmittedInt > 0 then
-                serverData.dataTotalEmitted = serverData.dataTotalEmitted - dataEmittedInt
                 serverData.dataBottlenecked = true
             elseif serverData.dataTotalEmitted >= job.outputData then
                 -- Job done
@@ -999,7 +1022,9 @@ function World:_update(dt)
             end
         end
     end
-    self.cpsCollector:insert(dt, cps)
+    if dt > 0 then
+        self.cpsCollector:insert(dt, cps)
+    end
 
     -- Run job poll
     for k, ji in pairs(g.VALID_JOBS) do
@@ -1291,9 +1316,14 @@ function World:_draw()
                     local objx = helper.lerp(svrx, dpx, pos)
                     local objy = helper.lerp(svry, dpy, pos)
                     -- TODO: rotation
-                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.5, 0.5)
+                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.2, 0.2)
                 end
             end
+        end
+
+        if itemData.rewardToShow > 0 then
+            worldutil.spawnText("{o}+{money}"..g.formatNumber(itemData.rewardToShow).."{/o}", x, y, 0.3, 15)
+            itemData.rewardToShow = 0
         end
     end
     prof_pop() -- prof_push("dataoutput_draw")
@@ -1325,7 +1355,7 @@ function World:_draw()
                     local objx = helper.lerp(dix, svrx, pos)
                     local objy = helper.lerp(diy, svry, pos)
                     -- TODO: rotation
-                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.5, 0.5)
+                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.2, 0.2)
                 end
             end
         end
@@ -1538,7 +1568,7 @@ function World:putItem(itemId, tx, ty, removable)
             nextOutput = 0,
             computePerSecond = 0,
             dataBottlenecked = false,
-            hasSent = false,
+            canSend = false,
         }
     elseif category == "data" then
         ---@type g.World.DataOutputData
@@ -1632,6 +1662,9 @@ function World:putItem(itemId, tx, ty, removable)
                     end
                 end
             end
+
+            local targetT = category == "data" and self.doAreaAutoConnect or self.diAreaAutoConnect
+            markExistInArea(targetT, itemData, itemInfo.wireLength)
         end
     end
     return itemData

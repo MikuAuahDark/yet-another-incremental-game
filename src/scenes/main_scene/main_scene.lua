@@ -258,16 +258,6 @@ function MainScene:draw()
 end
 
 
----@param server g.World.ServerData
----@param job g.Job
-function MainScene:jobCompleted(server, job)
-    local x = (server.tileX + 0.5) * consts.WORLD_TILE_SIZE
-    local y = (server.tileY + 0.5) * consts.WORLD_TILE_SIZE
-    local money = assert(job.resource and job.resource.money)
-    worldutil.spawnText("{o}+{money}"..g.formatNumber(money).."{/o}", x, y, 0.3, 15)
-end
-
-
 function MainScene:perSecondUpdate()
     local tree = g.getUpgTree()
     tree.priceBurnout = math.max(tree.priceBurnout * consts.UPGADE_BURNOUT_DECAY, 1)

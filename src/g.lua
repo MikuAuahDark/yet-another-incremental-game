@@ -1658,7 +1658,7 @@ function g.defineItem(id, def)
         def.heatRadiate = def.heatRadiate or 1
         def.heatRadiateAlgorithm = def.heatRadiateAlgorithm or "chessboard"
         assert(def.computeType, "invalid computeType")
-        g.getJobCategoryName(def.computeType)
+        g.getJobCategoryInfo(def.computeType)
     elseif def.category == "data" then
         ---@cast def g.DataOutInfo
         assert(def.dataPerSecond, "invalid dps")
@@ -2132,10 +2132,28 @@ function g.removeItem(tx, ty)
         item = world.items:get(tx, ty)
     end
 
-    -- TODO: Remove connections
-
     local ok = false
     if item then
+        -- Remove connections
+        local _, cat = g.getItemInfo(item.type)
+        if cat == "server" then
+            ---@cast item g.World.ServerData
+            local connIn = helper.shallowCopy(item.connectedInputs)
+            for _, wire in ipairs(connIn) do
+                g.disconnectDataWire(item, wire.source)
+            end
+            local connOut = helper.shallowCopy(item.connectedOutputs)
+            for _, wire in ipairs(connOut) do
+                g.disconnectDataWire(item, wire.source)
+            end
+        elseif cat == "data" or cat == "indata" then
+            ---@cast item g.World.DataOutputData|g.World.DataInputData
+            local conn = helper.shallowCopy(item.connects)
+            for _, wire in ipairs(conn) do
+                g.disconnectDataWire(wire.server, item)
+            end
+        end
+
         item.removed = true
         ok = true
     end
@@ -2206,7 +2224,6 @@ function g.connectDataWire(server, dp)
 
     dp.connects[#dp.connects+1] = wire
     if cat == "data" then
-        ---@cast dp g.World.DataOutputData
         server.connectedOutputs[#server.connectedOutputs+1] = wire
     else
         server.connectedInputs[#server.connectedInputs+1] = wire
@@ -2289,13 +2306,6 @@ local ITEM_PROBLEMS = {
         text = loc("Booster is doing nothing!", nil, {
             context = "Booster is an item that boosts stats of other machines."})
     },
-    -- No suitable data output found
-    no_suitable_output = {
-        error = true,
-        icon = "database",
-        text = loc("No suitable data output found for the current data load!", nil, {
-            context = "The server cannot find any data output that can handle its data load."}),
-    },
     -- Data input is not connected to any server
     input_not_connected = {
         error = false,
@@ -2305,10 +2315,10 @@ local ITEM_PROBLEMS = {
     },
     -- Data output is overloaded
     data_bottleneck = {
-        error = false,
+        error = true,
         icon = "database",
-        text = loc("Data output or wire is overloaded!", nil, {
-            context = "The server is sending data slower than its peak capacity."}),
+        text = loc("No suitable data output found for the current data load!", nil, {
+            context = "The server cannot emit data because all the wires are occupied."}),
     }
 }
 
@@ -2339,11 +2349,7 @@ function g.getItemProblems(itemData)
             result[#result+1] = "no_input_connection"
         end
 
-        if itemData.currentJob and not itemData.hasSent then
-            result[#result+1] = "no_suitable_output"
-        end
-
-        if itemData.dataBottlenecked then
+        if itemData.currentJob and itemData.dataBottlenecked then
             result[#result+1] = "data_bottleneck"
         end
 
