@@ -414,6 +414,14 @@ function World:init()
 
     self.averageCPS = 0 -- (read-only)
     self.peakCPS = 0 -- (read-only)
+
+    ---@type objects.Grid<g.World.DataInputData[]>
+    self.diAreaAutoConnect = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
+    self.diAreaAutoConnect:foreach(function(v, x, y) self.diAreaAutoConnect:set(x, y, {}) end)
+    ---@type objects.Grid<g.World.DataOutputData[]>
+    self.doAreaAutoConnect = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
+    self.doAreaAutoConnect:foreach(function(v, x, y) self.doAreaAutoConnect:set(x, y, {}) end)
+    self.autowire = true
 end
 
 
@@ -510,6 +518,8 @@ function World:_update(dt)
     table.clear(self.boostersInTiles)
     table.clear(self.dataProcessors)
     table.clear(self.dataInputs)
+    self.diAreaAutoConnect:foreach(table.clear)
+    self.doAreaAutoConnect:foreach(table.clear)
     table.clear(self.servers)
     table.clear(self.powerGens)
     table.clear(self.powerRelays)
@@ -534,7 +544,15 @@ function World:_update(dt)
                 table.clear(item.connectsTo)
             elseif category == "data" then
                 ---@cast item g.World.DataOutputData
+                ---@cast itemInfo g.DataOutInfo
                 self.dataProcessors[index] = item
+
+                for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
+                    local tx, ty = tile[1] + x, tile[2] + y
+                    if self.doAreaAutoConnect:contains(tx, ty) then
+                        table.insert(self.doAreaAutoConnect:get(tx, ty), item)
+                    end
+                end
             elseif category == "indata" then
                 ---@cast item g.World.DataInputData
                 ---@cast itemInfo g.DataInInfo
@@ -542,6 +560,13 @@ function World:_update(dt)
                 self.maxJobQueues[itemInfo.queuesJob] = self.maxJobQueues[itemInfo.queuesJob] + itemInfo.maxJobQueue
                 self.jobFreqModByCategory[itemInfo.queuesJob] = self.jobFreqModByCategory[itemInfo.queuesJob] + itemInfo.jobFrequencyModifier
                 self.jobFreqMulByCategory[itemInfo.queuesJob] = self.jobFreqMulByCategory[itemInfo.queuesJob] * itemInfo.jobFrequencyMultiplier
+
+                for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
+                    local tx, ty = tile[1] + x, tile[2] + y
+                    if self.diAreaAutoConnect:contains(tx, ty) then
+                        table.insert(self.diAreaAutoConnect:get(tx, ty), item)
+                    end
+                end
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
@@ -1578,7 +1603,37 @@ function World:putItem(itemId, tx, ty, removable)
     end
 
     self.items:set(tx, ty, itemData)
-    -- TODO: Auto-wire server and data I/O
+
+    -- Auto-wiring
+    if self.autowire then
+        if category == "server" then
+            ---@cast itemData g.World.ServerData
+            -- Find input and output datas
+            for _, di in ipairs(self.diAreaAutoConnect:get(tx, ty)) do
+                g.connectDataWire(itemData, di)
+            end
+            for _, doobj in ipairs(self.doAreaAutoConnect:get(tx, ty)) do
+                g.connectDataWire(itemData, doobj)
+            end
+        elseif category == "data" or category == "indata" then
+            ---@cast itemData g.World.DataInputData|g.World.DataOutputData
+            ---@cast itemInfo g.DataInInfo|g.DataOutInfo
+            for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
+                local x, y = tile[1] + tx, tile[2] + ty
+                if self.items:contains(x, y) then
+                    local targetItem = self.items:get(x, y)
+
+                    if targetItem then
+                        local _, targetCat = g.getItemInfo(targetItem.type)
+                        if targetCat == "server" then
+                            ---@cast targetItem g.World.ServerData
+                            g.connectDataWire(targetItem, itemData)
+                        end
+                    end
+                end
+            end
+        end
+    end
     return itemData
 end
 
