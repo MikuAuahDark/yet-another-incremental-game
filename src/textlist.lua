@@ -6,9 +6,6 @@
 
 ---@class TEXTLIST
 local text = {
-    HORIZONTAL_LIST_SEPARATOR = loc(", ", nil, {
-        context = "A separator symbol used to denote item list in single horizontal text"}),
-
     JOB_QUEUE_INFO = loc("Tasks", nil, {
         context = "Used in place to list available task categories"}),
     MONEY = loc("Money", nil, {
@@ -19,10 +16,6 @@ local text = {
         context = "CPS (Compute Per Second) is a measurement how fast server can process computation."}),
     CPS_DESCRIPTION = loc("This is how fast all your servers perform computation for its job. The win condition is to reach {b}1 million{/b} CPS.", nil, {
         context = "A description on what \"CPS\" (Compute Per Second) is for."}),
-    LOAD = loc("Load", nil, {
-        context = "Think of \"load\" as the \"electricity load\""}),
-    LOAD_DESCRIPTION = loc("\"Load\" measures how many servers, data output, and boosters can be in the datacenter. {c r=0.9 g=0.77 b=0.38}Exceeding the maximum load will impact the whole datacenter!{/c}", nil, {
-        context = "A description on what does \"Load\" do."}),
 
     CATEGORY_LIST = interp("Category: %{categories}", {
         context = "Denoting list of category, the ${categories} will be replaced with the actual list of items later"}),
@@ -43,12 +36,12 @@ local text = {
         context = "DPS (Data Per Second) is a measurement how fast data output can process data. {database} reflects \"Data\" icon in-game."}),
     WIRE_DPS = interp("Wire {COLORS_UI_TEXT_DPS}%{dps} {database}/second{/COLORS_UI_TEXT_DPS}", {
         context = "Denotes the speed of data transfer."}),
+    WIRE_COUNT = interp("Connections: %{count}/%{max}", {
+        context = "Denotes the (max) number of connections that can be handled by this machine/item."}),
     EFFECTIVITY = interp("Effectivity: %{effectivity}%", {
         context = "Denotes the effectivity of a booster. The %{effectivity} is percentage of the booster efficiency."}),
     HEAT_TOLERANCE = interp("Heat Tolerance: %{min_heat}-%{max_heat}", {
         context = "Denotes the heat tolerance range of a machine."}),
-    PRICE_TOOLTIP = interp("Price: %{price}{attach_money}", {
-        context = "Denotes the price of an item."}),
     LOAD_TOOLTIP = interp("Load: {COLORS_UI_TEXT_POWER_RELATED}%{load}{bolt}{/COLORS_UI_TEXT_POWER_RELATED}", {
         context = "How many load this item uses?"}),
     PROVIDE_LOAD_TOOLTIP = interp("Generates: {COLORS_UI_TEXT_POWER_RELATED}%{load}{bolt}{/COLORS_UI_TEXT_POWER_RELATED}", {
