@@ -368,12 +368,6 @@ function World:init()
     self.items = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
     ---@type objects.Grid<number>
     self.heat = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
-    ---@type g.Job[]
-    self.jobQueue = {}
-    ---@type table<g.JobCategory, integer>
-    self.jobQueueCounts = setmetatable({}, {__index = function() return 0 end})
-    ---@type table<g.JobCategory, integer>
-    self.maxJobQueues = setmetatable({}, {__index = function() return 0 end})
     ---@type table<g.JobCategory, number>
     self.jobFreqModByCategory = setmetatable({}, {__index = function() return 0 end})
     ---@type table<g.JobCategory, number>
@@ -508,21 +502,8 @@ function World:_update(dt)
         v.dirty = true
     end
 
-    table.clear(self.jobQueueCounts)
-    -- Update job queues
-    for i = #self.jobQueue, 1, -1 do
-        local job = self.jobQueue[i]
-        job.timeout = job.timeout - dt
-        if job.timeout <= 0 then
-            table.remove(self.jobQueue, i)
-        else
-            self.jobQueueCounts[job.category] = self.jobQueueCounts[job.category] + 1
-        end
-    end
-
     -- Update electricity load
     local loads = 0
-    table.clear(self.maxJobQueues)
     table.clear(self.jobFreqModByCategory)
     table.clear(self.jobFreqMulByCategory)
     table.clear(self.boosters)
@@ -562,7 +543,6 @@ function World:_update(dt)
                 ---@cast item g.World.DataInputData
                 ---@cast itemInfo g.DataInInfo
                 self.dataInputs[index] = item
-                self.maxJobQueues[itemInfo.queuesJob] = self.maxJobQueues[itemInfo.queuesJob] + itemInfo.maxJobQueue
                 self.jobFreqModByCategory[itemInfo.queuesJob] = self.jobFreqModByCategory[itemInfo.queuesJob] + itemInfo.jobFrequencyModifier
                 self.jobFreqMulByCategory[itemInfo.queuesJob] = self.jobFreqMulByCategory[itemInfo.queuesJob] * itemInfo.jobFrequencyMultiplier
                 markExistInArea(self.diAreaAutoConnect, item, itemInfo.wireLength)

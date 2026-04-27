@@ -168,20 +168,23 @@ function HUD:draw(show)
 
         -- Draw job queue
         if showJobQueue then
-            local jobQueueKeyList = {TEXT.JOB_QUEUE_INFO}
-            local jobQueueValueList = {""}
-            local totalJobs = 0
-            local totalMaxJobs = 0
-            for _, jobCat in ipairs(g.JOB_CATEGORIES) do
-                if world.maxJobQueues[jobCat] > 0 then
-                    local name = g.getJobCategoryInfo(jobCat).name
-                    jobQueueKeyList[#jobQueueKeyList+1] = name
-                    jobQueueValueList[#jobQueueValueList+1] = world.jobQueueCounts[jobCat].."/"..world.maxJobQueues[jobCat]
-                    totalJobs = totalJobs + world.jobQueueCounts[jobCat]
-                    totalMaxJobs = totalMaxJobs + world.maxJobQueues[jobCat]
+            local unlockedJobCats = objects.Set() --[[@as objects.Set<g.JobCategory>]]
+            for k, v in pairs(g.VALID_JOBS) do
+                if world.jobPoller[k] and world.jobPoller[k][2] > 0 then
+                    unlockedJobCats:add(v.category)
                 end
             end
-            jobQueueValueList[1] = totalJobs.."/"..totalMaxJobs
+
+            local jobQueueKeyList = {TEXT.JOB_QUEUE_INFO}
+            local jobQueueValueList = {""}
+            for _, jobCat in ipairs(g.JOB_CATEGORIES) do
+                if unlockedJobCats:contains(jobCat) then
+                    local jobCatInfo = g.getJobCategoryInfo(jobCat)
+                    local name = jobCatInfo.name
+                    jobQueueKeyList[#jobQueueKeyList+1] = name
+                    jobQueueValueList[#jobQueueValueList+1] = "+"..g.formatNumber(g.stats[jobCatInfo.nameRaw.."JobFrequency"]).."J/s"
+                end
+            end
 
             local jobQueueF = g.getMainFont(12)
             local jobQueueKeyText = table.concat(jobQueueKeyList, "\n")
