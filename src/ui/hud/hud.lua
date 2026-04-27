@@ -1,64 +1,4 @@
-local objects = require("src.modules.objects.objects")
-
-
----Doesn't have to be perfect. Just for visualization purposes.
----@type table<g.Job, number?>
-local jobTimeoutLookup = setmetatable({}, {__mode = "k"})
-
----@param job g.Job
-local function getJobTimeout(job)
-    local tmt = jobTimeoutLookup[job]
-    if not tmt then
-        tmt = job.timeout
-        jobTimeoutLookup[job] = tmt
-    end
-
-    return tmt
-end
-
----@param job g.Job
----@param r kirigami.Region full area (without padding)
----@param theme "dark"|"light"
-local function drawJobCard(job, r, theme)
-    local baseR = r:padUnit(4, 4, 8, 4)
-    local titleF = g.getMainFont(16)
-    local catF = g.getMainFont(10)
-
-    local titleR, catR, outR = helper.splitRegionByExactSizes(
-        baseR, "vertical",
-        titleF:getHeight(),
-        catF:getHeight(),
-        titleF:getHeight(),
-        0
-    )
-    love.graphics.setColor(g.COLORS.UI.MAIN[theme].CARD)
-    love.graphics.rectangle("fill", r:get())
-    love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-    local lw = gsman.setLineWidth(1)
-    love.graphics.rectangle("line", r:get())
-    lw:pop()
-
-    -- Draw text
-    love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-    richtext.printRichContainedNoWrap(job.name, titleF, titleR:get())
-    ui.printRichInRegion(g.getJobCategoryName(job.category), catF, catR, true, "left")
-    local computeR, dataR, moneyR = outR:splitHorizontal(1, 1, 1)
-    ui.printRichInRegion(g.formatNumber(job.computePower).."{dns}", catF, computeR, true, "left")
-    ui.printRichInRegion(g.formatNumber(job.outputData).."{database}", catF, dataR, true, "center")
-    -- We only have "money"
-    -- FIXME: Change it if we have more than 1 resources
-    ui.printRichInRegion("{money}"..g.formatNumber(job.resource.money), catF, moneyR, true, "right")
-
-    -- Draw timeout bar
-    local timeoutWidth = helper.clamp(job.timeout * r.w / math.max(getJobTimeout(job), 1), 0, r.w)
-    love.graphics.rectangle("fill", r.x, r.y + r.h - 4, timeoutWidth, 4)
-end
-
-local function getJobCardHeight()
-    local titleF = g.getMainFont(16)
-    local catF = g.getMainFont(10)
-    return 4 + titleF:getHeight() + catF:getHeight() * 2 + 6
-end
+local JobCard = require(".jobcard")
 
 ---@param r kirigami.Region
 ---@param count integer
@@ -234,7 +174,7 @@ function HUD:draw(show)
             local totalMaxJobs = 0
             for _, jobCat in ipairs(g.JOB_CATEGORIES) do
                 if world.maxJobQueues[jobCat] > 0 then
-                    local name = g.getJobCategoryName(jobCat)
+                    local name = g.getJobCategoryInfo(jobCat).name
                     jobQueueKeyList[#jobQueueKeyList+1] = name
                     jobQueueValueList[#jobQueueValueList+1] = world.jobQueueCounts[jobCat].."/"..world.maxJobQueues[jobCat]
                     totalJobs = totalJobs + world.jobQueueCounts[jobCat]
@@ -259,16 +199,51 @@ function HUD:draw(show)
             ui.printRichInRegion(jobQueueKeyText, jobQueueF, jobTextR, true, "left", "top")
             ui.printRichInRegion(jobQueueValueText, jobQueueF, jobTextR, true, "right", "top")
 
-            local jobCardHeight = getJobCardHeight()
-            local iterCount = math.min(#world.jobQueue, math.floor(jobQR.h / (jobCardHeight + 4)))
+            -- Draw job card
+            if world.htx and world.hty then
+                local item = g.getItem(world.htx, world.hty)
+                if item then
+                    local _, cat = g.getItemInfo(item.type)
+                    local wires = nil
+                    if cat == "server" then
+                        ---@cast item g.World.ServerData
+                        wires = item.connectedInputs
+                    elseif cat == "indata" then
+                        ---@cast item g.World.DataInputData
+                        wires = item.connects
+                    end
 
-            for i = 1, iterCount do
-                local jq = world.jobQueue[i]
-                local y = jobQR.y + (i - 1) * (jobCardHeight + 4)
-                local jobCardR = Kirigami(jobQR.x, y, jobQR.w, jobCardHeight)
-                drawJobCard(jq, jobCardR, theme)
+                    if wires then
+                        local height = 0
+                        local stop = false
+                        local PAD_W = 4
+                        local PAD_H = 4
+
+                        local lw = gsman.setLineWidth(2)
+                        for _, wire in ipairs(wires) do
+                            for _, job in ipairs(wire.objects) do
+                                local jobCard = JobCard(job)
+                                local jobCardHeight = jobCard:getHeight(jobQR.w - PAD_W * 2) + 2 * PAD_H
+                                if (jobCardHeight + height) > jobQR.h then
+                                    stop = true
+                                    break
+                                end
+
+                                jobCard:render(theme, jobQR.x + PAD_W, jobQR.y + height + PAD_H, jobQR.w - PAD_W * 2)
+                                love.graphics.rectangle("line", jobQR.x, jobQR.y + height, jobQR.w, jobCardHeight, 2, 2)
+                                height = height + jobCardHeight + 2 * PAD_H
+                            end
+
+                            if stop then
+                                break
+                            end
+                        end
+                        lw:pop()
+                    end
+                end
             end
 
+            -- Should we render job queue info?
             if iml.isHovered(jobTextR:get()) then
                 -- Request info
                 local descF = g.getMainFont(10)
