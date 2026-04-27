@@ -11,15 +11,18 @@ end
 local JobCard = objects.Class("g:HUD.JobCard")
 
 ---@param job g.Job
-function JobCard:init(job)
+---@param progress number?
+function JobCard:init(job, progress)
     self.job = job
+    self.progress = progress
 end
 
 if false then
     ---@param job g.Job
+    ---@param progress number?
     ---@return g.HUD.JobCard
     ---@diagnostic disable-next-line: cast-local-type, missing-return
-    function JobCard(job) end
+    function JobCard(job, progress) end
 end
 
 ---@param width number
@@ -35,6 +38,13 @@ function JobCard:getHeight(width)
 
     -- Outputs
     height = height + catF:getHeight()
+
+    -- If there's progress, then progress percentage and progress bar
+    if self.progress then
+        -- Progress percentage is 1 catF
+        -- Progress bar is 1 catF too
+        height = height + catF:getHeight() * 2
+    end
 
     return height
 end
@@ -64,6 +74,20 @@ function JobCard:render(theme, x, y, width)
     -- FIXME: Change it if we have more than 1 resources
     ui.printRichInRegion("{money}"..g.formatNumber(self.job.resource.money), catF, moneyR, true, "right")
     height = height + catF:getHeight()
+
+    -- Progress
+    if self.progress then
+        -- Progress percentage text
+        love.graphics.printf(math.floor(self.progress * 100).."%", catF, x, y + height, width, "center")
+        height = height + catF:getHeight()
+
+        -- Progress bar
+        local barR = Kirigami(x, y + height, width, catF:getHeight())
+            :padUnit(0, 3)
+        local barWidth = barR.w * self.progress
+        love.graphics.rectangle("fill", barR.x, barR.y, barWidth, barR.h)
+        height = height + catF:getHeight()
+    end
 end
 
 return JobCard

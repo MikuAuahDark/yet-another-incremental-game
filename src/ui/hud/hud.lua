@@ -205,21 +205,31 @@ function HUD:draw(show)
                 if item then
                     local _, cat = g.getItemInfo(item.type)
                     local wires = nil
+                    local height = 0
+                    local PAD_W = 4
+                    local PAD_H = 4
+                    local lw = gsman.setLineWidth(1)
+
                     if cat == "server" then
                         ---@cast item g.World.ServerData
                         wires = item.connectedInputs
+
+                        -- Always render current processed job on top
+                        if item.currentJob then
+                            local jobCard = JobCard(item.currentJob, item.dataTotalEmitted / item.currentJob.outputData)
+                            local jobCardHeight = jobCard:getHeight(jobQR.w - PAD_W * 2) + 2 * PAD_H
+                            jobCard:render(theme, jobQR.x + PAD_W, jobQR.y + height + PAD_H, jobQR.w - PAD_W * 2)
+                            love.graphics.rectangle("line", jobQR.x, jobQR.y + height, jobQR.w, jobCardHeight, 2, 2)
+                            height = height + jobCardHeight
+                        end
                     elseif cat == "indata" then
                         ---@cast item g.World.DataInputData
                         wires = item.connects
                     end
 
                     if wires then
-                        local height = 0
                         local stop = false
-                        local PAD_W = 4
-                        local PAD_H = 4
 
-                        local lw = gsman.setLineWidth(2)
                         for _, wire in ipairs(wires) do
                             for _, job in ipairs(wire.objects) do
                                 local jobCard = JobCard(job)
@@ -238,8 +248,9 @@ function HUD:draw(show)
                                 break
                             end
                         end
-                        lw:pop()
                     end
+
+                    lw:pop()
                 end
             end
 
