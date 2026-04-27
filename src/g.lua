@@ -1811,6 +1811,7 @@ end
 ---@field load number
 
 ---@class g._ServerDef: g._CommonSpecificItemDef<g.World.ServerData>
+---@field color objects.Color?
 ---@field computePerSecond number
 ---@field computeType string
 ---@field heatTolerance [number, number]
@@ -1821,6 +1822,7 @@ end
 ---@param def g._ServerDef
 function g.defineServer(id, name, def)
     defineItemUpgrades(id, name, worldutil.drawServerShape, def)
+    local objcol = def.color or g.getJobCategoryInfo(def.computeType).color
 
     return g.defineItem(id, {
         category = "server",
@@ -1841,13 +1843,13 @@ function g.defineServer(id, name, def)
             ---@cast itemData g.World.ServerData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawServerShape(r, def.color)
+            local r2 = worldutil.drawServerShape(r, objcol)
             if def.draw then
                 def.draw(r2, itemData)
             end
         end,
         drawItem = function(r)
-            local r2 = worldutil.drawServerShape(r, def.color)
+            local r2 = worldutil.drawServerShape(r, objcol)
             if def.draw then
                 def.draw(r2)
             end
@@ -1899,6 +1901,7 @@ function g.defineDataOutput(id, name, def)
 end
 
 ---@class g._DataInDef: g._CommonSpecificItemDef<g.World.DataInputData>
+---@field color objects.Color?
 ---@field queuesJob g.JobCategory
 ---@field maxJobQueue integer
 ---@field jobFrequencyModifier number?
@@ -1910,6 +1913,7 @@ end
 ---@param def g._DataInDef
 function g.defineDataInput(id, name, def)
     defineItemUpgrades(id, name, worldutil.drawDataInShape, def, 2)
+    local objcol = def.color or g.getJobCategoryInfo(def.queuesJob).color
 
     return g.defineItem(id, {
         category = "indata",
@@ -1931,13 +1935,13 @@ function g.defineDataInput(id, name, def)
             ---@cast itemData g.World.DataInputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawDataInShape(r, def.color)
+            local r2 = worldutil.drawDataInShape(r, objcol)
             if def.draw then
                 def.draw(r2, itemData)
             end
         end,
         drawItem = function(r)
-            local r2 = worldutil.drawDataInShape(r, def.color)
+            local r2 = worldutil.drawDataInShape(r, objcol)
             if def.draw then
                 def.draw(r2)
             end
@@ -2708,27 +2712,44 @@ g.COLORS = {
         BUFF = objects.Color("FF57DB6F"),
         OVERCLOCKED = objects.Color("FF3FB5EC"),
         WARNING = objects.Color("FFE6C562"),
+
+        TEXT_POWER_RELATED = objects.Color("#abeeff"),
+        TEXT_CPS = objects.Color("#e0fcae"),
+        TEXT_DPS = objects.Color("#fcdeae")
     },
 
     TILE_HOT = objects.Color("7fD63900"),
     TILE_COLD = objects.Color("7fabeeff"),
 
     -- FIXME: Register the color in `g.defineJobCategory`?
-    TYPE_GENERAL = g.getJobCategoryInfo("general").color,
-    TYPE_VIDEO = g.getJobCategoryInfo("video").color,
-    TYPE_AI = g.getJobCategoryInfo("ai").color,
+    JOBS = {
+        GENERAL = g.getJobCategoryInfo("general").color,
+        VIDEO = g.getJobCategoryInfo("video").color,
+        AI = g.getJobCategoryInfo("ai").color,
+    },
 }
 
 do
-for k,v in pairs(g.COLORS) do
-    if getmetatable(v) == objects.Color then
-        richtext.defineEffect(k, function (args, x,y, context, next)
-            local col = gsman.setColor(v)
-            next(context.textOrDrawable, x,y)
-            col:pop()
-        end)
+---@param tag string
+---@param color objects.Color
+local function defineColorTag(tag, color)
+    richtext.defineEffect(tag, function(args, x,y, context, next)
+        local col = gsman.setColor(color)
+        next(context.textOrDrawable, x,y)
+        col:pop()
+    end)
+end
+---@param prefix string
+local function registerColor(tab, prefix)
+    for k, v in pairs(tab) do
+        if getmetatable(v) == objects.Color then
+            defineColorTag(prefix..tostring(k), v)
+        elseif type(v) == "table" then
+            registerColor(v, prefix..tostring(k).."_")
+        end
     end
 end
+registerColor(g.COLORS, "COLORS_")
 end
 
 

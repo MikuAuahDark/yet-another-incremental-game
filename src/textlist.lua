@@ -1,6 +1,9 @@
 -- Simple file containing list translation text
 -- This is to ensure all translation text are in one place as possible.
 
+-- If you need to apply effect to whole text, don't apply it here.
+-- Apply it in the code that uses such text instead!
+
 ---@class TEXTLIST
 local text = {
     HORIZONTAL_LIST_SEPARATOR = loc(", ", nil, {
@@ -14,7 +17,7 @@ local text = {
         context = "A description on what \"Money\" (a resource in-game) is usable for."}),
     CPS = loc("Compute Per Second", nil, {
         context = "CPS (Compute Per Second) is a measurement how fast server can process computation."}),
-    CPS_DESCRIPTION = loc("This is how fast all your servers perform computation for its job. The win condition is to reach {b}1 billion{/b} CPS.", nil, {
+    CPS_DESCRIPTION = loc("This is how fast all your servers perform computation for its job. The win condition is to reach {b}1 million{/b} CPS.", nil, {
         context = "A description on what \"CPS\" (Compute Per Second) is for."}),
     LOAD = loc("Load", nil, {
         context = "Think of \"load\" as the \"electricity load\""}),
@@ -38,23 +41,17 @@ local text = {
         context = "Denotes heat of a machine."}),
     DPS_NUMBER = interp("%{dps} {database}/second", {
         context = "DPS (Data Per Second) is a measurement how fast data output can process data. {database} reflects \"Data\" icon in-game."}),
-    WIRE_RANGE = interp("Wire Range: %{range} Tiles", {
-        context = "Denotes the maximum range of data output wire connection"}),
-    WIRE_DPS = interp("Wire %{dps} {database}/second", {
-        context = "Denotes the maximum range of data output wire connection"}),
-    WIRE_COUNT = interp("Connections: %{count}/%{max}", {
-        context = "Denotes the number of data that can be transmitted to single wire."}),
-    JOB_QUEUE = interp("Tasks: %{job}", {
-        context = "Denotes the number of additional tasks that can be queued."}),
+    WIRE_DPS = interp("Wire {COLORS_UI_TEXT_DPS}%{dps} {database}/second{/COLORS_UI_TEXT_DPS}", {
+        context = "Denotes the speed of data transfer."}),
     EFFECTIVITY = interp("Effectivity: %{effectivity}%", {
         context = "Denotes the effectivity of a booster. The %{effectivity} is percentage of the booster efficiency."}),
     HEAT_TOLERANCE = interp("Heat Tolerance: %{min_heat}-%{max_heat}", {
         context = "Denotes the heat tolerance range of a machine."}),
     PRICE_TOOLTIP = interp("Price: %{price}{attach_money}", {
         context = "Denotes the price of an item."}),
-    LOAD_TOOLTIP = interp("Load: %{load}{bolt}", {
+    LOAD_TOOLTIP = interp("Load: {COLORS_UI_TEXT_POWER_RELATED}%{load}{bolt}{/COLORS_UI_TEXT_POWER_RELATED}", {
         context = "How many load this item uses?"}),
-    PROVIDE_LOAD_TOOLTIP = interp("Generates: %{load}{bolt}", {
+    PROVIDE_LOAD_TOOLTIP = interp("Generates: {COLORS_UI_TEXT_POWER_RELATED}%{load}{bolt}{/COLORS_UI_TEXT_POWER_RELATED}", {
         context = "How many load this item generates/provides?"}),
     TOTAL_LOAD_TOOLTIP = interp("Power Network: %{s}", {
         context = "How many load is used and power available across the whole power network? %{s} will be replaced by `load/total`."}),

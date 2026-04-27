@@ -36,7 +36,10 @@ local function description(upgrade, tree, x, y, safeArea)
         if category == "server" then
             ---@cast itemInfo g.ServerInfo
             -- CPS
-            builder:addText(TEXT.CPS_NUMBER({cps = g.formatNumber(itemInfo.computePerSecond)}), attrF, "left")
+            builder:addText(
+                helper.wrapRichtextColor(g.COLORS.UI.TEXT_CPS, TEXT.CPS_NUMBER({cps = g.formatNumber(itemInfo.computePerSecond)})),
+                attrF, "left"
+            )
             -- Heat Tolerance
             builder:addText(TEXT.HEAT_TOLERANCE({
                 min_heat = itemInfo.heatTolerance[1],
@@ -45,31 +48,25 @@ local function description(upgrade, tree, x, y, safeArea)
         elseif category == "data" then
             ---@cast itemInfo g.DataOutInfo
             -- DPS
-            builder:addText(TEXT.DPS_NUMBER({dps = g.formatNumber(itemInfo.dataPerSecond)}), attrF, "left")
-            -- Wire Range
-            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
+            builder:addText(
+                helper.wrapRichtextColor(
+                    g.COLORS.UI.TEXT_DPS,
+                    TEXT.DPS_NUMBER({dps = g.formatNumber(itemInfo.dataPerSecond)})
+                ),
+                attrF, "left"
+            )
             -- Wire DPS
             builder:addText(TEXT.WIRE_DPS({dps = g.formatNumber(itemInfo.wireDPS)}), attrF, "left")
         elseif category == "indata" then
             ---@cast itemInfo g.DataInInfo
             -- Queued Job Category
-            builder:addText(TEXT.CATEGORY_LIST({
-                categories = g.getJobCategoryName(itemInfo.queuesJob)
-            }), attrF, "left")
-            -- Added Job Queue
-            builder:addText(TEXT.JOB_QUEUE({job = itemInfo.maxJobQueue}), attrF, "left")
-            -- Wire Range
-            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
+            -- builder:addText(TEXT.CATEGORY_LIST({
+            --     categories = g.getJobCategoryInfo(itemInfo.queuesJob).name
+            -- }), attrF, "left")
         elseif category == "powergen" then
             ---@cast itemInfo g.PowerGenInfo
             -- Power
             builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = g.formatNumber(itemInfo.power)}), attrF, "left")
-            -- Wire Range
-            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
-        elseif category == "powerrelay" then
-            ---@cast itemInfo g.PowerRelayInfo
-            -- Wire Range
-            builder:addText(TEXT.WIRE_RANGE({range = itemInfo.wireLength}), attrF, "left")
         end
     end
 

@@ -547,7 +547,13 @@ function HUD:draw(show)
             else
                 love.graphics.setColor(1, 1, 1)
             end
-            drawStats(cpsR, TEXT.CPS, TEXT.CPS_DESCRIPTION, g.formatNumber(cps), "{dns}/s")
+            drawStats(
+                cpsR,
+                helper.wrapRichtextColor(g.COLORS.UI.TEXT_CPS, TEXT.CPS),
+                TEXT.CPS_DESCRIPTION,
+                g.formatNumber(cps),
+                helper.wrapRichtextColor(g.COLORS.UI.TEXT_CPS, "{dns}/s")
+            )
             lw2:pop()
 
 

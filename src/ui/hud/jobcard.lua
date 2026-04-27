@@ -2,7 +2,7 @@
 local function getJobName(job)
     local ctype = job.category
     local ctypeup = ctype:upper()
-    local symbol = "{TYPE_"..ctypeup.."}{"..g.getJobCategoryInfo(ctype).symbol.."}{/TYPE_"..ctypeup.."}"
+    local symbol = "{COLORS_JOBS_"..ctypeup.."}{"..g.getJobCategoryInfo(ctype).symbol.."}{/COLORS_JOBS_"..ctypeup.."}"
     return symbol..job.name..symbol
 end
 

@@ -49,6 +49,8 @@ local function getPowerNetworkText(powerNetwork)
         s = helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, s)
     elseif load > power then
         s = helper.wrapRichtextColor(g.COLORS.UI.WARNING, s)
+    else
+        s = helper.wrapRichtextColor(g.COLORS.UI.BUFF, s)
     end
 
     return TEXT.TOTAL_LOAD_TOOLTIP({s = s})
@@ -63,7 +65,7 @@ end
 ---@param dpInfo g.DataOutInfo
 local function getDPS(dpInfo)
     local dps = g.getProperty("getDataThroughput", dpInfo.dataPerSecond, 1, dpInfo)
-    local dpsText = TEXT.DPS_NUMBER({dps = g.formatNumber(dps)})
+    local dpsText = helper.wrapRichtextColor(g.COLORS.UI.TEXT_DPS, TEXT.DPS_NUMBER({dps = g.formatNumber(dps)}))
     if dps > dpInfo.dataPerSecond then
         local p = (dps - dpInfo.dataPerSecond) / dpInfo.dataPerSecond
         dpsText = dpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "("..helper.round(p * 100, 2).."%)")
@@ -113,7 +115,7 @@ local function getServerDataInputDisplayName(info)
         ctype = info.queuesJob
     end
     local ctypeup = ctype:upper()
-    local symbol = "{TYPE_"..ctypeup.."}{"..g.getJobCategoryInfo(ctype).symbol.."}{/TYPE_"..ctypeup.."}"
+    local symbol = "{COLORS_JOBS_"..ctypeup.."}{"..g.getJobCategoryInfo(ctype).symbol.."}{/COLORS_JOBS_"..ctypeup.."}"
     return symbol..info.name..symbol
 end
 
@@ -157,7 +159,7 @@ function ItemTooltip.ServerTooltipWorld(serverData, mx, my, safeArea)
     -- CPS
     local actualCPS = serverData.computePerSecond
     local baseCPS = serverInfo.computePerSecond
-    local cpsText = TEXT.CPS_NUMBER({cps = g.formatNumber(actualCPS)})
+    local cpsText = helper.wrapRichtextColor(g.COLORS.UI.TEXT_CPS, TEXT.CPS_NUMBER({cps = g.formatNumber(actualCPS)}))
     if actualCPS > baseCPS then
         local p = (actualCPS - baseCPS) / baseCPS
         cpsText = cpsText .. " " .. helper.wrapRichtextColor(g.COLORS.UI.BUFF, "(+" .. helper.round(p * 100, 2) .. "%)")
@@ -215,7 +217,6 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
         builder:addText(getPowerNetworkText(dpData.powerNetwork), attrF, "left")
     end
     builder:addText(getDPS(dpInfo), attrF, "left")
-        :addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
         :addText(getWireDPS(dpInfo), attrF, "left")
 
     -- Log message
@@ -319,11 +320,9 @@ function ItemTooltip.DITooltipWorld(diData, mx, my, safeArea)
     if diData.powerNetwork then
         builder:addText(getPowerNetworkText(diData.powerNetwork), attrF, "left")
     end
-    builder:addText(TEXT.CATEGORY_LIST({
-            categories = g.getJobCategoryInfo(diInfo.queuesJob).name
-        }), attrF, "left")
-        :addText(TEXT.JOB_QUEUE({job = diInfo.maxJobQueue}), attrF, "left")
-        :addText(TEXT.WIRE_RANGE({range = diInfo.wireLength}), attrF, "left")
+    -- builder:addText(TEXT.CATEGORY_LIST({
+    --     categories = g.getJobCategoryInfo(diInfo.queuesJob).name
+    -- }), attrF, "left")
 
     -- Log message
     addLogMessages(diData, builder)
@@ -359,7 +358,6 @@ function ItemTooltip.DrawPowerGenTooltip(powerData, mx, my, safeArea)
     if powerData.powerNetwork then
         builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
     end
-    builder:addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
 
     -- Log message
     addLogMessages(powerData, builder)
@@ -395,7 +393,6 @@ function ItemTooltip.DrawPowerRelayTooltip(powerData, mx, my, safeArea)
     if powerData.powerNetwork then
         builder:addText(getPowerNetworkText(powerData.powerNetwork), attrF, "left")
     end
-    builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
 
     -- Log message
     addLogMessages(powerData, builder)
@@ -469,7 +466,10 @@ function ItemTooltip.ServerTooltipHUD(serverInfo, x, y, safeArea)
     -- Load
     builder:addText(getItemLoadText(serverInfo), attrF, "left")
     -- CPS
-    builder:addText(TEXT.CPS_NUMBER({cps = g.formatNumber(serverInfo.computePerSecond)}), attrF, "left")
+    builder:addText(
+        helper.wrapRichtextColor(g.COLORS.UI.TEXT_CPS, TEXT.CPS_NUMBER({cps = g.formatNumber(serverInfo.computePerSecond)})),
+        attrF, "left"
+    )
     -- Heat tolerance
     builder:addText(TEXT.HEAT_TOLERANCE({
         min_heat = g.formatNumber(serverInfo.heatTolerance[1]),
@@ -511,8 +511,6 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y, safeArea)
     builder:addText(getItemLoadText(dpInfo), attrF, "left")
     -- DPS
     builder:addText(getDPS(dpInfo), attrF, "left")
-    -- Wire Range
-    builder:addText(TEXT.WIRE_RANGE({range = dpInfo.wireLength}), attrF, "left")
     -- Wire DPS
     builder:addText(getWireDPS(dpInfo), attrF, "left")
 
@@ -566,13 +564,9 @@ function ItemTooltip.DITooltipHUD(diInfo, x, y, safeArea)
     -- Load
     builder:addText(getItemLoadText(diInfo), attrF, "left")
     -- Queued Job Category
-    builder:addText(TEXT.CATEGORY_LIST({
-        categories = g.getJobCategoryInfo(diInfo.queuesJob).name
-    }), attrF, "left")
-    -- Added Job Queue
-    builder:addText(TEXT.JOB_QUEUE({job = diInfo.maxJobQueue}), attrF, "left")
-    -- Wire Range
-    builder:addText(TEXT.WIRE_RANGE({range = diInfo.wireLength}), attrF, "left")
+    -- builder:addText(TEXT.CATEGORY_LIST({
+    --     categories = g.getJobCategoryInfo(diInfo.queuesJob).name
+    -- }), attrF, "left")
 
     builder:render()
 end
@@ -641,7 +635,6 @@ function ItemTooltip.PowerGenTooltipHUD(powerGenInfo, x, y, safeArea)
     end
     -- Load
     builder:addText(getGeneratorOutput(powerGenInfo), attrF, "left")
-        :addText(TEXT.WIRE_RANGE({range = powerGenInfo.wireLength}), attrF, "left")
 
     builder:render()
 end
@@ -674,8 +667,6 @@ function ItemTooltip.PowerRelayTooltipHUD(powerRelayInfo, x, y, safeArea)
     if priceText then
         builder:addText(priceText, attrF, "left")
     end
-    -- Range
-    builder:addText(TEXT.WIRE_RANGE({range = powerRelayInfo.wireLength}), attrF, "left")
 
     builder:render()
 end
