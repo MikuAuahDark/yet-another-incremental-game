@@ -8,6 +8,7 @@ local settingData = {
     lang = love.system.getPreferredLocales()[1] or "en",
     crt = false,
     fullscreen = true,
+    tutorial = true,
 }
 
 -- Load setting
@@ -81,7 +82,16 @@ end
 
 ---@param fs boolean
 function setting.setFullscreen(fs)
-    settingData.fullscreen = fs
+    settingData.fullscreen = not not fs
+end
+
+function setting.isTutorialShown()
+    return settingData.tutorial
+end
+
+---@param tut boolean
+function setting.setTutorialShown(tut)
+    settingData.tutorial = not not tut
 end
 
 return setting

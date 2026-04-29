@@ -7,7 +7,7 @@ local Z = require("lib.zorder")
 
 
 ---@class g.Session.TutorialState
----@field harvest boolean
+---@field start integer (-1 = tutorial completed)
 ---@field upgrades boolean
 
 ---@class g.Session: objects.Class
@@ -73,8 +73,8 @@ function Session:init()
     self.paused = false
 
     self.showTutorials = {
-        harvest = true,
-        upgrades = true
+        start = settings.isTutorialShown() and 0 or -1,
+        upgrades = settings.isTutorialShown()
     }
 end
 
@@ -168,7 +168,7 @@ function Session.deserialize(data)
 
     -- Tutorial messages
     if data.showTutorials then
-        sess.showTutorials.harvest = nilIsTrue(data.showTutorials.harvest)
+        sess.showTutorials.start = tonumber(data.showTutorials.start) or -1
         sess.showTutorials.upgrades = nilIsTrue(data.showTutorials.upgrades)
     end
 
