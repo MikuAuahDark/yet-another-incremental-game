@@ -3,40 +3,42 @@
 ---@param dist number
 ---@param len number
 ---@param thickness number
-local function drawDataOutputDecorator(r, n, dist, len, thickness)
+---@param extradist number?
+local function drawDataOutputDecorator(r, n, dist, len, thickness, extradist)
     -- Data output decoration is "arrow" pointing inwards
-    local centerR = r:padRatio(0.75)
+    local centerR = r:padRatio(0.5)
     local sz = math.sqrt(centerR.w * centerR.h)
     local d = dist * sz
     local width = len * sz
     local height = thickness * sz
     local hpx0 = height / 2
+    local ed = (extradist or 0) * sz
     for i = 1, n do
         local t = math.sin((love.timer.getTime() + i / 5) * math.pi) ^ 2
-        local hpx = hpx0 + t * sz / 20
+        local hpx = hpx0 + t * sz / 40
         -- Top Left
-        local baseX = centerR.x - (i - 1) * d
-        local baseY = centerR.y - (i - 1) * d
+        local baseX = centerR.x - ed - (i - 1) * d
+        local baseY = centerR.y - ed - (i - 1) * d
         love.graphics.rectangle("fill", baseX + hpx, baseY + hpx, -width, -height)
         love.graphics.rectangle("fill", baseX + hpx, baseY + hpx, -height, -width)
         -- Top Right
-        baseX = centerR.x + centerR.w + (i - 1) * d
-        baseY = centerR.y - (i - 1) * d
+        baseX = centerR.x + centerR.w + ed + (i - 1) * d
+        baseY = centerR.y - ed - (i - 1) * d
         love.graphics.rectangle("fill", baseX - hpx, baseY + hpx, width, -height)
         love.graphics.rectangle("fill", baseX - hpx, baseY + hpx, height, -width)
         -- Bottom Right
-        baseX = centerR.x + centerR.w + (i - 1) * d
-        baseY = centerR.y + centerR.h + (i - 1) * d
+        baseX = centerR.x + centerR.w + ed + (i - 1) * d
+        baseY = centerR.y + centerR.h + ed + (i - 1) * d
         love.graphics.rectangle("fill", baseX - hpx, baseY - hpx, width, height)
         love.graphics.rectangle("fill", baseX - hpx, baseY - hpx, height, width)
         -- Bottom Left
-        baseX = centerR.x - (i - 1) * d
-        baseY = centerR.y + centerR.h + (i - 1) * d
+        baseX = centerR.x - ed - (i - 1) * d
+        baseY = centerR.y + centerR.h + ed + (i - 1) * d
         love.graphics.rectangle("fill", baseX + hpx, baseY - hpx, -width, height)
         love.graphics.rectangle("fill", baseX + hpx, baseY - hpx, -height, width)
     end
 
-    return centerR
+    return centerR:padRatio(0.25)
 end
 
 
@@ -51,7 +53,7 @@ g.defineDataOutput("basic_data", "Basic Data Output", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(0, 0, 0)
-        drawDataOutputDecorator(r, 2, 0.25, 0.35, 0.05)
+        drawDataOutputDecorator(r, 1, 0.125, 0.2, 0.04, -0.2)
         col:pop()
     end,
 })
@@ -66,7 +68,7 @@ g.defineDataOutput("normal_data", "Data Output", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(0, 0, 0)
-        drawDataOutputDecorator(r, 2, 0.15, 0.4, 0.08)
+        drawDataOutputDecorator(r, 2, 0.15, 0.2, 0.04, -0.275)
         col:pop()
     end,
 })
@@ -82,7 +84,7 @@ g.defineDataOutput("advanced_data", "Advanced Data Output", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(0, 0, 0)
-        drawDataOutputDecorator(r, 3, 0.15, 0.4, 0.08)
+        drawDataOutputDecorator(r, 2, 0.15, 0.2, 0.075, -0.325)
         col:pop()
     end,
 })
@@ -98,7 +100,7 @@ g.defineDataOutput("he_data", "High-End Data Output", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(0, 0, 0)
-        drawDataOutputDecorator(r, 4, 0.15, 0.45, 0.08)
+        drawDataOutputDecorator(r, 3, 0.15, 0.2, 0.075, -0.36)
         col:pop()
     end,
 })
@@ -114,9 +116,7 @@ g.defineDataOutput("quantum_data", "Quantum Data Output", {
     draw = function(r)
         -- Draw decor
         local col = gsman.mulColor(0, 0, 0)
-        local centerR = drawDataOutputDecorator(r, 4, 0.15, 0.45, 0.08)
-        local t = math.sin(love.timer.getTime() * math.pi) ^ 2
-        g.drawImageContained("blur_on", centerR:padRatio(-0.3):padRatio(-0.1 * t):get())
+        drawDataOutputDecorator(r, 3, 0.15, 0.3, 0.075, -0.4)
         col:pop()
     end,
 })

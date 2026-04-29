@@ -1,11 +1,12 @@
 ---@param r kirigami.Region
 ---@param npipes integer
-local function drawConnectableDecor(r, npipes)
+---@param lwidth number?
+local function drawConnectableDecor(r, npipes, lwidth)
     local LENGTH = 0.6
     local col = gsman.mulColor(objects.Color("FFE58609"))
     local radius = math.sqrt(r.w * r.h) / 2
     local cx, cy = r:getCenter()
-    local lw = gsman.setLineWidth(0.1 * radius)
+    local lw = gsman.setLineWidth(0.1 * radius * (lwidth or 1))
 
     for i = 0, npipes - 1 do
         local a = i / npipes * 2 * math.pi + math.pi / 2
@@ -142,7 +143,7 @@ g.defineBooster("pfc", "Power Factor Correction", {
     },
     draw = function(r)
         -- Draw decor
-        drawConnectableDecor(r, 6)
+        drawConnectableDecor(r, 6, 0.7)
         g.drawImageContained("energy_savings_leaf", r:padRatio(0.5):get())
     end,
     getLoadMultiplier = function(reltx, relty)
@@ -220,7 +221,7 @@ g.defineBooster("selective_tweaks", "Selective Tweaks", {
     },
     draw = function(r)
         -- Draw decor
-        drawConnectableDecor(r, 6)
+        drawConnectableDecor(r, 6, 0.75)
         g.drawImageContained("speed", r:padRatio(0.5):get())
     end,
     getPerformanceMultiplier = function(reltx, relty)

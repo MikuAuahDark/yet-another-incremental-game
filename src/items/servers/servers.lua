@@ -2,7 +2,7 @@
 ---@param thicknessRatio number?
 local function makeLineDrawerForServer(numLines, thicknessRatio)
     -- The draw area is 0.2-0.8
-    local thickness = thicknessRatio or 0.1
+    local thickness = thicknessRatio or 0.08
     local placements = {} -- from [0, 1]
     -- Divide it equally by numLines
     -- I'm too lazy to get formula for it so just abuse Kirigami
@@ -158,7 +158,7 @@ g.defineServer("video3_server", "Video Server (Tier 3)", {
 
 
 
-local _aiServer1 = makeLineDrawerForServer(3, 0.05)
+local _aiServer1 = makeLineDrawerForServer(3)
 g.defineServer("ai_server", "AI Server (Tier 1)", {
     price = 7000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
@@ -176,7 +176,7 @@ g.defineServer("ai_server", "AI Server (Tier 1)", {
 })
 
 
-local _aiServer2 = makeLineDrawerForServer(5, 0.05)
+local _aiServer2 = makeLineDrawerForServer(5)
 g.defineServer("ai_server_t2", "AI Server (Tier 2)", {
     price = 16000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
@@ -193,7 +193,7 @@ g.defineServer("ai_server_t2", "AI Server (Tier 2)", {
     end,
 })
 
-local _aiServer3 = makeLineDrawerForServer(8, 0.04)
+local _aiServer3 = makeLineDrawerForServer(7)
 g.defineServer("ai_server_t3", "AI Server (Tier 3)", {
     price = 35000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.15, 1),
