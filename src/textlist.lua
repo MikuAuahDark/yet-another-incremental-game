@@ -90,25 +90,25 @@ local text = {
         context = "Tutorial on the basic controls."}),
     TUTORIAL_1_1 = loc("Start by placing a server;", nil, {
         context = "Tutorial on placing server"}),
-    TUTORIAL_1_2 = interp("Click the %{server} on the bottom and click anywhere to place it.", {
+    TUTORIAL_1_2 = interp("Click the {c r=0.8 g=0.8 b=1}%{server}{/c} on the bottom and click anywhere to place it.", {
         context = "Tutorial on placing server"}),
-    TUTORIAL_2_1 = loc("Now, place a Data-Input: servers must be connected to one to perform tasks.", nil, {
+    TUTORIAL_2_1 = loc("Now, place a {c r=0.8 g=0.8 b=1}Data-Input{/c}: servers must be connected to perform tasks.", nil, {
         context = "Tutorial on placing data inputs"}),
     TUTORIAL_2_2 = interp("(Press the {c r=0.8 g=0.8 b=1}\"%{CATEGORY_DATA}\"{/c} to show available)", {
         context = "Tutorial on placing data inputs"}),
     TUTORIAL_2_3 = interp("Click the {c r=0.8 g=0.8 b=1}%{di}{/c} on the bottom and click near the server on the world to place it.", {
         context = "Tutorial on placing data inputs"}),
-    TUTORIAL_3_1 = loc("Now, place a Data-Outputs. This is where server sends data after it's done processing.", nil, {
+    TUTORIAL_3_1 = loc("Now, place a {c r=0.8 g=0.8 b=1}Data-Output{/c}. This is where server sends data after it's done processing.", nil, {
         context = "Tutorial on placing data outputs"}),
-    TUTORIAL_3_2 = interp("Click the %{do} on the bottom and place it near the world.", {
+    TUTORIAL_3_2 = interp("Click the {c r=0.8 g=0.8 b=1}%{do}{/c} on the bottom and place it near the world.", {
         context = "Tutorial on placing data outputs"}),
-    TUTORIAL_4_1 = loc("You should now see data flowing from the Data-Input, to the Server, and then to the Data-Output! (If not, you probably placed them too far away.)", nil, {
+    TUTORIAL_4_1 = loc("You should now see data flowing from the {c r=0.8 g=0.8 b=1}Data-Input{/c}, to the {c r=0.8 g=0.8 b=1}Server{/c}, and then to the {c r=0.8 g=0.8 b=1}Data-Output{/c}! (If not, you probably placed them too far away.)", nil, {
         context = "Tutorial on verifying pipeline"}),
-    TUTORIAL_4_2 = loc("If you see yellow or red indicator above the items, that means something's' wrong. Hover to it to see more information.", nil, {
+    TUTORIAL_4_2 = loc("yellow or red indicator above the items means something's wrong. Hover to see more information.", nil, {
         context = "Tutorial on verifying pipeline"}),
-    TUTORIAL_5_1 = loc("You may remove buildings by using the {c r=1 g=0 b=0}Delete{/c} tool on bottom right.", nil, {
+    TUTORIAL_5_1 = loc("Remove buildings by using the {c r=1 g=0 b=0}Delete{/c} tool on bottom right.", nil, {
         context = "Tutorial on removing buildings"}),
-    TUTORIAL_5_2 = loc("To use it, click on it, then click anything you want to remove. Once removed, they'll be put back into your storage.", nil, {
+    TUTORIAL_5_2 = loc("To remove a building, click on it. Once removed, it'll be put into your inventory.", nil, {
         context = "Tutorial on removing buildings"}),
     TUTORIAL_6_0 = loc("Now let's head to the tech tree!", nil, {
         context = "Tutorial on the tech tree."}),
