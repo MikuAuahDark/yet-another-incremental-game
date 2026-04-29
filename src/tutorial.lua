@@ -199,6 +199,52 @@ local function renderTutorial7(safeArea)
     return skipped
 end
 
+local function renderTutorial8(safeArea)
+    local ack = false
+    local textF = g.getMainFont(12)
+
+    local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 180)
+    builder:addText(TEXT.TUTORIAL_8_1, textF, "center")
+    builder:addText(TEXT.TUTORIAL_8_2, textF, "center")
+
+    builder:addPadding(4)
+    builder:addCustom(32, function(x, y, w, h)
+        local r = Kirigami(x, y, w, h):padRatio(0.25, 0.25, 0.25, 0.25)
+        if ui.Button2(TEXT.TUTORIAL_NEXT, textF, objects.Color.BLACK, r) then
+            ack = true
+        end
+    end)
+    builder:addPadding(4)
+
+    builder:render()
+
+    return ack
+end
+
+local function renderTutorial9(safeArea)
+    local ack = false
+    local textF = g.getMainFont(12)
+
+    local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 180)
+    builder:addText(TEXT.TUTORIAL_9_1, textF, "center")
+    builder:addText(TEXT.TUTORIAL_9_2, textF, "left")
+    builder:addText(TEXT.TUTORIAL_9_3, textF, "left")
+    builder:addText(TEXT.TUTORIAL_9_4, textF, "left")
+
+    builder:addPadding(4)
+    builder:addCustom(32, function(x, y, w, h)
+        local r = Kirigami(x, y, w, h):padRatio(0.25, 0.25, 0.25, 0.25)
+        if ui.Button2(TEXT.TUTORIAL_FINISH, textF, objects.Color.BLACK, r) then
+            ack = true
+        end
+    end)
+    builder:addPadding(4)
+
+    builder:render()
+
+    return ack
+end
+
 return {
     [0] = renderTutorial0,
     [1] = renderTutorial1,
@@ -208,4 +254,6 @@ return {
     [5] = renderTutorial5,
     [6] = renderTutorial6,
     [7] = renderTutorial7,
+    [8] = renderTutorial8,
+    [9] = renderTutorial9,
 }

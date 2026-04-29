@@ -77,6 +77,8 @@ local text = {
         context = "A button to skip the tutorial entirely"}),
     TUTORIAL_NEXT = loc("Next", nil, {
         context = "A button to advance to the next step in the tutorial"}),
+    TUTORIAL_FINISH = loc("Finish", nil, {
+        context = "A button that finishes the tutorial"}),
     -- FIXME: My English for this tutorial
     TUTORIAL_0_1 = loc("Welcome to the game, let's familiarize yourself first.", nil, {
         context = "Tutorial on the basic controls."}),
@@ -116,6 +118,20 @@ local text = {
     -- TUTORIAL_7_1 = TUTORIAL_6_1
     TUTORIAL_7_2 = interp("For now, let's get another {COLORS_JOBS_GENERAL}%{bs}{/COLORS_JOBS_GENERAL}, {COLORS_JOBS_GENERAL}%{di}{/COLORS_JOBS_GENERAL}, and {COLORS_JOBS_GENERAL}%{do}{/COLORS_JOBS_GENERAL}. You may need to wait until you have enough {money} money to buy them.", {
         context = "Tutorial on the tech tree."}),
+    TUTORIAL_8_1 = loc("You can also buy other sorts of upgrades in here, unlocking the tech tree.", nil, {
+        context = "Tutorial on the tech tree."}),
+    TUTORIAL_8_2 = loc("You can hover your cursor to the upgrades to view more information about it.", nil, {
+        context = "Tutorial on the tech tree."}),
+    TUTORIAL_9_0 = loc("Now let's get back to the area!", nil, {
+        context = "Tutorial on the other mechanics."}),
+    TUTORIAL_9_1 = loc("Servers and data inputs can only connect within their same colored types or icons, or task types.", nil, {
+        context = "Tutorial on task types."}),
+    TUTORIAL_9_2 = loc("{COLORS_JOBS_GENERAL}Yellow {change_history_fill_20dp}{/COLORS_JOBS_GENERAL} - General Tasks", nil, {
+        context = "Tutorial on task types."}),
+    TUTORIAL_9_3 = loc("{COLORS_JOBS_VIDEO}Blue {crop_square_fill_20dp}{/COLORS_JOBS_VIDEO} - Video Tasks", nil, {
+        context = "Tutorial on task types."}),
+    TUTORIAL_9_4 = loc("{COLORS_JOBS_AI}Red {circle_fill_20dp}{/COLORS_JOBS_AI} - AI Tasks", nil, {
+        context = "Tutorial on task types."}),
 }
 text.TUTORIAL_7_1 = text.TUTORIAL_6_1
 return text

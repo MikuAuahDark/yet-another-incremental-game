@@ -847,13 +847,27 @@ function upgscene:draw()
             g.playUISound("ui_click_basic", 1.4,0.8)
             g.gotoScene("main_scene")
         end
-    end
 
-    -- Tutorial check
-    if s.showTutorials.start == 6 and tutorial[6](ui.getScreenRegion()) then
-        s.showTutorials.start = 7
-    elseif s.showTutorials.start == 7 and tutorial[7](ui.getScreenRegion()) then
-        s.showTutorials.start = 8
+        -- Tutorial check
+        if s.showTutorials.start == 6 and tutorial[6](ui.getScreenRegion()) then
+            s.showTutorials.start = 7
+        elseif s.showTutorials.start == 7 and tutorial[7](ui.getScreenRegion()) then
+            s.showTutorials.start = 8
+        elseif s.showTutorials.start == 8 and tutorial[8](ui.getScreenRegion()) then
+            s.showTutorials.start = 9
+        elseif s.showTutorials.start == 9 then
+            -- Tutorial state 9 needs to get back to area.
+            local x, y = switchR:getCenter()
+            local col = gsman.setColor(1, 0, 0)
+            local lw = gsman.setLineWidth(6)
+            helper.circleHighlight(x, y, switchR.w / 1.7)
+            lw:pop()
+            col:pop()
+
+            ui.TooltipBuilder(switchR.x + switchR.w, switchR.y + switchR.h + 24, 1, 0, ui.getScreenRegion(), 120)
+                :addText(TEXT.TUTORIAL_9_0, g.getMainFont(12), "center")
+                :render()
+        end
     end
 
     self:renderPause()

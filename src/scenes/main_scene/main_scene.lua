@@ -276,6 +276,9 @@ function MainScene:draw()
             s.showTutorials.start = 5
         elseif s.showTutorials.start == 5 and tutorial[5](safeArea) then
             s.showTutorials.start = 6
+        elseif s.showTutorials.start == 9 and tutorial[9](safeArea) then
+            -- Finish
+            s.showTutorials.start = -1
         end
     end
 
