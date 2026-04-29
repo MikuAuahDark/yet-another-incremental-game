@@ -1822,7 +1822,7 @@ end
 ---@param def g._ServerDef
 function g.defineServer(id, name, def)
     defineItemUpgrades(id, name, worldutil.drawServerShape, def)
-    local objcol = def.color or g.getJobCategoryInfo(def.computeType).color
+    def.color = def.color or g.getJobCategoryInfo(def.computeType).color
 
     return g.defineItem(id, {
         category = "server",
@@ -1843,13 +1843,13 @@ function g.defineServer(id, name, def)
             ---@cast itemData g.World.ServerData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawServerShape(r, objcol)
+            local r2 = worldutil.drawServerShape(r, def.color)
             if def.draw then
                 def.draw(r2, itemData)
             end
         end,
         drawItem = function(r)
-            local r2 = worldutil.drawServerShape(r, objcol)
+            local r2 = worldutil.drawServerShape(r, def.color)
             if def.draw then
                 def.draw(r2)
             end
@@ -1913,7 +1913,7 @@ end
 ---@param def g._DataInDef
 function g.defineDataInput(id, name, def)
     defineItemUpgrades(id, name, worldutil.drawDataInShape, def, 2)
-    local objcol = def.color or g.getJobCategoryInfo(def.queuesJob).color
+    def.color = def.color or g.getJobCategoryInfo(def.queuesJob).color
 
     return g.defineItem(id, {
         category = "indata",
@@ -1935,13 +1935,13 @@ function g.defineDataInput(id, name, def)
             ---@cast itemData g.World.DataInputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75
             local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawDataInShape(r, objcol)
+            local r2 = worldutil.drawDataInShape(r, def.color)
             if def.draw then
                 def.draw(r2, itemData)
             end
         end,
         drawItem = function(r)
-            local r2 = worldutil.drawDataInShape(r, objcol)
+            local r2 = worldutil.drawDataInShape(r, def.color)
             if def.draw then
                 def.draw(r2)
             end
