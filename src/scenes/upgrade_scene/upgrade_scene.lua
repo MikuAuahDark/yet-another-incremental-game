@@ -217,10 +217,14 @@ local function drawUpgradeBox(mode, upgrade, noframe)
 
     -- Tutorial state 5 highlight (wth is this abomination)
     if
-        g.getSn().showTutorials.start == 5 and
+        g.getSn().showTutorials.start == 7 and
         uinfo.kind == "INVENTORY" and
         upgrade.level <= 1 and
-        (uinfo.targetItem == "basic_server" or uinfo.targetItem == "basic_indata" or uinfo.targetItem == "basic_data")
+        (
+            uinfo.targetItem == "basic_server" or
+            uinfo.targetItem == "basic_indata" or
+            uinfo.targetItem == "basic_data"
+        )
     then
         local col = gsman.setColor(g.COLORS.JOBS.GENERAL)
         local lw = gsman.setLineWidth(6)
@@ -851,8 +855,10 @@ function upgscene:draw()
     end
 
     -- Tutorial check
-    if s.showTutorials.start == 5 and tutorial[5](ui.getScreenRegion()) then
-        s.showTutorials.start = 6
+    if s.showTutorials.start == 6 and tutorial[6](ui.getScreenRegion()) then
+        s.showTutorials.start = 7
+    elseif s.showTutorials.start == 7 and tutorial[7](ui.getScreenRegion()) then
+        s.showTutorials.start = 8
     end
 
     self:renderPause()
@@ -916,14 +922,14 @@ function upgscene:update(dt)
     self.lastUpgradeMaxxed[2] = math.max(self.lastUpgradeMaxxed[2] - dt, 0)
 
     local s = g.getSn()
-    if s.showTutorials.start == 5 then
+    if s.showTutorials.start == 7 then
         if
             g.ask("getItemTotalInventory", "basic_server") >= 2 and
             g.ask("getItemTotalInventory", "basic_indata") >= 2 and
             g.ask("getItemTotalInventory", "basic_data") >= 2
         then
             -- Advance
-            s.showTutorials.start = 6
+            s.showTutorials.start = 8
         end
     end
 end

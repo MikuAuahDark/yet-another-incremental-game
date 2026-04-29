@@ -446,9 +446,9 @@ function HUD:draw(show)
                     -- Tutorial State 0: Highlight Basic Server
                     if s then
                         local highlightForTutorial =
-                            (s.showTutorials.start == 0 and itemInfo.id == "basic_server") or
-                            (s.showTutorials.start == 1 and itemInfo.id == "basic_indata") or
-                            (s.showTutorials.start == 2 and itemInfo.id == "basic_data")
+                            (s.showTutorials.start == 1 and itemInfo.id == "basic_server") or
+                            (s.showTutorials.start == 2 and itemInfo.id == "basic_indata") or
+                            (s.showTutorials.start == 3 and itemInfo.id == "basic_data")
 
                         if highlightForTutorial then
                             local t = math.sin(love.timer.getTime() * 3) ^ 2

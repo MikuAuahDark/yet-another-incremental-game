@@ -72,37 +72,50 @@ local text = {
         context = "Category of settings"}),
 
     TUTORIAL_SKIP = loc("Skip", nil, {
-        context = "A button to skip the current tutorial"}),
+        context = "A button to skip the current tutorial step"}),
+    TUTORIAL_SKIP_ALL = loc("Skip Tutorial", nil, {
+        context = "A button to skip the tutorial entirely"}),
     TUTORIAL_NEXT = loc("Next", nil, {
         context = "A button to advance to the next step in the tutorial"}),
     -- FIXME: My English for this tutorial
-    TUTORIAL_0_1 = loc("Let's start by placing server on the area.", nil, {
+    TUTORIAL_0_1 = loc("Welcome to the game, let's familiarize yourself first.", nil, {
+        context = "Tutorial on the basic controls."}),
+    TUTORIAL_0_2 = loc("Use your mouse wheel to zoom in and out of the world.", nil, {
+        context = "Tutorial on the basic controls."}),
+    TUTORIAL_0_3 = loc("Click and drag your mouse to move around the area.", nil, {
+        context = "Tutorial on the basic controls."}),
+    TUTORIAL_0_4 = interp("Hovering on the items gives you more information. Try it on the %{main_power} on the center.", {
+        context = "Tutorial on the basic controls."}),
+    TUTORIAL_1_1 = loc("Let's start by placing server on the area.", nil, {
         context = "Tutorial on placing server"}),
-    TUTORIAL_0_2 = interp("Click the %{server} on the bottom and click anywhere on the world to place it.", {
+    TUTORIAL_1_2 = interp("Click the %{server} on the bottom and click anywhere on the world to place it.", {
         context = "Tutorial on placing server"}),
-    TUTORIAL_1_1 = loc("Now, time to place data inputs. Data input provides tasks to the server.", nil, {
+    TUTORIAL_2_1 = loc("Now, time to place data inputs. Data input provides tasks to the server.", nil, {
         context = "Tutorial on placing data inputs"}),
-    TUTORIAL_1_2 = interp("Press the \"%{CATEGORY_DATA}\" to show the data inputs.", {
+    TUTORIAL_2_2 = interp("Press the \"%{CATEGORY_DATA}\" to show the data inputs.", {
         context = "Tutorial on placing data inputs"}),
-    TUTORIAL_1_3 = interp("Click the %{di} on the bottom and click near the server on the world to place it.", {
+    TUTORIAL_2_3 = interp("Click the %{di} on the bottom and click near the server on the world to place it.", {
         context = "Tutorial on placing data inputs"}),
-    TUTORIAL_2_1 = loc("Now, time to place data outputs. Server will process a data fragment that needs to be send to data output to earn money.", nil, {
+    TUTORIAL_3_1 = loc("Now, time to place data outputs. Server will process a data fragment that needs to be send to data output to earn money.", nil, {
         context = "Tutorial on placing data outputs"}),
-    TUTORIAL_2_2 = interp("Click the %{do} on the bottom and click near the server on the world to place it.", {
+    TUTORIAL_3_2 = interp("Click the %{do} on the bottom and click near the server on the world to place it.", {
         context = "Tutorial on placing data outputs"}),
-    TUTORIAL_3_1 = loc("You should see data moving by hovering on the data input, server, or the data outputs. If not, try to move them closer to each other.", nil, {
+    TUTORIAL_4_1 = loc("You should see data moving by hovering on the data input, server, or the data outputs. If not, you probably placed them too far away.", nil, {
         context = "Tutorial on verifying pipeline"}),
-    TUTORIAL_3_2 = loc("If you see yellow or red indicator above the items, that means something's' wrong. Hover to it to see more information.", nil, {
+    TUTORIAL_4_2 = loc("If you see yellow or red indicator above the items, that means something's' wrong. Hover to it to see more information.", nil, {
         context = "Tutorial on verifying pipeline"}),
-    TUTORIAL_4_1 = loc("You can remove buildings from the world by using the {c r=1 g=0 b=0}Delete{/c} tool on the bottom right.", nil, {
+    TUTORIAL_5_1 = loc("You can remove buildings from the world by using the {c r=1 g=0 b=0}Delete{/c} tool on the bottom right.", nil, {
         context = "Tutorial on removing buildings"}),
-    TUTORIAL_4_2 = loc("To use it, click on it then click items you want to remove. Once removed, they'll be put back into your storage.", nil, {
+    TUTORIAL_5_2 = loc("To use it, click on it then click items you want to remove. Once removed, they'll be put back into your storage.", nil, {
         context = "Tutorial on removing buildings"}),
-    TUTORIAL_5_0 = loc("Now let's head to the tech tree!", nil, {
+    TUTORIAL_6_0 = loc("Now let's head to the tech tree!", nil, {
         context = "Tutorial on the tech tree."}),
-    TUTORIAL_5_1 = loc("The tech tree is where you spend money to unlock upgrades and buy more buildings that'll help you progress in the game.", nil, {
+    TUTORIAL_6_1 = loc("The tech tree is where you spend money to unlock upgrades and buy more buildings that'll help you progress in the game.", nil, {
         context = "Tutorial on the tech tree."}),
-    TUTORIAL_5_2 = interp("For now, let's get another {COLORS_JOBS_GENERAL}%{bs}{/COLORS_JOBS_GENERAL}, {COLORS_JOBS_GENERAL}%{di}{/COLORS_JOBS_GENERAL}, and {COLORS_JOBS_GENERAL}%{do}{/COLORS_JOBS_GENERAL}. You may need to wait until you have enough {money} money to buy them.", {
+    TUTORIAL_6_2 = loc("To view around, click on empty space and drag using your mouse."),
+    -- TUTORIAL_7_1 = TUTORIAL_6_1
+    TUTORIAL_7_2 = interp("For now, let's get another {COLORS_JOBS_GENERAL}%{bs}{/COLORS_JOBS_GENERAL}, {COLORS_JOBS_GENERAL}%{di}{/COLORS_JOBS_GENERAL}, and {COLORS_JOBS_GENERAL}%{do}{/COLORS_JOBS_GENERAL}. You may need to wait until you have enough {money} money to buy them.", {
         context = "Tutorial on the tech tree."})
 }
+text.TUTORIAL_7_1 = text.TUTORIAL_6_1
 return text

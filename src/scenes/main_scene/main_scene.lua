@@ -209,12 +209,12 @@ function MainScene:draw()
                         g.putItem(hud.selectedItem, tx, ty)
 
                         -- Tutorial
-                        if s.showTutorials.start == 0 and hud.selectedItem == "basic_server" then
-                            s.showTutorials.start = 1
-                        elseif s.showTutorials.start == 1 and hud.selectedItem == "basic_indata" then
+                        if s.showTutorials.start == 1 and hud.selectedItem == "basic_server" then
                             s.showTutorials.start = 2
-                        elseif s.showTutorials.start == 2 and hud.selectedItem == "basic_data" then
+                        elseif s.showTutorials.start == 2 and hud.selectedItem == "basic_indata" then
                             s.showTutorials.start = 3
+                        elseif s.showTutorials.start == 3 and hud.selectedItem == "basic_data" then
+                            s.showTutorials.start = 4
                         end
                     end
                 end
@@ -242,8 +242,8 @@ function MainScene:draw()
             g.playUISound("ui_click_basic", 1.4,0.8)
             g.gotoScene("upgrade_scene")
         end
-        -- Tutorial state 5 needs to get to tech tree
-        if s.showTutorials.start == 5 then
+        -- Tutorial state 6 needs to get to tech tree
+        if s.showTutorials.start == 6 then
             local x, y = switchR:getCenter()
             local col = gsman.setColor(1, 0, 0)
             local lw = gsman.setLineWidth(6)
@@ -252,13 +252,20 @@ function MainScene:draw()
             col:pop()
 
             ui.TooltipBuilder(switchR.x + switchR.w, switchR.y + switchR.h + 24, 1, 0, safeArea, 120)
-                :addText(TEXT.TUTORIAL_5_0, g.getMainFont(12), "center")
+                :addText(TEXT.TUTORIAL_6_0, g.getMainFont(12), "center")
                 :render()
         end
 
         -- Tutorial check
-        if s.showTutorials.start == 0 and tutorial[0](safeArea) then
-            s.showTutorials.start = 1
+        if s.showTutorials.start == 0 then
+            local mode = tutorial[0](safeArea)
+            if mode == 1 then
+                -- Skip tutorial
+                s.showTutorials.start = -1
+            elseif mode == 2 then
+                -- Continue tutorial
+                s.showTutorials.start = 1
+            end
         elseif s.showTutorials.start == 1 and tutorial[1](safeArea) then
             s.showTutorials.start = 2
         elseif s.showTutorials.start == 2 and tutorial[2](safeArea) then
@@ -267,6 +274,8 @@ function MainScene:draw()
             s.showTutorials.start = 4
         elseif s.showTutorials.start == 4 and tutorial[4](safeArea) then
             s.showTutorials.start = 5
+        elseif s.showTutorials.start == 5 and tutorial[5](safeArea) then
+            s.showTutorials.start = 6
         end
     end
 
