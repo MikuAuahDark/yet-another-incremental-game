@@ -1,6 +1,33 @@
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local World = require("src.world.world")
 
+
+---@param safeArea kirigami.Region
+local function renderTutorial0(safeArea)
+    local skipped = false
+    local textF = g.getMainFont(12)
+    local bs = g.getItemInfo("basic_server", "server")
+
+    local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 150)
+    -- TODO: Localize
+    builder:addText(TEXT.TUTORIAL_0_1, textF, "center")
+    builder:addText(TEXT.TUTORIAL_0_2({server = bs.name}), textF, "center")
+
+    builder:addPadding(4)
+    builder:addCustom(32, function(x, y, w, h)
+        local r = Kirigami(x, y, w, h):padRatio(0.25, 0.25, 0.25, 0.25)
+        if ui.Button2(TEXT.TUTORIAL_SKIP, textF, objects.Color.BLACK, r) then
+            skipped = true
+        end
+    end)
+    builder:addPadding(4)
+
+    builder:render()
+
+    return skipped
+end
+
+
 ---@class MainScene: FreeCameraScene
 local MainScene = FreeCameraScene()
 
@@ -37,6 +64,7 @@ end
 function MainScene:draw()
     local hud = g.getHUD()
     local safeArea = hud:getSafeArea()
+    local s = g.getSn()
 
     self:setCamera()
 
@@ -154,7 +182,7 @@ function MainScene:draw()
         end
 
         if not selectedItem then
-            if world.items:contains(tx, ty) then
+            if world:isWithinWorldLimit(tx, ty) then
                 selectedItem = g.getItem(tx, ty)
             end
         end
@@ -205,16 +233,29 @@ function MainScene:draw()
                     -- Item placement
                     if g.canPutItem(tx, ty) then
                         g.putItem(hud.selectedItem, tx, ty)
+
+                        if s.showTutorials.start == 0 and hud.selectedItem == "basic_server" then
+                            -- Next
+                            s.showTutorials.start = 1
+                        end
                     end
                 end
             elseif ui.region.wasJustClicked(safeArea, 2, "moveworld") then
                 hud.selectedItem = nil
             end
+        elseif ui.region.wasJustClicked(safeArea, 1, "moveworld") then
+            -- Item description pinning
+            local item = g.getItem(tx, ty)
+            if item then
+                self.pinPosition = {tx, ty}
+            else
+                self.pinPosition = nil
+            end
         end
     end
 
-    -- Draw scene switch
     if not self.hideHUD then
+        -- Draw scene switch
         local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
         love.graphics.setColor(1, 1, 1)
         ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
@@ -222,6 +263,14 @@ function MainScene:draw()
         if iml.wasJustClicked(switchR:get()) then
             g.playUISound("ui_click_basic", 1.4,0.8)
             g.gotoScene("upgrade_scene")
+        end
+
+        -- Tutorial check
+        if s.showTutorials.start == 0 then
+            if renderTutorial0(safeArea) then
+                -- Next
+                s.showTutorials.start = 1
+            end
         end
     end
 

@@ -427,6 +427,11 @@ function HUD:draw(show)
             love.graphics.setStencilMode("test", 2)
             love.graphics.setColor(1, 1, 1)
 
+            local s = nil
+            if g.hasSession() then
+                s = g.getSn()
+            end
+
             -- Draw individual items
             for i, itemBaseR in ipairs(itemListGrid) do
                 -- If itemBaseR is completely invisible, don't bother rendering it
@@ -438,10 +443,20 @@ function HUD:draw(show)
                     local x, y, w, h = clickAreaR:get()
                     local inventory = g.getItemInventoryCount(itemInfo.id)
 
+                    -- Tutorial State 0: Highlight Basic Server
+                    if s and s.showTutorials.start == 0 and itemInfo.id == "basic_server" then
+                        local t = math.sin(love.timer.getTime() * 3) ^ 2
+                        local col = gsman.setColor(0, 1, 0, t * 0.33)
+                        love.graphics.rectangle("fill", itemBaseR:get())
+                        col:pop()
+                    end
+
+                    -- Hover effect
                     if iml.isHovered(x, y, w, h, itemInfo) then
-                        love.graphics.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
+                        local col = gsman.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
                         love.graphics.rectangle("fill", itemBaseR:get())
                         showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+                        col:pop()
                     end
 
                     local col

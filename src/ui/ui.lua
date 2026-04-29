@@ -62,6 +62,7 @@ end
 ---@param col objects.Color
 ---@param reg kirigami.Region
 ---@param linecol objects.Color?
+---@param textcol objects.Color?
 function ui.Button2(rtxt, f, col, reg, linecol, textcol)
 	local x, y, w, h = reg:get()
 	if iml.isClicked(x, y, w, h) then

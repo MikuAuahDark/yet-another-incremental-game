@@ -70,5 +70,12 @@ local text = {
         context = "Category of settings"}),
     SETTING_AUDIO = loc("Audio", nil, {
         context = "Category of settings"}),
+
+    TUTORIAL_SKIP = loc("Skip", nil, {
+        context = "A button to skip the current tutorial"}),
+    TUTORIAL_0_1 = loc("Let's start by placing server on the area.", nil, {
+        context = "Tutorial on placing server"}),
+    TUTORIAL_0_2 = interp("Click the %{server} on the bottom and click anywhere on the world to place it.", {
+        context = "Tutorial on placing server"}),
 }
 return text
