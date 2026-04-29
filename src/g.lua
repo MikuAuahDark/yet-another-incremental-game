@@ -2197,6 +2197,15 @@ function g.canConnectDataWire(server, dp)
         return false
     end
 
+    if cat == "indata" then
+        ---@cast dpInfo g.DataInInfo
+        -- Need to check if the compute type is compatible
+        local srvInfo = g.getItemInfo(server.type, "server")
+        if srvInfo.computeType ~= dpInfo.queuesJob then
+            return false
+        end
+    end
+
     return true
 end
 
