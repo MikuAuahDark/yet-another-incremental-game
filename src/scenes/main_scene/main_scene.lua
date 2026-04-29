@@ -250,6 +250,10 @@ function MainScene:draw()
             s.showTutorials.start = 2
         elseif s.showTutorials.start == 2 and tutorial[2](safeArea) then
             s.showTutorials.start = 3
+        elseif s.showTutorials.start == 3 and tutorial[3](safeArea) then
+            s.showTutorials.start = 4
+        elseif s.showTutorials.start == 4 and tutorial[4](safeArea) then
+            s.showTutorials.start = 5
         end
     end
 

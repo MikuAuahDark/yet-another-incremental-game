@@ -73,6 +73,9 @@ local text = {
 
     TUTORIAL_SKIP = loc("Skip", nil, {
         context = "A button to skip the current tutorial"}),
+    TUTORIAL_NEXT = loc("Next", nil, {
+        context = "A button to advance to the next step in the tutorial"}),
+    -- FIXME: My English for this tutorial
     TUTORIAL_0_1 = loc("Let's start by placing server on the area.", nil, {
         context = "Tutorial on placing server"}),
     TUTORIAL_0_2 = interp("Click the %{server} on the bottom and click anywhere on the world to place it.", {
@@ -86,6 +89,14 @@ local text = {
     TUTORIAL_2_1 = loc("Now, time to place data outputs. Server will process a data fragment that needs to be send to data output to earn money.", nil, {
         context = "Tutorial on placing data outputs"}),
     TUTORIAL_2_2 = interp("Click the %{do} on the bottom and click near the server on the world to place it.", {
-        context = "Tutorial on placing data outputs"})
+        context = "Tutorial on placing data outputs"}),
+    TUTORIAL_3_1 = loc("You should see data moving by hovering on the data input, server, or the data outputs. If not, try to move them closer to each other.", nil, {
+        context = "Tutorial on verifying pipeline"}),
+    TUTORIAL_3_2 = loc("If you see yellow or red indicator above the items, that means something's' wrong. Hover to it to see more information.", nil, {
+        context = "Tutorial on verifying pipeline"}),
+    TUTORIAL_4_1 = loc("You can remove buildings from the world by using the {c r=1 g=0 b=0}Delete{/c} tool on the bottom right.", nil, {
+        context = "Tutorial on removing buildings"}),
+    TUTORIAL_4_2 = loc("To use it, click on it then click items you want to remove. Once removed, they'll be put back into your storage.", nil, {
+        context = "Tutorial on removing buildings"}),
 }
 return text
