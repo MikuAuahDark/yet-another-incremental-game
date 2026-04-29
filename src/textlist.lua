@@ -77,5 +77,15 @@ local text = {
         context = "Tutorial on placing server"}),
     TUTORIAL_0_2 = interp("Click the %{server} on the bottom and click anywhere on the world to place it.", {
         context = "Tutorial on placing server"}),
+    TUTORIAL_1_1 = loc("Now, time to place data inputs. Data input provides tasks to the server.", nil, {
+        context = "Tutorial on placing data inputs"}),
+    TUTORIAL_1_2 = interp("Press the \"%{CATEGORY_DATA}\" to show the data inputs.", {
+        context = "Tutorial on placing data inputs"}),
+    TUTORIAL_1_3 = interp("Click the %{di} on the bottom and click near the server on the world to place it.", {
+        context = "Tutorial on placing data inputs"}),
+    TUTORIAL_2_1 = loc("Now, time to place data outputs. Server will process a data fragment that needs to be send to data output to earn money.", nil, {
+        context = "Tutorial on placing data outputs"}),
+    TUTORIAL_2_2 = interp("Click the %{do} on the bottom and click near the server on the world to place it.", {
+        context = "Tutorial on placing data outputs"})
 }
 return text

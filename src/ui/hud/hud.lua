@@ -444,11 +444,18 @@ function HUD:draw(show)
                     local inventory = g.getItemInventoryCount(itemInfo.id)
 
                     -- Tutorial State 0: Highlight Basic Server
-                    if s and s.showTutorials.start == 0 and itemInfo.id == "basic_server" then
-                        local t = math.sin(love.timer.getTime() * 3) ^ 2
-                        local col = gsman.setColor(0, 1, 0, t * 0.33)
-                        love.graphics.rectangle("fill", itemBaseR:get())
-                        col:pop()
+                    if s then
+                        local highlightForTutorial =
+                            (s.showTutorials.start == 0 and itemInfo.id == "basic_server") or
+                            (s.showTutorials.start == 1 and itemInfo.id == "basic_indata") or
+                            (s.showTutorials.start == 2 and itemInfo.id == "basic_data")
+
+                        if highlightForTutorial then
+                            local t = math.sin(love.timer.getTime() * 3) ^ 2
+                            local col = gsman.setColor(0, 1, 0, t * 0.33)
+                            love.graphics.rectangle("fill", itemBaseR:get())
+                            col:pop()
+                        end
                     end
 
                     -- Hover effect
