@@ -98,5 +98,11 @@ local text = {
         context = "Tutorial on removing buildings"}),
     TUTORIAL_4_2 = loc("To use it, click on it then click items you want to remove. Once removed, they'll be put back into your storage.", nil, {
         context = "Tutorial on removing buildings"}),
+    TUTORIAL_5_0 = loc("Now let's head to the tech tree!", nil, {
+        context = "Tutorial on the tech tree."}),
+    TUTORIAL_5_1 = loc("The tech tree is where you spend money to unlock upgrades and buy more buildings that'll help you progress in the game.", nil, {
+        context = "Tutorial on the tech tree."}),
+    TUTORIAL_5_2 = interp("For now, let's get another {COLORS_JOBS_GENERAL}%{bs}{/COLORS_JOBS_GENERAL}, {COLORS_JOBS_GENERAL}%{di}{/COLORS_JOBS_GENERAL}, and {COLORS_JOBS_GENERAL}%{do}{/COLORS_JOBS_GENERAL}. You may need to wait until you have enough {money} money to buy them.", {
+        context = "Tutorial on the tech tree."})
 }
 return text

@@ -119,8 +119,8 @@ end
 
 return {
     [0] = renderTutorial0,
-    renderTutorial1,
-    renderTutorial2,
-    renderTutorial3,
-    renderTutorial4
+    [1] = renderTutorial1,
+    [2] = renderTutorial2,
+    [3] = renderTutorial3,
+    [4] = renderTutorial4
 }

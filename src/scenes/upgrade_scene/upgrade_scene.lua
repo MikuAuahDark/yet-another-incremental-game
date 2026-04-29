@@ -8,6 +8,8 @@ local procGen = require("src.upgrades.proc_gen")
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local vignette = require("src.modules.vignette.vignette")
 
+local tutorial = require(".upgtutorial")
+
 
 ---@class UpgradesScene: FreeCameraScene
 local upgscene = FreeCameraScene()
@@ -211,6 +213,21 @@ local function drawUpgradeBox(mode, upgrade, noframe)
 
     if uinfo.drawUI then
         uinfo:drawUI(upgrade.level, iconR)
+    end
+
+    -- Tutorial state 5 highlight (wth is this abomination)
+    if
+        g.getSn().showTutorials.start == 5 and
+        uinfo.kind == "INVENTORY" and
+        upgrade.level <= 1 and
+        (uinfo.targetItem == "basic_server" or uinfo.targetItem == "basic_indata" or uinfo.targetItem == "basic_data")
+    then
+        local col = gsman.setColor(g.COLORS.JOBS.GENERAL)
+        local lw = gsman.setLineWidth(6)
+        local x, y = clickableR:getCenter()
+        helper.circleHighlight(x, y, clickableR.w / 1.7)
+        col:pop()
+        lw:pop()
     end
 end
 
@@ -801,15 +818,8 @@ function upgscene:draw()
     ui.startUI()
 
     local hud = g.getHUD()
+    local s = g.getSn()
     hud:draw({stats = true, jobQueue = false, itemList = false, mode = "upgrade"})
-
-    -- Draw tutorial text if needed
-    if g.getSn().showTutorials.upgrades then
-        local tutTextR = ui.getScreenRegion():padRatio(0.1)
-        local txt = consts.IS_MOBILE and TUTORIAL_UPGRADES_MOBILE or TUTORIAL_UPGRADES
-        love.graphics.setColor(1, 1, 1)
-        richtext.printRich(txt, g.getMainFont(32), tutTextR.x, tutTextR.y, tutTextR.w, "center")
-    end
 
     if hoveredUpgrade then
         local mx, my = ui.getMouse()
@@ -838,6 +848,11 @@ function upgscene:draw()
             g.playUISound("ui_click_basic", 1.4,0.8)
             g.gotoScene("main_scene")
         end
+    end
+
+    -- Tutorial check
+    if s.showTutorials.start == 5 and tutorial[5](ui.getScreenRegion()) then
+        s.showTutorials.start = 6
     end
 
     self:renderPause()
@@ -900,7 +915,17 @@ function upgscene:update(dt)
     -- g.requestBGM(g.BGMID.UPGRADE)
     self.lastUpgradeMaxxed[2] = math.max(self.lastUpgradeMaxxed[2] - dt, 0)
 
-    local w = g.getMainWorld()
+    local s = g.getSn()
+    if s.showTutorials.start == 5 then
+        if
+            g.ask("getItemTotalInventory", "basic_server") >= 2 and
+            g.ask("getItemTotalInventory", "basic_indata") >= 2 and
+            g.ask("getItemTotalInventory", "basic_data") >= 2
+        then
+            -- Advance
+            s.showTutorials.start = 6
+        end
+    end
 end
 
 

@@ -242,6 +242,19 @@ function MainScene:draw()
             g.playUISound("ui_click_basic", 1.4,0.8)
             g.gotoScene("upgrade_scene")
         end
+        -- Tutorial state 5 needs to get to tech tree
+        if s.showTutorials.start == 5 then
+            local x, y = switchR:getCenter()
+            local col = gsman.setColor(1, 0, 0)
+            local lw = gsman.setLineWidth(6)
+            helper.circleHighlight(x, y, switchR.w / 1.7)
+            lw:pop()
+            col:pop()
+
+            ui.TooltipBuilder(switchR.x + switchR.w, switchR.y + switchR.h + 24, 1, 0, safeArea, 120)
+                :addText(TEXT.TUTORIAL_5_0, g.getMainFont(12), "center")
+                :render()
+        end
 
         -- Tutorial check
         if s.showTutorials.start == 0 and tutorial[0](safeArea) then
