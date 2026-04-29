@@ -8,18 +8,13 @@ local procGen = require("src.upgrades.proc_gen")
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local vignette = require("src.modules.vignette.vignette")
 
-local tutorial = require(".upgtutorial")
+local tutorial = require("src.tutorial")
 
 
 ---@class UpgradesScene: FreeCameraScene
 local upgscene = FreeCameraScene()
 
 local UNLOCKED_UPGRADE_ANIMATION_DURATION = 0.7
-
-local TUTORIAL_UPGRADES = "{w}{o thickness=2}"..loc("These are permanent {c r=0 g=1 b=0}upgrades{/c}.\nClick to buy!").."{/o}{/w}"
-local TUTORIAL_UPGRADES_MOBILE = "{w}{o thickness=2}"..loc("These are permanent {c r=0 g=1 b=0}upgrades{/c}.\nTap once to view about the upgrade.\nTap again to buy!").."{/o}{/w}"
-
-
 
 
 function upgscene:init()

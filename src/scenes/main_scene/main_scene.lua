@@ -1,6 +1,6 @@
 local FreeCameraScene = require("src.scenes.FreeCameraScene")
 local World = require("src.world.world")
-local tutorial = require(".tutorial")
+local tutorial = require("src.tutorial")
 
 ---@class MainScene: FreeCameraScene
 local MainScene = FreeCameraScene()

@@ -115,7 +115,7 @@ local text = {
     TUTORIAL_6_2 = loc("To view around, click on empty space and drag using your mouse."),
     -- TUTORIAL_7_1 = TUTORIAL_6_1
     TUTORIAL_7_2 = interp("For now, let's get another {COLORS_JOBS_GENERAL}%{bs}{/COLORS_JOBS_GENERAL}, {COLORS_JOBS_GENERAL}%{di}{/COLORS_JOBS_GENERAL}, and {COLORS_JOBS_GENERAL}%{do}{/COLORS_JOBS_GENERAL}. You may need to wait until you have enough {money} money to buy them.", {
-        context = "Tutorial on the tech tree."})
+        context = "Tutorial on the tech tree."}),
 }
 text.TUTORIAL_7_1 = text.TUTORIAL_6_1
 return text
