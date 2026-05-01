@@ -27,6 +27,8 @@ local text = {
         context = "Denotes the category of booster buildings used to boost server performance"}),
     CATEGORY_POWER = loc("Power", nil, {
         context = "Denotes the category of power buildings used to provide power to other buildings"}),
+    CATEGORY_EMPTY = loc("Inventory Empty", nil, {
+        context = "Shown on item list when there are no unlocked items."}),
 
     CPS_NUMBER = interp("%{cps} {dns}/second", {
         context = "CPS (Compute Per Second) is a measurement how fast server can process computation. {dns} reflects \"Compute\" icon in-game."}),
@@ -34,8 +36,6 @@ local text = {
         context = "Denotes heat of a machine."}),
     DPS_NUMBER = interp("%{dps} {database}/second", {
         context = "DPS (Data Per Second) is a measurement how fast data output can process data. {database} reflects \"Data\" icon in-game."}),
-    WIRE_DPS = interp("Wire {COLORS_UI_TEXT_DPS}%{dps} {database}/second{/COLORS_UI_TEXT_DPS}", {
-        context = "Denotes the speed of data transfer."}),
     WIRE_COUNT = interp("Connections: %{count}/%{max}", {
         context = "Denotes the (max) number of connections that can be handled by this machine/item."}),
     EFFECTIVITY = interp("Effectivity: %{effectivity}%", {

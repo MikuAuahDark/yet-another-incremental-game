@@ -432,87 +432,95 @@ function HUD:draw(show)
                 s = g.getSn()
             end
 
-            -- Draw individual items
-            for i, itemBaseR in ipairs(itemListGrid) do
-                -- If itemBaseR is completely invisible, don't bother rendering it
-                itemBaseR = itemBaseR:moveUnit(-self.scrollPos, 0)
-                local clickAreaR = itemListR:intersection(itemBaseR)
-                if clickAreaR:exists() then
-                    local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
-                    local itemInfo = items[i]
-                    local x, y, w, h = clickAreaR:get()
-                    local inventory = g.getItemInventoryCount(itemInfo.id)
+            if #items > 0 then
+                -- Draw individual items
+                for i, itemBaseR in ipairs(itemListGrid) do
+                    -- If itemBaseR is completely invisible, don't bother rendering it
+                    itemBaseR = itemBaseR:moveUnit(-self.scrollPos, 0)
+                    local clickAreaR = itemListR:intersection(itemBaseR)
+                    if clickAreaR:exists() then
+                        local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
+                        local itemInfo = items[i]
+                        local x, y, w, h = clickAreaR:get()
+                        local inventory = g.getItemInventoryCount(itemInfo.id)
 
-                    -- Tutorial State 0: Highlight Basic Server
-                    if s then
-                        local highlightForTutorial =
-                            (s.showTutorials.start == 1 and itemInfo.id == "basic_server") or
-                            (s.showTutorials.start == 2 and itemInfo.id == "basic_indata") or
-                            (s.showTutorials.start == 3 and itemInfo.id == "basic_data")
+                        -- Tutorial State 0: Highlight Basic Server
+                        if s then
+                            local highlightForTutorial =
+                                (s.showTutorials.start == 1 and itemInfo.id == "basic_server") or
+                                (s.showTutorials.start == 2 and itemInfo.id == "basic_indata") or
+                                (s.showTutorials.start == 3 and itemInfo.id == "basic_data")
 
-                        if highlightForTutorial then
-                            local t = math.sin(love.timer.getTime() * 3) ^ 2
-                            local col = gsman.setColor(0, 1, 0, t * 0.33)
+                            if highlightForTutorial then
+                                local t = math.sin(love.timer.getTime() * 3) ^ 2
+                                local col = gsman.setColor(0, 1, 0, t * 0.33)
+                                love.graphics.rectangle("fill", itemBaseR:get())
+                                col:pop()
+                            end
+                        end
+
+                        -- Hover effect
+                        if iml.isHovered(x, y, w, h, itemInfo) then
+                            local col = gsman.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
                             love.graphics.rectangle("fill", itemBaseR:get())
+                            showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
+                            col:pop()
+                        end
+
+                        local col
+                        if inventory > 0 then
+                            if iml.wasJustClicked(x, y, w, h, 1, itemInfo) then
+                                if self.selectedItem == itemInfo.id then
+                                    self.selectedItem = nil
+                                else
+                                    self.selectedItem = itemInfo.id
+                                end
+                            end
+                            col = gsman.setColor(1, 1, 1)
+                        else
+                            col = gsman.setColor(0.5, 0.5, 0.5)
+                        end
+
+                        -- Draw actual item
+                        local itemR = itemPlacementR:padRatio(0.1):shrinkToAspectRatio(1, 1):center(itemPlacementR)
+                        itemInfo.drawItem(itemR)
+                        col:pop()
+
+                        -- Draw inventory quantity
+                        do
+                            if inventory > 0 then
+                                col = gsman.setColor(0.1, 0.7, 0)
+                            else
+                                col = gsman.setColor(0.7, 0.1, 0.1)
+                            end
+
+                            local txt = tostring(inventory)
+                            local invW = inventoryF:getWidth(txt)
+                            helper.printTextOutlineSimple(
+                                txt,
+                                inventoryF, 0.7,
+                                itemPlacementR.x + itemPlacementR.w - invW - 4,
+                                itemPlacementR.y + itemPlacementR.h - inventoryF:getHeight()
+                            )
+                            col:pop()
+                        end
+
+                        -- Draw item name
+                        do
+                            local _, l = itemNameF:getWrap(itemInfo.name, itemNameR.w)
+                            local oy = (itemNameR.h - itemNameF:getHeight() * #l) / 2
+                            col = gsman.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+                            love.graphics.printf(itemInfo.name, itemNameF, itemNameR.x, itemNameR.y + oy, itemNameR.w, "center")
                             col:pop()
                         end
                     end
-
-                    -- Hover effect
-                    if iml.isHovered(x, y, w, h, itemInfo) then
-                        local col = gsman.setColor(helper.multiplyAlpha(g.COLORS.UI.MAIN[theme].TEXT, 0.2))
-                        love.graphics.rectangle("fill", itemBaseR:get())
-                        showDescriptionOf = {itemBaseR.x + itemBaseR.w / 2, itemBaseR.y, itemInfo}
-                        col:pop()
-                    end
-
-                    local col
-                    if inventory > 0 then
-                        if iml.wasJustClicked(x, y, w, h, 1, itemInfo) then
-                            if self.selectedItem == itemInfo.id then
-                                self.selectedItem = nil
-                            else
-                                self.selectedItem = itemInfo.id
-                            end
-                        end
-                        col = gsman.setColor(1, 1, 1)
-                    else
-                        col = gsman.setColor(0.5, 0.5, 0.5)
-                    end
-
-                    -- Draw actual item
-                    local itemR = itemPlacementR:padRatio(0.1):shrinkToAspectRatio(1, 1):center(itemPlacementR)
-                    itemInfo.drawItem(itemR)
-                    col:pop()
-
-                    -- Draw inventory quantity
-                    do
-                        if inventory > 0 then
-                            col = gsman.setColor(0.1, 0.7, 0)
-                        else
-                            col = gsman.setColor(0.7, 0.1, 0.1)
-                        end
-
-                        local txt = tostring(inventory)
-                        local invW = inventoryF:getWidth(txt)
-                        helper.printTextOutlineSimple(
-                            txt,
-                            inventoryF, 0.7,
-                            itemPlacementR.x + itemPlacementR.w - invW - 4,
-                            itemPlacementR.y + itemPlacementR.h - inventoryF:getHeight()
-                        )
-                        col:pop()
-                    end
-
-                    -- Draw item name
-                    do
-                        local _, l = itemNameF:getWrap(itemInfo.name, itemNameR.w)
-                        local oy = (itemNameR.h - itemNameF:getHeight() * #l) / 2
-                        col = gsman.setColor(g.COLORS.UI.MAIN[theme].TEXT)
-                        love.graphics.printf(itemInfo.name, itemNameF, itemNameR.x, itemNameR.y + oy, itemNameR.w, "center")
-                        col:pop()
-                    end
                 end
+            else
+                -- Draw no items message
+                local emptyF = g.getMainFont(18)
+                local col = gsman.setColor(g.COLORS.UI.MAIN[theme].TEXT)
+                ui.printRichInRegion(TEXT.CATEGORY_EMPTY, emptyF, itemListR, true, "center", "center")
+                col:pop()
             end
 
             love.graphics.setStencilMode()
