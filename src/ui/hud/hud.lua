@@ -60,6 +60,7 @@ function HUD:init()
 
     ---@type string? itemID or empty string to delete (nil = no tool)
     self.selectedItem = nil
+    self.lastMode = "main"
 end
 
 if false then
@@ -165,6 +166,7 @@ function HUD:draw(show)
     local showJobQueue = nilIsTrue(show and show.jobQueue)
     local showItemList = nilIsTrue(show and show.itemList)
     local mode = show and show.mode or "main"
+    self.lastMode = mode
 
     local lineWidth = gsman.setLineWidth(2)
     local theme = g.getSystemTheme()
@@ -556,6 +558,25 @@ function HUD:draw(show)
                 else
                     self.selectedItem = ""
                 end
+            elseif iml.isHovered(deleteButtonR:get()) then
+                local builder = ui.TooltipBuilder(
+                    deleteButtonR.x,
+                    deleteButtonR.y + deleteButtonR.h / 2,
+                    1,
+                    0.5,
+                    ui.getScreenRegion()
+                )
+                local titleF = g.getMainFont(16)
+                local descF = g.getMainFont(12)
+                if self.selectedItem then
+                    builder:addText(TEXT.CANCEL_SELECT, titleF, "center")
+                    builder:addText(TEXT.CANCEL_SELECT_DESCRIPTION, descF, "center")
+                else
+                    builder:addText(TEXT.DELETE, titleF, "center")
+                    builder:addText(TEXT.DELETE_DESCRIPTION, descF, "center")
+                end
+
+                builder:render()
             end
 
             love.graphics.setColor(1, 1, 1)
@@ -660,6 +681,12 @@ end
 
 function HUD:getSafeArea()
     local r = ui.getFullScreenRegion()
+
+    if self.lastMode == "upgrade" then
+        -- Only consider the top
+        local topY = self.topR.y + self.topR.h
+        return r:set(nil, topY, nil, r.h - topY)
+    end
 
     local topY = self.topR.y + self.topR.h
     local leftX = self.leftR.x + self.leftR.w

@@ -587,6 +587,7 @@ function ui.arcLoadingBar(x, y, t, theme)
 end
 
 ---Contains simple IML wrapper that accepts region instead
+---@class ui.region
 ui.region = {}
 
 ---@param key any

@@ -28,6 +28,14 @@ local text = {
         context = "A button to reset the camera"}),
     RESET_CAMERA_DESCRIPTION = loc("Resets the camera positions, in case you were stuck.", nil, {
         context = "A description on what \"Reset Camera\" button is for."}),
+    CANCEL_SELECT = loc("Cancel", nil, {
+        context = "Cancel selection/usage of an item/tool."}),
+    CANCEL_SELECT_DESCRIPTION = loc("Cancel selection/usage of an item/tool.", nil, {
+        context = "A description on what \"Cancel\" button is for."}),
+    DELETE = loc("Delete Item", nil, {
+        context = "Tool to delete an item"}),
+    DELETE_DESCRIPTION = loc("Delete an item from the area by clicking it.", nil, {
+        context = "A description on what \"Delete\" button is for."}),
 
     CATEGORY_LIST = interp("Category: %{categories}", {
         context = "Denoting list of category, the ${categories} will be replaced with the actual list of items later"}),
