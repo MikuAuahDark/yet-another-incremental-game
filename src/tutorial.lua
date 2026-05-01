@@ -182,7 +182,7 @@ local function renderTutorial7(safeArea)
     local bdo = g.getItemInfo("basic_data", "data")
 
     local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 180)
-    builder:addText(TEXT.TUTORIAL_7_1, textF, "center")
+    -- builder:addText(TEXT.TUTORIAL_7_1, textF, "center") -- this is just repeating same thing as 6_1, I dont think we need?
     builder:addText(TEXT.TUTORIAL_7_2({bs = bs.name, di = bdi.name, ["do"] = bdo.name}), textF, "center")
 
     builder:addPadding(4)
