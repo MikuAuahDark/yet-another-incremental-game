@@ -10,8 +10,6 @@ function MainScene:init()
     local wtz = consts.WORLD_TILE_SIZE
     self.camera:setPos((center + 0.5) * wtz, (center + 0.5) * wtz)
 
-    ---@type [integer,integer]?
-    self.pinPosition = nil
     ---@type [number,number]?
     self.lastPan = nil
 
@@ -146,20 +144,8 @@ function MainScene:draw()
 
         -- Draw tile selection tooltip
         local selectedItem = nil
-        if self.pinPosition then
-            local selTx, selTy = self.pinPosition[1], self.pinPosition[2]
-
-            if not world:isWithinWorldLimit(selTx, selTy) then
-                self.pinPosition = nil
-            else
-                selectedItem = g.getItem(selTx, selTx)
-            end
-        end
-
-        if not selectedItem then
-            if world:isWithinWorldLimit(tx, ty) then
-                selectedItem = g.getItem(tx, ty)
-            end
+        if world:isWithinWorldLimit(tx, ty) then
+            selectedItem = g.getItem(tx, ty)
         end
 
         -- Draw scene switch
@@ -185,18 +171,7 @@ function MainScene:draw()
 
         if selectedItem then
             -- Draw tooltip
-            local uix, uiy
-            if self.pinPosition then
-                local selTx, selTy = self.pinPosition[1], self.pinPosition[2]
-                ---@type number,number
-                uix, uiy = ui.getUIScalingTransform():inverseTransformPoint(
-                    self.camera:toScreen((selTx + 0.5) * wtz, (selTy + 0.5) * wtz)
-                )
-            else
-                uix, uiy = uimx + 11, uimy + 5
-            end
-
-            ui.ItemTooltip.DrawWorldTooltip(selectedItem, uix, uiy, safeArea)
+            ui.ItemTooltip.DrawWorldTooltip(selectedItem, uimx + 11, uimy + 5, safeArea)
         end
 
         local drag = ui.region.consumeDrag("moveworld", safeArea, 1)
@@ -240,14 +215,6 @@ function MainScene:draw()
                 end
             elseif ui.region.wasJustClicked(safeArea, 2, "moveworld") then
                 hud.selectedItem = nil
-            end
-        elseif ui.region.wasJustClicked(safeArea, 1, "moveworld") then
-            -- Item description pinning
-            local item = g.getItem(tx, ty)
-            if item then
-                self.pinPosition = {tx, ty}
-            else
-                self.pinPosition = nil
             end
         end
 
