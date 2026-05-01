@@ -86,7 +86,7 @@ World.TILE_SIZE = 101
 World.WIRE_DPS = 50
 
 
-local UNHIGHLIGHT_ALPHA = 0.2
+local UNHIGHLIGHT_ALPHA = 0.33
 local HIGHLIGHT_ALPHA = 1
 
 
@@ -1284,7 +1284,7 @@ function World:_draw()
                 -- Draw physical data
                 local svrInfo = g.getItemInfo(svr.type, "server")
                 local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
-                love.graphics.setColor(helper.multiplyAlpha(catinfo.color, alpha))
+                love.graphics.setColor(catinfo.color)
                 for _, pos in ipairs(wire.positions) do
                     local objx = helper.lerp(svrx, dpx, pos)
                     local objy = helper.lerp(svry, dpy, pos)
@@ -1329,7 +1329,7 @@ function World:_draw()
                 -- Draw physical data
                 local svrInfo = g.getItemInfo(svr.type, "server")
                 local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
-                love.graphics.setColor(helper.multiplyAlpha(catinfo.color, alpha))
+                love.graphics.setColor(catinfo.color)
                 for _, pos in ipairs(wire.positions) do
                     local objx = helper.lerp(dix, svrx, pos)
                     local objy = helper.lerp(diy, svry, pos)
@@ -1425,6 +1425,64 @@ function World:_draw()
     self.particles:draw()
 
     prof_pop() -- prof_push("world:_draw")
+end
+
+
+
+---@param itemInfo g.ItemInfo<g.World.ItemData>
+---@param tx integer
+---@param ty integer
+function World:_drawWiresForPotentialItem(itemInfo, tx, ty)
+    local col = gsman.setColor(0, 0, 0)
+    if itemInfo.category == "server" then
+        -- Connection to DI, DO.
+        -- TODO: Connectable boosters
+
+        -- Data input
+        for _, di in ipairs(self.diAreaAutoConnect:get(tx, ty)) do
+            drawLine(
+                (tx + 0.5) * consts.WORLD_TILE_SIZE,
+                (ty + 0.5) * consts.WORLD_TILE_SIZE,
+                (di.tileX + 0.5) * consts.WORLD_TILE_SIZE,
+                (di.tileY + 0.5) * consts.WORLD_TILE_SIZE,
+                3
+            )
+        end
+        -- Data output
+        for _, dout in ipairs(self.doAreaAutoConnect:get(tx, ty)) do
+            drawLine(
+                (tx + 0.5) * consts.WORLD_TILE_SIZE,
+                (ty + 0.5) * consts.WORLD_TILE_SIZE,
+                (dout.tileX + 0.5) * consts.WORLD_TILE_SIZE,
+                (dout.tileY + 0.5) * consts.WORLD_TILE_SIZE,
+                3
+            )
+        end
+    elseif itemInfo.category == "data" or itemInfo.category == "indata" then
+        ---@cast itemInfo g.DataOutDefinition|g.DataInDefinition
+        -- Connection to servers
+        for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
+            local x, y = tile[1] + tx, tile[2] + ty
+            if self.items:contains(x, y) then
+                local targetItem = self.items:get(x, y)
+
+                if targetItem then
+                    local _, targetCat = g.getItemInfo(targetItem.type)
+                    if targetCat == "server" then
+                        drawLine(
+                            (tx + 0.5) * consts.WORLD_TILE_SIZE,
+                            (ty + 0.5) * consts.WORLD_TILE_SIZE,
+                            (targetItem.tileX + 0.5) * consts.WORLD_TILE_SIZE,
+                            (targetItem.tileY + 0.5) * consts.WORLD_TILE_SIZE,
+                            3
+                        )
+                    end
+                end
+            end
+        end
+    end
+
+    col:pop()
 end
 
 

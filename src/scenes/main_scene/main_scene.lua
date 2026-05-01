@@ -84,6 +84,7 @@ function MainScene:draw()
             local itemR = Kirigami(tx * wtz, ty * wtz, wtz, wtz)
             local col = gsman.setColor(1, 1, 1, 0.5)
             drawItemPreview.drawItem(itemR:padRatio(0.25))
+            world:_drawWiresForPotentialItem(drawItemPreview, tx, ty)
             col:pop()
         end
     else
