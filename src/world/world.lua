@@ -177,7 +177,7 @@ local function drawRangeVisualization(tx, ty, algo, dist)
     local alpha = helper.remap(t, 0, 1, 0.025, 0.1)
 
     local tiles = worldutil.getSpreadTiles(algo, dist)
-    local col = gsman.setColor(0, 1, 0, alpha)
+    local col = gsman.mulColor(1, 1, 1, alpha)
     for _, tile in ipairs(tiles) do
         local absTx = tile[1] + tx
         local absTy = tile[2] + ty
@@ -1175,6 +1175,7 @@ function World:_draw()
         local itemData = self.items:get(self.htx, self.hty)
         if itemData then
             local itemInfo, cat = g.getItemInfo(itemData.type)
+            love.graphics.setColor(0, 1, 0)
             if cat == "booster" then
                 ---@cast itemInfo g.BoosterInfo
                 drawRangeVisualization(self.htx, self.hty, itemInfo.radiateAlgorithm, itemInfo.radiate)
@@ -1231,6 +1232,7 @@ function World:_draw()
                         love.graphics.draw(STATUS_MESH, cx, cy, 0, wtz * 1.1, wtz * 1.1, 0.5, 0.5)
                     end
 
+                    love.graphics.setColor(0, 1, 0)
                     if self.htx == x and self.hty == y then
                         if cat == "booster" then
                             ---@cast itemInfo g.BoosterInfo
@@ -1460,6 +1462,11 @@ function World:_drawWiresForPotentialItem(itemInfo, tx, ty)
         end
     elseif itemInfo.category == "data" or itemInfo.category == "indata" then
         ---@cast itemInfo g.DataOutDefinition|g.DataInDefinition
+        -- Range visualization
+        local col2 = gsman.setColor(0, 0, 1)
+        drawRangeVisualization(tx, ty, "chessboard", itemInfo.wireLength)
+        col2:pop()
+
         -- Connection to servers
         for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
             local x, y = tile[1] + tx, tile[2] + ty
