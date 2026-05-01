@@ -76,22 +76,6 @@ local function getDPS(dpInfo)
     return dpsText
 end
 
----@param dpInfo g.DataOutInfo
-local function getWireDPS(dpInfo)
-    local dps = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
-
-    local dpsText = TEXT.WIRE_DPS({dps = g.formatNumber(dps)})
-    if dps > dpInfo.wireDPS then
-        local p = (dps - dpInfo.wireDPS) / dpInfo.wireDPS
-        dpsText = dpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.BUFF, "(+"..helper.round(p * 100, 2).."%)")
-    elseif dps < dpInfo.wireDPS then
-        local p = (dpInfo.wireDPS - dps) / dpInfo.wireDPS
-        dpsText = dpsText.." "..helper.wrapRichtextColor(g.COLORS.UI.DEBUFF, "(-"..helper.round(p * 100, 2).."%)")
-    end
-
-    return dpsText
-end
-
 ---@param powerGenInfo g.PowerGenInfo
 local function getGeneratorOutput(powerGenInfo)
     local power = g.getProperty("getGeneratorLoad", powerGenInfo.power, 1, powerGenInfo)
@@ -217,7 +201,6 @@ function ItemTooltip.DPTooltipWorld(dpData, mx, my, safeArea)
         builder:addText(getPowerNetworkText(dpData.powerNetwork), attrF, "left")
     end
     builder:addText(getDPS(dpInfo), attrF, "left")
-        :addText(getWireDPS(dpInfo), attrF, "left")
 
     -- Log message
     addLogMessages(dpData, builder)
@@ -511,8 +494,6 @@ function ItemTooltip.DPTooltipHUD(dpInfo, x, y, safeArea)
     builder:addText(getItemLoadText(dpInfo), attrF, "left")
     -- DPS
     builder:addText(getDPS(dpInfo), attrF, "left")
-    -- Wire DPS
-    builder:addText(getWireDPS(dpInfo), attrF, "left")
 
     builder:render()
 end

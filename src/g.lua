@@ -1535,7 +1535,6 @@ g.CATEGORIES = {
 ---@field public category "data"
 ---@field public dataPerSecond number
 ---@field public wireLength integer
----@field public wireDPS number
 
 ---@class g.DataOutInfo: g.ItemInfo<g.World.DataOutputData>, g._DataInfoCommon
 ---@class g.DataOutDefinition: g.ItemDefinition<g.World.DataOutputData>, g._DataInfoCommon
@@ -1663,7 +1662,6 @@ function g.defineItem(id, def)
         ---@cast def g.DataOutInfo
         assert(def.dataPerSecond, "invalid dps")
         assert(def.wireLength and def.wireLength > 0, "invalid wire length")
-        assert(def.wireDPS > 0, "invalid wire dps")
     elseif def.category == "indata" then
         ---@cast def g.DataInInfo
         assert(g.VALID_JOB_CATEGORIES[def.queuesJob], "invalid queuesJob")
@@ -1860,7 +1858,6 @@ end
 ---@class g._DataDef: g._CommonSpecificItemDef<g.World.DataOutputData>
 ---@field dataPerSecond number
 ---@field wireLength integer
----@field wireDPS number? (defaults to 20)
 
 ---@param id string
 ---@param name string
@@ -1881,7 +1878,6 @@ function g.defineDataOutput(id, name, def)
         load = def.load,
         dataPerSecond = def.dataPerSecond,
         wireLength = def.wireLength,
-        wireDPS = def.wireDPS or 20,
         draw = function(itemData)
             ---@cast itemData g.World.DataOutputData
             local wtz = consts.WORLD_TILE_SIZE * 0.75

@@ -55,8 +55,6 @@ local function description(upgrade, tree, x, y, safeArea)
                 ),
                 attrF, "left"
             )
-            -- Wire DPS
-            builder:addText(TEXT.WIRE_DPS({dps = g.formatNumber(itemInfo.wireDPS)}), attrF, "left")
         elseif category == "indata" then
             ---@cast itemInfo g.DataInInfo
             -- Queued Job Category

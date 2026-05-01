@@ -12,7 +12,6 @@ g.defineProperty("getPerformance") -- For server only. arguments: g.ServerInfo
 g.defineProperty("getLoad") -- arguments: g.ItemInfo
 g.defineProperty("getGeneratorLoad") -- arguments: g.PowerGenInfo
 g.defineProperty("getDataThroughput") -- arguments: g.DataOutInfo
-g.defineProperty("getWireThroughput") -- arguments: g.DataOutInfo
 g.defineQuestion("isItemUnlocked", reducers.OR, false) -- arguments: string (item ID)
 g.defineQuestion("isJobUnlocked", reducers.OR, false) -- arguments: string (job ID)
 g.defineQuestion("getItemTotalInventory", reducers.ADD, 0) -- arguments: string (item ID)

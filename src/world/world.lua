@@ -44,14 +44,12 @@ end
 ---@field dataBottlenecked boolean
 
 ---@class g.World.DataInputData: g.World.ItemData
----@field wireDPS number (readonly; updated every frame)
 ---@field connects g.World.DataInputWire[] (readwrite; connects to this server, source of truth)
 ---@field next integer (wraparound, 0-based)
 
 ---@class g.World.DataOutputData: g.World.ItemData
 ---@field connects g.World.DataOutputWire[] (readwrite; connects to this server, source of truth)
 ---@field dataPerSecond number (readonly; updated every frame)
----@field wireDPS number (readonly; updated every frame)
 ---@field dataRemaining number
 ---@field reward number
 ---@field rewardToShow number
@@ -85,6 +83,7 @@ end
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")
 World.TILE_SIZE = 101
+World.WIRE_DPS = 50
 
 
 local UNHIGHLIGHT_ALPHA = 0.2
@@ -820,13 +819,12 @@ function World:_update(dt)
             loadPercentage * boosterMul,
             dpInfo
         )
-        dpData.wireDPS = g.getProperty("getWireThroughput", dpInfo.wireDPS, 1, dpInfo)
 
         --- Update data output wires
         if loadPercentage > 0 then
             for _, wire in ipairs(dpData.connects) do
                 table.insert(wire.server.connectedOutputs, wire)
-                updateWire(loadPercentage, dpData.wireDPS, dt, wire)
+                updateWire(loadPercentage, World.WIRE_DPS, dt, wire)
             end
         end
 
@@ -864,16 +862,12 @@ function World:_update(dt)
 
     -- Run data input update
     for _, diData in pairs(self.dataInputs) do
-        local diInfo = g.getItemInfo(diData.type, "indata")
         local loadPercentage = worldutil.getLoadPercentage(diData)
-        -- TODO: Data input wire DPS?
-        local DI_WIRE_DPS = 25
-        diData.wireDPS = g.getProperty("getWireThroughput", DI_WIRE_DPS, 1, diInfo)
 
         if loadPercentage > 0 then
             for _, wire in ipairs(diData.connects) do
                 table.insert(wire.server.connectedInputs, wire)
-                updateWire(loadPercentage, diData.wireDPS, dt, wire)
+                updateWire(loadPercentage, World.WIRE_DPS, dt, wire)
             end
         end
     end
@@ -1570,7 +1564,6 @@ function World:putItem(itemId, tx, ty, removable)
             rewardToShow = 0,
             next = 0,
             dataPerSecond = 0,
-            wireDPS = 0,
             requestedLoad = 0,
             dataScale = 1,
         }
@@ -1598,7 +1591,6 @@ function World:putItem(itemId, tx, ty, removable)
             load = itemInfo.load,
             connects = {},
             next = 0,
-            wireDPS = 0,
         }
     elseif category == "powergen" or category == "powerrelay" then
         ---@type g.World.PowerData
