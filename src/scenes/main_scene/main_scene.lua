@@ -161,6 +161,25 @@ function MainScene:draw()
             end
         end
 
+        -- Draw scene switch
+        local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
+        love.graphics.setColor(1, 1, 1)
+        ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
+        g.drawImageContained("account_tree", switchImageR:get())
+        -- Tutorial state 6 needs to get to tech tree
+        if s.showTutorials.start == 6 then
+            local x, y = switchR:getCenter()
+            local col = gsman.setColor(1, 0, 0)
+            local lw = gsman.setLineWidth(6)
+            helper.circleHighlight(x, y, switchR.w / 1.7)
+            lw:pop()
+            col:pop()
+
+            ui.TooltipBuilder(switchR.x + switchR.w, switchR.y + switchR.h + 24, 1, 0, safeArea, 120)
+                :addText(TEXT.TUTORIAL_6_0, g.getMainFont(12), "center")
+                :render()
+        end
+
         hud:draw({mode = "main"})
 
         if selectedItem then
@@ -230,30 +249,10 @@ function MainScene:draw()
                 self.pinPosition = nil
             end
         end
-    end
 
-    if not self.hideHUD then
-        -- Draw scene switch
-        local switchR, switchImageR = ui.getTooltipRegion(hud.topR.x + hud.topR.w - 56, hud.topR.y + hud.topR.h + 8, 40, 40, ui.getScreenRegion())
-        love.graphics.setColor(1, 1, 1)
-        ui.Tooltip(switchR, objects.Color.BLACK, objects.Color.WHITE)
-        g.drawImageContained("account_tree", switchImageR:get())
         if iml.wasJustClicked(switchR:get()) then
             g.playUISound("ui_click_basic", 1.4,0.8)
             g.gotoScene("upgrade_scene")
-        end
-        -- Tutorial state 6 needs to get to tech tree
-        if s.showTutorials.start == 6 then
-            local x, y = switchR:getCenter()
-            local col = gsman.setColor(1, 0, 0)
-            local lw = gsman.setLineWidth(6)
-            helper.circleHighlight(x, y, switchR.w / 1.7)
-            lw:pop()
-            col:pop()
-
-            ui.TooltipBuilder(switchR.x + switchR.w, switchR.y + switchR.h + 24, 1, 0, safeArea, 120)
-                :addText(TEXT.TUTORIAL_6_0, g.getMainFont(12), "center")
-                :render()
         end
 
         -- Tutorial check
@@ -392,7 +391,7 @@ function MainScene:keyreleased(k)
         g.gotoScene("upgrade_scene")
     elseif k == "escape" then
         local s = g.getSn()
-        s.paused = not s.paused
+        s:setPaused("button")
     end
 end
 

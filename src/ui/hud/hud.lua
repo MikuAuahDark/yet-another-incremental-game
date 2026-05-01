@@ -17,8 +17,6 @@ local function generateItemListRegion(r, count, itemListSize, horzPadding)
 end
 
 
-local MAX_TOOLTIP_WIDTH = 180
-
 ---@param x number
 ---@param y number
 ---@param title string
@@ -27,7 +25,7 @@ local function drawTooltipWithDescription(x, y, title, description)
     local titleF = g.getMainFont(16)
     local descF = g.getMainFont(12)
 
-    ui.TooltipBuilder(x, y, 0.5, 0, ui.getFullScreenRegion(), MAX_TOOLTIP_WIDTH)
+    ui.TooltipBuilder(x, y, 0.5, 0, ui.getFullScreenRegion(), 180)
         :addText(title, titleF, "center")
         :addText(description, descF, "center")
         :render()
@@ -120,6 +118,24 @@ local function drawStats(r, title, desc, left, right, col)
         drawTooltipWithDescription(padR.x + padR.w / 2, padR.y + padR.h + 8, title, desc)
         col3:pop()
     end
+end
+
+---@param r kirigami.Region
+---@param image string
+---@param title string
+---@param desc string
+local function drawActionButton(r, image, title, desc)
+    g.drawImageContained(image, r:padRatio(0.15):get())
+
+    local pressed = iml.wasJustClicked(r:get())
+    local builder = nil
+    if iml.isHovered(r:get()) then
+        builder = ui.TooltipBuilder(r.x + r.w / 2, r.y + r.h, 0.5, 0, ui.getFullScreenRegion(), 128)
+            :addText(title, g.getMainFont(12), "center")
+            :addText(desc, g.getMainFont(10), "center")
+    end
+
+    return pressed, builder
 end
 
 
@@ -594,10 +610,13 @@ function HUD:draw(show)
                 love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
             end
 
-            g.drawImageContained("pause", pauseButtonR:padRatio(0.15):get())
-            if iml.wasJustClicked(pauseButtonR:get()) then
+            local pressed, tooltipRender = drawActionButton(pauseButtonR, "pause", TEXT.PAUSE, TEXT.PAUSE_DESCRIPTION)
+            if pressed then
                 sn:setPaused("button")
-            elseif consts.DEV_MODE and iml.wasKeyJustReleased("p") then
+            end
+
+
+            if consts.DEV_MODE and iml.wasKeyJustReleased("p") then
                 if sn.paused and sn.pauseReason == "debug" then
                     sn:setPaused()
                 else
@@ -608,11 +627,17 @@ function HUD:draw(show)
             love.graphics.setColor(g.COLORS.UI.MAIN[theme].TEXT)
 
             if mode == "main" then
-                g.drawImageContained("visibility_off", hideButtonR:padRatio(0.15):get())
-                self.wasVisibilityButtonPressed = iml.wasJustClicked(hideButtonR:get())
+                local tooltip
+                self.wasVisibilityButtonPressed, tooltip = drawActionButton(hideButtonR, "visibility_off", TEXT.HIDE_HUD, TEXT.HIDE_HUD_DESCRIPTION)
+                tooltipRender = tooltipRender or tooltip
 
-                g.drawImageContained("reset_focus", resetCameraR:padRatio(0.15):get())
-                self.wasResetCameraButtonPressed = iml.wasJustClicked(resetCameraR:get())
+                self.wasResetCameraButtonPressed, tooltip = drawActionButton(resetCameraR, "reset_focus", TEXT.RESET_CAMERA, TEXT.RESET_CAMERA_DESCRIPTION)
+                tooltipRender = tooltipRender or tooltip
+            end
+
+            if tooltipRender then
+                love.graphics.setColor(1, 1, 1)
+                tooltipRender:render()
             end
         end
     end
