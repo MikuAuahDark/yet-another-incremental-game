@@ -1370,7 +1370,7 @@ function World:_draw()
     -- Draw item problems status icons
     prof_push("item_problems_draw")
     love.graphics.setColor(1, 1, 1)
-    local statusIconF = g.getMainFont(18)
+    local statusIconF = g.getMainFont(12)
     self.items:foreach(function(itemData, tx, ty)
         if itemData then
             local problems = g.getItemProblems(itemData)
