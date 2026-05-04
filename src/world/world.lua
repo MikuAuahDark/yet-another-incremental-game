@@ -83,7 +83,7 @@ end
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")
 World.TILE_SIZE = 101
-World.WIRE_DPS = 50
+World.WIRE_DPS = 100
 
 
 local UNHIGHLIGHT_ALPHA = 0.33

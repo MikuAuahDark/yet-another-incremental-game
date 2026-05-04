@@ -113,13 +113,13 @@ defJob("image_processing", "Image Processing", "general", {
 defJob("video_encode", "Video Encode", "video", {
     image = "movie_edit",
     compute = {30, 50},
-    data = {30, 60},
+    data = {18, 30},
     money = {15, 45}
 })
 defJob("livestream", "Livestream", "video", {
     image = "camera_video",
     compute = 80,
-    data = {30, 120},
+    data = {25, 50},
     money = {20, 60},
 })
 
@@ -129,18 +129,18 @@ defJob("livestream", "Livestream", "video", {
 defJob("physics_simulation", "Physics Simulation", "ai", {
     image = "draw_abstract",
     compute = {150, 500},
-    data = {100, 350},
+    data = {20, 50},
     money = {120, 500},
 })
 defJob("research_model", "Research Model", "ai", {
     image = "batch_prediction",
     compute = {350, 800},
-    data = {175, 500},
+    data = {15, 50},
     money = {105, 500},
 })
 defJob("llm", "LLM", "ai", {
     image = "article_shortcut",
     compute = {700, 2000},
-    data = {350, 1000},
+    data = {5, 45},
     money = {460, 1000},
 })
