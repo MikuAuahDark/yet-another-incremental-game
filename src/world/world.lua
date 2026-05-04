@@ -1439,16 +1439,20 @@ function World:_drawWiresForPotentialItem(itemInfo, tx, ty)
     if itemInfo.category == "server" then
         -- Connection to DI, DO.
         -- TODO: Connectable boosters
+        ---@cast itemInfo g.ServerInfo
 
         -- Data input
         for _, di in ipairs(self.diAreaAutoConnect:get(tx, ty)) do
-            drawLine(
-                (tx + 0.5) * consts.WORLD_TILE_SIZE,
-                (ty + 0.5) * consts.WORLD_TILE_SIZE,
-                (di.tileX + 0.5) * consts.WORLD_TILE_SIZE,
-                (di.tileY + 0.5) * consts.WORLD_TILE_SIZE,
-                3
-            )
+            local diInfo = g.getItemInfo(di.type, "indata")
+            if diInfo.queuesJob == itemInfo.computeType then
+                drawLine(
+                    (tx + 0.5) * consts.WORLD_TILE_SIZE,
+                    (ty + 0.5) * consts.WORLD_TILE_SIZE,
+                    (di.tileX + 0.5) * consts.WORLD_TILE_SIZE,
+                    (di.tileY + 0.5) * consts.WORLD_TILE_SIZE,
+                    3
+                )
+            end
         end
         -- Data output
         for _, dout in ipairs(self.doAreaAutoConnect:get(tx, ty)) do
@@ -1474,15 +1478,22 @@ function World:_drawWiresForPotentialItem(itemInfo, tx, ty)
                 local targetItem = self.items:get(x, y)
 
                 if targetItem then
-                    local _, targetCat = g.getItemInfo(targetItem.type)
+                    local targetInfo, targetCat = g.getItemInfo(targetItem.type)
                     if targetCat == "server" then
-                        drawLine(
-                            (tx + 0.5) * consts.WORLD_TILE_SIZE,
-                            (ty + 0.5) * consts.WORLD_TILE_SIZE,
-                            (targetItem.tileX + 0.5) * consts.WORLD_TILE_SIZE,
-                            (targetItem.tileY + 0.5) * consts.WORLD_TILE_SIZE,
-                            3
-                        )
+                        ---@cast targetInfo g.ServerInfo
+                        if
+                            itemInfo.category == "indata" and
+                            itemInfo.queuesJob == targetInfo.computeType or
+                            itemInfo.category ~= "indata"
+                        then
+                            drawLine(
+                                (tx + 0.5) * consts.WORLD_TILE_SIZE,
+                                (ty + 0.5) * consts.WORLD_TILE_SIZE,
+                                (targetItem.tileX + 0.5) * consts.WORLD_TILE_SIZE,
+                                (targetItem.tileY + 0.5) * consts.WORLD_TILE_SIZE,
+                                3
+                            )
+                        end
                     end
                 end
             end
