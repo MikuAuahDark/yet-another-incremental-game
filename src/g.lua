@@ -100,7 +100,10 @@ function g.incrementPrestige()
 
     -- copy over the important stuff:
     new.prestige = prestige
-    new.showTutorials = {harvest=false, upgrades=false}
+    new.showTutorials = {
+        start = -1,
+        upgrades = false
+    }
 
     currentSession = new
 end
@@ -691,10 +694,6 @@ g.stats = {}
 
 -- SSTATS 
 -- (if you ever want to quickly search the name of stats, search "sstats")
--- g.defineQuestion("getJobFrequencyModifier", reducers.ADD, 0) -- arguments: g.JobCategory
-g.stats.MaxLoad = g.defineStat("MaxLoad", 10, "Max Load")
-g.stats.JobFrequency = g.defineStat("JobFrequency", 0, "Job Spawn Frequency")
--- World stat
 g.stats.WorldTileSize = g.defineStat("WorldTileSize", 2, "World Size") -- maxed at floor(World.TILE_SIZE / 2)
 
 
@@ -2673,22 +2672,12 @@ g.COLORS = {
         FALLBACK = objects.Color.WHITE,
     },
 
-    SHADOW = objects.Color(0,0,0,0.4),
-
-    CRIT = objects.Color("FFA43929"),
-
     CANT_AFFORD = objects.Color("FFD72D2D"),
     CAN_AFFORD = objects.Color("FF73FF73"),
 
     MONEY = objects.Color("FFF7D127"),
     RECOMMENDED = objects.Color("FF9DEC4E"),
     UPGRADE_CONNECTOR = objects.Color("FF000000"),
-
-    RARITIES = {
-        [0] = objects.Color("FF8A8A8A"), -- Common (grey)
-        [1] = objects.Color("FF4A9EFF"), -- Rare (blue)
-        [2] = objects.Color("FFFFD700"), -- Legendary (gold)
-    },
 
     UI = {
         -- Key matches g.getSystemTheme output.

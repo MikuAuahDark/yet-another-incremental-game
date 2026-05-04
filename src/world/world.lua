@@ -1612,7 +1612,6 @@ function World:putItem(itemId, tx, ty, removable)
             nextOutput = 0,
             computePerSecond = 0,
             dataBottlenecked = false,
-            canSend = false,
         }
     elseif category == "data" then
         ---@type g.World.DataOutputData
