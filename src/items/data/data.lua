@@ -110,7 +110,7 @@ g.defineDataOutput("quantum_data", "Quantum Data Output", {
     getPriceMultiplier = helper.valueGetterNoSelf(0.5, 1),
     load = 50,
     dataPerSecond = 4000,
-    wireLength = 6,
+    wireLength = 5,
     wireDPS = 100,
     color = objects.Color("#DAB5C1"),
     draw = function(r)
