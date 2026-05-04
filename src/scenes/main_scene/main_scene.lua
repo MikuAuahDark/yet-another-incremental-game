@@ -28,6 +28,7 @@ end
 ---@param dt number
 function MainScene:update(dt)
     local z = self:zoomFromScale(ui.getUIScaling())
+    self.zoomValue = helper.clamp(self.zoomValue, -1.4, 1)
     self:setZoom(z + self.zoomValue)
     self.camera:setViewport(0, 0, love.graphics.getDimensions())
     g.getHUD():update(dt)
