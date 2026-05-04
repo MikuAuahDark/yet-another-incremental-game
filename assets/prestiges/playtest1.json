@@ -64,7 +64,7 @@
 			"priceScaling": 1.01
 		},
 		"32": {
-			"id": "video2_server",
+			"id": "advanced_server",
 			"level": 0,
 			"basePrice": {
 				"money": 150.0
@@ -595,6 +595,10 @@
 		[
 			112,
 			62
+		],
+		[
+			112,
+			178
 		],
 		[
 			120,
