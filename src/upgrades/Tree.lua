@@ -661,7 +661,7 @@ local function hasAnyFullyPurchasedNeighbors(self, upg)
     local neighs = self:getNeighbors(upg.x, upg.y)
     for _, u in ipairs(neighs) do
         local maxLevel = self:getUpgradeMaxLevel(u)
-        if ((u.level >= maxLevel) and (maxLevel ~= 0)) or (u.isRoot) then
+        if (u.level >= maxLevel) and (maxLevel ~= 0) then
             return true
         end
     end
