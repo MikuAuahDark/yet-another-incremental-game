@@ -224,6 +224,7 @@ function MainScene:draw()
         end
 
         -- Tutorial check
+        love.graphics.setColor(1, 1, 1)
         if s.showTutorials.start == 0 then
             local mode = tutorial[0](safeArea)
             if mode == 1 then
