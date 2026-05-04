@@ -3,6 +3,7 @@ local setting = {}
 
 -- Keep this in-sync with the setting.init
 local settingData = {
+    masterVolume = 100,
     sfxVolume = 100,
     bgmVolume = 50,
     lang = love.system.getPreferredLocales()[1] or "en",
@@ -38,6 +39,17 @@ function setting.save()
     if not status then
         log.error("Cannot save settings: "..err)
     end
+end
+
+function setting.getMasterVolume()
+    return settingData.masterVolume
+end
+
+---@param volume integer value range [0, 100]
+function setting.setMasterVolume(volume)
+    local vol = helper.clamp(math.floor(volume), 0, 100)
+    settingData.masterVolume = vol
+    love.audio.setVolume(vol / 100)
 end
 
 function setting.getSFXVolume()

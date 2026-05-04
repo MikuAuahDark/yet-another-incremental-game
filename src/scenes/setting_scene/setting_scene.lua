@@ -34,6 +34,12 @@ local SETTINGS = {
             setter = settings.setFullscreen
         },
         {
+            text = loc("New Game Tutorial"),
+            type = "toggle",
+            getter = settings.isTutorialShown,
+            setter = settings.setTutorialShown
+        },
+        {
             text = loc("Language"),
             type = "button",
             buttonLabel = settings.getLanguage(),
@@ -52,7 +58,15 @@ local SETTINGS = {
     },
     audio = {
         {
-            text = loc("Sound Volume"),
+            text = loc("Main Volume"),
+            type = "slider",
+            getter = settings.getMasterVolume,
+            setter = settings.setMasterVolume,
+            min = 0,
+            max = 100
+        },
+        {
+            text = loc("Music Volume"),
             type = "slider",
             getter = settings.getBGMVolume,
             setter = settings.setBGMVolume,

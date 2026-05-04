@@ -264,6 +264,7 @@ function love.load(arg)
 
     _isloadtime = false
 
+    love.audio.setVolume(settings.getMasterVolume() / 100)
     love.window.setFullscreen(settings.isFullscreen())
     SteamInventory.init()
     SteamTicket.init()
@@ -308,6 +309,7 @@ function love.update(dt)
     end
     achievements.update()
     sfx.update()
+    sfx.setVolume(settings.getSFXVolume())
     bgm.update(dt, settings.getBGMVolume() / 100)
     iml.setPointer(love.mouse.getPosition())
 
