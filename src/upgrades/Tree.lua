@@ -357,8 +357,8 @@ function Tree:tryBuyUpgrade(upg)
     if upg.level >= maxLevel then
         return false -- already max level
     end
-    if self:canAffordUpgrade(upg) then
-        local price = self:getUpgradePrice(upg)
+    if self:canAffordUpgrade(upg, upg.level + 1) then
+        local price = self:getUpgradePrice(upg, upg.level + 1)
         achievements.emitUnlockUpgrade(upg.id, price)
         g.subtractResources(price)
         self:setUpgradeLevel(upg, upg.level + 1)
@@ -379,7 +379,7 @@ function Tree:getUpgradeRequirements(upg)
 
     -- Price
     if uinfo.getPriceOverride then
-        local price = uinfo:getPriceOverride(upg.level)
+        local price = uinfo:getPriceOverride(upg.level + 1)
         for _, resId in ipairs(g.RESOURCE_LIST) do
             local val = price[resId] or 0
             if val > 0 then
@@ -389,7 +389,7 @@ function Tree:getUpgradeRequirements(upg)
         end
     else
         for _, resId in ipairs(g.RESOURCE_LIST) do
-            local val = modifyUpgradePrice(upg, uinfo, upg.basePrice[resId] or 0, upg.level, self.priceBurnout)
+            local val = modifyUpgradePrice(upg, uinfo, upg.basePrice[resId] or 0, upg.level + 1, self.priceBurnout)
             if val > 0 then
                 local canAfford = FLAGS.INFINITE_MONEY or g.getResource(resId) >= val
                 reqs[#reqs+1] = {"{"..resId.."}"..g.formatNumber(val), canAfford}

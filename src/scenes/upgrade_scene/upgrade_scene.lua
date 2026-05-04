@@ -315,10 +315,12 @@ local function drawUpgradeBoxes(self)
                 g.playUISound("ui_click_satisfying", 0.8,0.7,0,0)
 
                 local shouldTryBuy = consts.IS_MOBILE and self.lastHoveredUpgrade == upg or (not consts.IS_MOBILE)
-                if shouldTryBuy and tree:tryBuyUpgrade(upg) and upg.level == maxLevel then
-                    self.lastUpgradeMaxxed = {upg, UNLOCKED_UPGRADE_ANIMATION_DURATION}
+                if shouldTryBuy and tree:tryBuyUpgrade(upg) then
                     sn.showTutorials.upgrades = false
-                    g.playUISound("ui_upgrade_level_maxxed", 0.65,0.3,0.2,0.1)
+                    if upg.level == maxLevel then
+                        self.lastUpgradeMaxxed = {upg, UNLOCKED_UPGRADE_ANIMATION_DURATION}
+                        g.playUISound("ui_upgrade_level_maxxed", 0.65,0.3,0.2,0.1)
+                    end
                 end
 
                 self.lastHoveredUpgrade = hoveredUpgrade
