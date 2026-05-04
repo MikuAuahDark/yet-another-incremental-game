@@ -872,6 +872,11 @@ function upgscene:draw()
         end
     end
 
+    if hud.wasResetCameraButtonPressed then
+        self.camera:setPos(0, 0)
+        self:setZoom(0.5)
+    end
+
     self:renderPause()
 
     ui.endUI()

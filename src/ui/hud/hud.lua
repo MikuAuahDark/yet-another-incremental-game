@@ -654,6 +654,10 @@ function HUD:draw(show)
 
                 self.wasResetCameraButtonPressed, tooltip = drawActionButton(resetCameraR, "reset_focus", TEXT.RESET_CAMERA, TEXT.RESET_CAMERA_DESCRIPTION)
                 tooltipRender = tooltipRender or tooltip
+            else
+                local tooltip
+                self.wasResetCameraButtonPressed, tooltip = drawActionButton(hideButtonR, "reset_focus", TEXT.RESET_CAMERA, TEXT.RESET_CAMERA_DESCRIPTION)
+                tooltipRender = tooltipRender or tooltip
             end
 
             if tooltipRender then
