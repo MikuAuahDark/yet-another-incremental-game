@@ -18,6 +18,7 @@
 			},
 			"x": 0,
 			"y": -2,
+			"isRoot": true,
 			"maxLevelOverride": 20,
 			"priceScaling": 3.0
 		},
