@@ -335,28 +335,6 @@ local function updateWire(lp, wdps, dt, wire)
     end
 end
 
----@param category g.JobCategory
-local function makeDataInputFilter(category)
-    ---@param item g.World.ItemData
-    return function(item)
-        local itemInfo, cat = g.getItemInfo(item.type)
-        if cat == "indata" then
-            ---@cast itemInfo g.DataInInfo
-            if itemInfo.queuesJob == category then
-                ---@cast item g.World.DataInputData
-                for _, wire in ipairs(item.connects) do
-                    local maxWireCap = math.floor(getWireLength(wire) / PHYSICAL_DATA_SIZE)
-                    if #wire.objects < maxWireCap then
-                        return true
-                    end
-                end
-            end
-        end
-
-        return false
-    end
-end
-
 ---@param grid objects.Grid<g.World.ItemData[]>
 ---@param item g.World.ItemData
 ---@param length integer
@@ -368,13 +346,6 @@ local function markExistInArea(grid, item, length)
         end
     end
 end
-
----@type table<g.JobCategory, fun(g.World.ItemData):boolean>
-local DATA_INPUT_CYCLE_FILTER = {
-    general = makeDataInputFilter("general"),
-    video = makeDataInputFilter("video"),
-    ai = makeDataInputFilter("ai")
-}
 
 
 function World:init()
@@ -554,13 +525,6 @@ function World:_update(dt)
                 ---@cast itemInfo g.DataOutInfo
                 self.dataProcessors[index] = item
                 markExistInArea(self.doAreaAutoConnect, item, itemInfo.wireLength)
-            elseif category == "indata" then
-                ---@cast item g.World.DataInputData
-                ---@cast itemInfo g.DataInInfo
-                self.dataInputs[index] = item
-                self.jobFreqModByCategory[itemInfo.queuesJob] = self.jobFreqModByCategory[itemInfo.queuesJob] + itemInfo.jobFrequencyModifier
-                self.jobFreqMulByCategory[itemInfo.queuesJob] = self.jobFreqMulByCategory[itemInfo.queuesJob] * itemInfo.jobFrequencyMultiplier
-                markExistInArea(self.diAreaAutoConnect, item, itemInfo.wireLength)
             elseif category == "server" then
                 ---@cast item g.World.ServerData
                 self.servers[index] = item
@@ -1004,50 +968,11 @@ function World:_update(dt)
 
             if dataEmittedInt > 0 then
                 serverData.dataBottlenecked = true
-            elseif serverData.dataTotalEmitted >= job.outputData then
-                -- Job done
-                g.call("jobCompleted", serverData, job)
-                serverData.currentJob = nil
             end
         end
     end
     if dt > 0 then
         self.cpsCollector:insert(dt, cps)
-    end
-
-    -- Run job poll
-    for k, ji in pairs(g.VALID_JOBS) do
-        local jpinfo = self.jobPoller[k]
-
-        if g.ask("isJobUnlocked", k) then
-            local info = g.getJobCategoryInfo(ji.category)
-            -- Yea these stat name and evbus name is MSOT.
-            -- Is there a better way?
-            local stat = g.VALID_STATS[info.nameRaw.."JobFrequency"]
-            -- TODO: Cache this
-            local jobFreqMod = g.ask(stat.addQuestion)
-            local jobFreqMul = g.ask(stat.multQuestion)
-            local spawnChance = g.getProperty("getJobFrequency", jobFreqMod, jobFreqMul, k)
-            jpinfo[2] = spawnChance
-            if spawnChance > 0 then
-                local time = 1 / spawnChance -- the stat is frequency
-                jpinfo[1] = jpinfo[1] + dt
-
-                while jpinfo[1] >= time do
-                    jpinfo[1] = jpinfo[1] - time
-
-                    local job = g.genJob(k)
-                    if not self:_queueJob(job) then
-                        break
-                    end
-                end
-            else
-                jpinfo[1] = 0
-            end
-        else
-            jpinfo[1] = 0
-            jpinfo[2] = 0
-        end
     end
 
     -- Run per second update event bus on upgrades
@@ -1300,6 +1225,7 @@ function World:_draw()
                 drawLine(svrx, svry, dpx, dpy, 3)
 
                 -- Draw physical data
+                --[[
                 local svrInfo = g.getItemInfo(svr.type, "server")
                 local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
                 love.graphics.setColor(catinfo.color)
@@ -1309,6 +1235,7 @@ function World:_draw()
                     -- TODO: rotation
                     g.drawImage(catinfo.symbol, objx, objy, 0, 0.2, 0.2)
                 end
+                ]]
             end
         end
 
@@ -1345,6 +1272,7 @@ function World:_draw()
                 drawLine(dix, diy, svrx, svry, 3)
 
                 -- Draw physical data
+                --[[
                 local svrInfo = g.getItemInfo(svr.type, "server")
                 local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
                 love.graphics.setColor(catinfo.color)
@@ -1354,6 +1282,7 @@ function World:_draw()
                     -- TODO: rotation
                     g.drawImage(catinfo.symbol, objx, objy, 0, 0.2, 0.2)
                 end
+                ]]
             end
         end
     end
@@ -1776,63 +1705,12 @@ function World:_cycleNextItem(counterVal, criteria)
     return counterVal, nil
 end
 
----@param job g.Job
-function World:_queueJob(job)
-    local jpinfo = self.jobPoller[job.type]
-    local targetIndata
-    jpinfo[3], targetIndata = self:_cycleNextItem(jpinfo[3], DATA_INPUT_CYCLE_FILTER[job.category])
-    if not targetIndata then
-        return false
-    end
-    ---@cast targetIndata g.World.DataInputData
-
-    -- Find a wire that has space
-    ---@type g.World.DataInputWire|nil
-    local wire = nil
-    for j = 1, #targetIndata.connects do
-        local i = (j + targetIndata.next) % #targetIndata.connects + 1
-        local w = targetIndata.connects[i]
-        local maxWireCap = math.floor(getWireLength(w) / PHYSICAL_DATA_SIZE)
-        if #w.objects < maxWireCap then
-            wire = w
-            targetIndata.next = i - 1
-            break
-        end
-    end
-
-    if not wire then
-        return false
-    end
-
-    table.insert(wire.objects, 1, job)
-    table.insert(wire.positions, 1, 0)
-    return true
-end
-
 
 
 
 --- Buses
 
----@param cat string
-local function defJobFreqBus(cat)
-    local catlow = cat:lower()
-    ---@param self g.World
-    World["get"..cat.."JobFrequencyModifier"] = function(self)
-        return self.jobFreqModByCategory[catlow]
-    end
-    ---@param self g.World
-    World["get"..cat.."JobFrequencyMultiplier"] = function(self)
-        return self.jobFreqMulByCategory[catlow]
-    end
-end
 
--- These are MSOT unfortunately, but is there a way?
--- Will think of it later. Gotta move fast.
--- Just make sure to sync this with g.defineJobCategory
-defJobFreqBus("General")
-defJobFreqBus("Video")
-defJobFreqBus("AI")
 
 --- End Buses
 

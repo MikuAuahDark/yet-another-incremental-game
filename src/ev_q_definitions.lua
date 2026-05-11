@@ -5,9 +5,6 @@ g.defineEvent("draw")
 g.defineEvent("update")
 g.defineEvent("perSecondUpdate")
 
-g.defineEvent("jobCreated") -- args: g.Job
-g.defineEvent("jobCompleted") -- args: g.World.ServerData, g.Job
-
 g.defineProperty("getPerformance") -- For server only. arguments: g.ServerInfo
 g.defineProperty("getLoad") -- arguments: g.ItemInfo
 g.defineProperty("getGeneratorLoad") -- arguments: g.PowerGenInfo
