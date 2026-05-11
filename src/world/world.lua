@@ -95,6 +95,13 @@ end
 ---@alias g.World.DataInputWire g.World.Wire<g.World.DataInputData, g.Job>
 ---@alias g.World.DataOutputWire g.World.Wire<g.World.DataOutputData, number>
 
+---@class g.World.Wire2
+---@field from g.World.MachineData
+---@field to g.World.MachineData
+---@field criterion g._InputSet
+---@field shapes g.Shape[]
+---@field colors g.ShapeColor[]
+---@field positions number[] normalized [0, 1]
 
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")
