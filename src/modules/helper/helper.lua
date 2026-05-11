@@ -6,6 +6,18 @@ local helper = {}
 
 
 
+
+---@generic K
+---@param t table<K, any>
+---@return K[]
+function helper.keys(t)
+    local keys = {}
+    for k in pairs(t) do
+        keys[#keys+1] = k
+    end
+    return keys
+end
+
 ---@param a number
 ---@param b number
 ---@param t number

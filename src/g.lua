@@ -2081,6 +2081,191 @@ end
 end
 
 
+----------------------
+-- Shape and Colors --
+----------------------
+
+do
+
+---@class g.ShapeInfo
+---@field public name string
+---@field public image string
+
+---@class g._ShapeDef
+---@field public name string
+---@field public nameContext string?
+---@field public image string
+
+---@param def g._ShapeDef
+---@return g.ShapeInfo
+local function defineShape(def)
+    def.name = loc(def.name, nil, {context = def.nameContext})
+    def.nameContext = nil
+    assert(g.isImage(def.image))
+    ---@cast def g.ShapeInfo
+    return def
+end
+
+---@class g.ShapeColorInfo
+---@field public name string
+---@field public color objects.Color
+
+---@class g._ShapeColorDef
+---@field public name string
+---@field public nameContext string?
+---@field public color objects.Color
+
+---@param def g._ShapeColorDef
+---@return g.ShapeColorInfo
+local function defineShapeColor(def)
+    def.name = loc(def.name, nil, {context = def.nameContext})
+    def.nameContext = nil
+    def.color = objects.Color(def.color)
+    ---@cast def g.ShapeColorInfo
+    return def
+end
+
+---@enum (key) g.Shape
+g.SHAPES = {
+    triangle = defineShape {name = "Triangle", image = "change_history_fill_20dp"},
+    square = defineShape {name = "Square", image = "crop_square_fill_20dp"},
+    circle = defineShape {name = "Circle", image = "circle_fill_20dp"},
+}
+
+---@enum (key) g.ShapeColor
+g.SHAPE_COLORS = {
+    white = defineShapeColor {name = "White", color = objects.Color.WHITE},
+    yellow = defineShapeColor {name = "Yellow", color = objects.Color("#ebe883")},
+    red = defineShapeColor {name = "Red", color = objects.Color("#f16053")},
+    blue = defineShapeColor {name = "Blue", color = objects.Color("#12aae6")},
+}
+
+end
+
+--------------
+-- Machines --
+--------------
+
+do
+
+---@type string[]
+g.MACHINES = {}
+---@type table<string, g.MachineInfo>
+local machineInfo = {}
+
+---@class g._AcceptShape
+---@field public amount integer
+---@field public shape "any"|(g.Shape[])
+---@field public color "any"|(g.ShapeColor[])
+
+---@class g._InputSet
+---@field public shapes objects.Set<g.Shape>
+---@field public colors objects.Set<g.ShapeColor>
+
+---@class g._InputSetWithAmount: g._InputSet
+---@field public amount integer
+
+---@param isets g._AcceptShape[]
+local function processInputSets(isets)
+    -- Process the input sets
+    ---@type g._InputSetWithAmount[]
+    local outsets = {}
+    for _, iset in ipairs(isets) do
+        local shapes = iset.shape
+        local shapeColors = iset.color
+
+        if shapes == "any" then
+            shapes = objects.Set(helper.keys(g.SHAPES))
+        else
+            ---@cast shapes g.Shape[]
+            shapes = objects.Set(shapes)
+        end
+
+        if shapeColors == "any" then
+            shapeColors = objects.Set(helper.keys(g.SHAPE_COLORS))
+        else
+            ---@cast shapeColors g.ShapeColor[]
+            shapeColors = objects.Set(shapeColors)
+        end
+
+        outsets[#outsets+1] = {
+            amount = iset.amount,
+            shapes = shapes,
+            colors = shapeColors,
+        }
+    end
+
+    return outsets
+end
+
+---@class g._MachineDef
+---@field public nameContext string?
+---@field public description string?
+---@field public descriptionContext string?
+---@field public tags string[]?
+---@field public powerLoad number?
+---@field public powerGenerate number?
+---@field public input g._AcceptShape[]?
+---@field public output g._AcceptShape?
+---@field public processTime number? (in seconds)
+---@field public wireLength integer? (output only)
+---@field public init fun(inst: g.World.MachineData)?
+---@field public onProcessFinished fun(inst: g.World.MachineData)?
+---@field public onUpdate fun(inst: g.World.MachineData, dt: number)?
+---@field public onDraw fun(inst: g.World.MachineData) (already translated to center of tile)
+---@field public onDrawItem fun(r: kirigami.Region) (not translated)
+
+---@class g.MachineInfo: g._MachineDef
+---@field public type string
+---@field public name string
+---@field public tags objects.Set<string>
+---@field public powerLoad number?
+---@field public powerGenerate number?
+---@field public input g._InputSetWithAmount[]?
+---@field public output g._InputSetWithAmount?
+---@field public processTime number?
+---@field public wireLength integer (output only)
+
+---@param id string
+---@param name string
+---@param def g._MachineDef
+function g.defineMachine(id, name, def)
+    assert(not machineInfo[id], "Machine already defined: " .. id)
+
+    ---@type g.MachineInfo
+    local info = {
+        type = id,
+        name = loc(name, nil, {context = def.nameContext}),
+        description = nil,
+        tags = objects.Set(def.tags),
+        powerLoad = def.powerLoad,
+        powerGenerate = def.powerGenerate,
+        input = processInputSets(def.input or {}),
+        output = nil,
+        processTime = def.processTime,
+        wireLength = def.wireLength or 0,
+        init = def.init,
+        onProcessFinished = def.onProcessFinished,
+        onUpdate = def.onUpdate,
+        onDraw = def.onDraw,
+        onDrawItem = def.onDrawItem,
+    }
+    if def.description then
+        info.description = loc(def.description, nil, {context = def.descriptionContext})
+    end
+    if def.output then
+        info.output = processInputSets({def.output})[1]
+        assert(info.wireLength > 0, "wire length cannot be zero if there's output")
+    end
+
+    g.MACHINES[#g.MACHINES+1] = id
+    machineInfo[id] = info
+end
+
+
+end
+
+
 
 ----------------------
 -- Placement And Stuff

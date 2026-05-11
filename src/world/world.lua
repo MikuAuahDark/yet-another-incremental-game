@@ -18,6 +18,22 @@ local function zeroTileHeat(grid)
     end
 end
 
+---@class g.World.QueuedInput: g._InputSet
+---@field queue [g.Shape, g.ShapeColor][]
+
+---@class g.World.MachineData
+---@field type string Item ID
+---@field tileX integer (readonly; updated every frame)
+---@field tileY integer (readonly; updated every frame)
+---@field powerLoad number (readonly; updated every frame)
+---@field powerGenerate number (readonly; updated every frame)
+---@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
+---@field processTime number (readonly; in seconds)
+---@field processTimeCurrent number (readwrite; in seconds)
+---@field input g.World.QueuedInput[]
+---@field output g._InputSet? (readwrite; only applicable if it has outputs)
+---@field removed boolean
+---@field removable boolean
 
 ---@class g.World.ItemData
 ---@field type string Item ID
