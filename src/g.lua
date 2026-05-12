@@ -2019,22 +2019,30 @@ end
 ---@field public output g._AcceptShape?
 ---@field public processTime number? (in seconds)
 ---@field public wireLength integer? (output only)
+---@field public heat number?
+---@field public heatTolerance [number, number]?
+---@field public heatRadiate integer? (default is 1)
 ---@field public init fun(inst: g.World.MachineData)?
----@field public onProcessFinished fun(inst: g.World.MachineData)?
----@field public onUpdate fun(inst: g.World.MachineData, dt: number)?
+---@field public onProcessFinished (fun(inst: g.World.MachineData):boolean)?
+---@field public onUpdatePowerStage fun(inst: g.World.MachineData, dt: number)? run when `powerLoad`/`powerGenerate` needs update
+---@field public onUpdateHeatStage fun(inst: g.World.MachineData, dt: number)? run when `heat` needs update
+---@field public onUpdateTileHeatStage fun(inst: g.World.MachineData, dt: number)? run when tile heat needs update
+---@field public onUpdate fun(inst: g.World.MachineData, dt: number)? run when most properties needs update
 ---@field public onDraw fun(inst: g.World.MachineData) (already translated to center of tile)
 ---@field public onDrawItem fun(r: kirigami.Region) (not translated)
+---@field public perSecondUpdate fun(inst: g.World.MachineData, seconds: integer)?
 
 ---@class g.MachineInfo: g._MachineDef
 ---@field public type string
 ---@field public name string
 ---@field public tags objects.Set<string>
----@field public powerLoad number?
----@field public powerGenerate number?
+---@field public powerLoad number
 ---@field public input g._InputSetWithAmount[]?
 ---@field public output g._InputSetWithAmount?
 ---@field public processTime number?
 ---@field public wireLength integer (output only)
+---@field public heat number
+---@field public heatRadiate integer (always in taxicab distance)
 
 ---@param id string
 ---@param name string
@@ -2048,17 +2056,23 @@ function g.defineMachine(id, name, def)
         name = loc(name, nil, {context = def.nameContext}),
         description = nil,
         tags = objects.Set(def.tags),
-        powerLoad = def.powerLoad,
+        powerLoad = def.powerLoad or 0,
         powerGenerate = def.powerGenerate,
         input = processInputSets(def.input or {}),
         output = nil,
         processTime = def.processTime,
         wireLength = def.wireLength or 0,
+        heat = def.heat or 0,
+        heatRadiate = def.heatRadiate or 1,
         init = def.init,
         onProcessFinished = def.onProcessFinished,
         onUpdate = def.onUpdate,
+        onUpdatePowerStage = def.onUpdatePowerStage,
+        onUpdateHeatStage = def.onUpdateHeatStage,
+        onUpdateTileHeatStage = def.onUpdateTileHeatStage,
         onDraw = def.onDraw,
         onDrawItem = def.onDrawItem,
+        perSecondUpdate = def.perSecondUpdate,
     }
     if def.description then
         info.description = loc(def.description, nil, {context = def.descriptionContext})
@@ -2066,6 +2080,12 @@ function g.defineMachine(id, name, def)
     if def.output then
         info.output = processInputSets({def.output})[1]
         assert(info.wireLength > 0, "wire length cannot be zero if there's output")
+    end
+    if def.heatTolerance then
+        info.heatTolerance = {
+            math.min(def.heatTolerance[1], def.heatTolerance[2]),
+            math.max(def.heatTolerance[1], def.heatTolerance[2])
+        }
     end
 
     g.MACHINES[#g.MACHINES+1] = id
@@ -2078,6 +2098,54 @@ function g.getMachineInfo(id)
         error("Machine not found: " .. id)
     end
     return machineInfo[id]
+end
+
+
+
+-- Machine quick helper functions
+
+
+---@class g._DataEmitterDef: g._CommonSpecificItemDef<g.World.MachineData>
+---@field emitShape [g.Shape, g.ShapeColor]
+---@field duration number
+---@field heat number
+---@field heatTolerance [number, number]?
+
+---@param id string
+---@param name string
+---@param def g._DataEmitterDef
+function g.defineDataEmitter(id, name, def)
+    local tags = helper.shallowCopy(def.tags or {})
+    tags[#tags+1] = "emitter"
+    g.defineMachine(id, name, {
+        nameContext = def.nameContext,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        powerLoad = def.load,
+        tags = tags,
+        heat = def.heat,
+        heatTolerance = def.heatTolerance,
+        processTime = def.duration,
+
+        onProcessFinished = function(itemData)
+            -- TODO: Emit single shape with specific color
+            return true
+        end,
+        onDraw = function(itemData)
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2, itemData)
+            end
+        end,
+        onDrawItem = function(r)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
 end
 
 
@@ -2382,6 +2450,13 @@ function g.getItemProblems(itemData)
     end
 
     return result
+end
+
+---@param machine g.World.MachineData
+---@return g.ItemProblems[]
+function g.getMachineProblems(machine)
+    -- TODO
+    return {}
 end
 
 ---@param problem g.ItemProblems

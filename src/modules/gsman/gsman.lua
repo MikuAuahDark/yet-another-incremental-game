@@ -60,7 +60,31 @@ function Transform:pop()
     return love.graphics.pop()
 end
 
+---@class gsman.Blend: objects.Class
+local Blend = objects.Class("gsman.Blend")
 
+---@param blendmode love.BlendMode
+---@param blendalphamode love.BlendAlphaMode
+function Blend:init(blendmode, blendalphamode)
+    local obm, obam = love.graphics.getBlendMode()
+    -- We need to check if the requested blend mode is equal.
+    self.obm = obm
+    self.obam = obam
+    -- LOVE doesn't check the blending mode internally
+    -- and will always break batching even if the specified
+    -- blend mode in `setBlendMode` is same as `getBlendMode`.
+    if blendmode ~= obm or blendalphamode ~= obam then
+        love.graphics.setBlendMode(blendmode, blendalphamode)
+    end
+end
+
+function Blend:pop()
+    -- Just in case it's changed from an outside source
+    local bm, bam = love.graphics.getBlendMode()
+    if bm ~= self.obm or bam ~= self.obam then
+        love.graphics.setBlendMode(self.obm, self.obam)
+    end
+end
 
 ---@param lw number
 ---@return gsman.LineWidth
@@ -121,6 +145,14 @@ end
 ---@nodiscard
 function gsman.transform(x, y, r, sx, sy, ox, oy, kx, ky)
     return Transform(x, y, r, sx, sy, ox, oy, kx, ky)
+end
+
+---@param blendmode love.BlendMode
+---@param blendalphamode love.BlendAlphaMode
+---@return gsman.Blend
+---@nodiscard
+function gsman.setBlendMode(blendmode, blendalphamode)
+    return Blend(blendmode, blendalphamode)
 end
 
 return gsman

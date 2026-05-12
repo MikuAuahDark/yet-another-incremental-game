@@ -20,7 +20,7 @@ local Set = Class("objects:Set")
 
 if false then
     ---@generic T
-    ---@param initial T[]?
+    ---@param initial (T[]|objects.Set<T>)?
     ---@return objects.Set<T>
     function Set(initial) end ---@diagnostic disable-line: cast-local-type, missing-return
 end

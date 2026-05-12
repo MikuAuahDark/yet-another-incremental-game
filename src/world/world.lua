@@ -9,7 +9,7 @@ local ParticleService = require(".particle.ParticleService")
 local DataCollector = require(".data_collector")
 
 
----@param grid objects.Grid
+---@param grid objects.Grid<number>
 local function zeroTileHeat(grid)
     for x = 0, grid.width-1 do
         for y = 0, grid.height-1 do
@@ -18,20 +18,23 @@ local function zeroTileHeat(grid)
     end
 end
 
----@class g.World.QueuedInput: g._InputSet
+---@class g.World.QueuedInput: g._InputSetWithAmount
 ---@field queue [g.Shape, g.ShapeColor][]
 
 ---@class g.World.MachineData
 ---@field type string Item ID
 ---@field tileX integer (readonly; updated every frame)
 ---@field tileY integer (readonly; updated every frame)
+---@field heat number (readwrite)
 ---@field powerLoad number (readonly; updated every frame)
----@field powerGenerate number (readonly; updated every frame)
+---@field powerGenerate? number (readonly; updated every frame; if exist, can be in power network)
 ---@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
 ---@field processTime number (readonly; in seconds)
 ---@field processTimeCurrent number (readwrite; in seconds)
+---@field processSpeedMultiplier number (readwrite)
 ---@field input g.World.QueuedInput[]
----@field output g._InputSet? (readwrite; only applicable if it has outputs)
+---@field output g._InputSetWithAmount? (readwrite; only applicable if it has outputs)
+---@field wireSpeedMultiplier number (readwrite)
 ---@field removed boolean
 ---@field removable boolean
 
@@ -73,15 +76,12 @@ end
 ---@field package requestedLoad number
 ---@field package dataScale number
 
----@class g.World.PowerData: g.World.ItemData
----@field power number (readonly; updated every frame)
----@field connectsTo g.World.ItemData[] (readwrite; connected power consumers)
----@field connectsPowerNodes g.World.PowerData[] (readonly; connected power nodes generated dynamically)
 
 ---@class g.World.PowerNetwork
----@field generators g.World.PowerData[]
----@field relays g.World.PowerData[]
----@field consumers g.World.ItemData[]
+---@field powerNodes g.World.MachineData[]
+---@field consumers g.World.MachineData[]
+---@field nodeConnections [g.World.MachineData, g.World.MachineData][] -- Bi-directional connections between power nodes
+---@field consumerConnections [g.World.MachineData, g.World.MachineData][] -- One-way from power node to consumer
 ---@field totalPower number (readonly; updated every frame)
 ---@field totalLoad number (readonly; updated every frame)
 
@@ -96,8 +96,8 @@ end
 ---@alias g.World.DataOutputWire g.World.Wire<g.World.DataOutputData, number>
 
 ---@class g.World.Wire2
----@field from g.World.MachineData
----@field to g.World.MachineData
+---@field from g.World.MachineData (note: it's unidirectional)
+---@field to g.World.MachineData (note: it's unidirectional)
 ---@field criterion g._InputSet
 ---@field shapes g.Shape[]
 ---@field colors g.ShapeColor[]
@@ -222,73 +222,31 @@ local function drawPowerLines(powerNetwork, visibleArea, htx, hty)
     local wtz = consts.WORLD_TILE_SIZE
     local t = g.getSn().worldTime % 1
 
-    -- Generator always one way. Generator -> Relay/Consumer.
-    for _, node in ipairs(powerNetwork.generators) do
-        local nodeSelected = htx == node.tileX and hty == node.tileY
-        local x1 = (node.tileX + 0.5) * wtz
-        local y1 = (node.tileY + 0.5) * wtz
-        local nodeHasCoords = visibleArea:containsCoords(x1, y1)
+    -- Power node connections (Bi-directional)
+    for _, conn in ipairs(powerNetwork.nodeConnections) do
+        local node1, node2 = conn[1], conn[2]
+        local x1, y1 = (node1.tileX + 0.5) * wtz, (node1.tileY + 0.5) * wtz
+        local x2, y2 = (node2.tileX + 0.5) * wtz, (node2.tileY + 0.5) * wtz
 
-        for _, other in ipairs(node.connectsPowerNodes) do
-            local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
-
-            if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                if nodeSelected or htx == other.tileX and hty == other.tileY then
-                    love.graphics.setColor(POWER_COLOR)
-                    drawArrows(x1, y1, x2, y2, 6, t)
-                end
-            end
-        end
-
-        for _, other in ipairs(node.connectsTo) do
-            local _, cat = g.getItemInfo(other.type)
-            if cat ~= "powergen" then
-                local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
-
-                if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                    if nodeSelected or htx == other.tileX and hty == other.tileY then
-                        love.graphics.setColor(POWER_COLOR)
-                        drawArrows(x1, y1, x2, y2, 6, t)
-                    end
-                end
+        if visibleArea:containsCoords(x1, y1) or visibleArea:containsCoords(x2, y2) then
+            if htx == node1.tileX and hty == node1.tileY or htx == node2.tileX and hty == node2.tileY then
+                love.graphics.setColor(POWER_COLOR)
+                drawArrows(x1, y1, x2, y2, 6, t)
+                drawArrows(x2, y2, x1, y1, 6, t)
             end
         end
     end
 
-    -- Relay is
-    -- * Two-way for Relay <-> Relay.
-    -- * One-way for Relay -> Consumer.
-    for _, node in ipairs(powerNetwork.relays) do
-        local nodeSelected = htx == node.tileX and hty == node.tileY
-        local x1 = (node.tileX + 0.5) * wtz
-        local y1 = (node.tileY + 0.5) * wtz
-        local nodeHasCoords = visibleArea:containsCoords(x1, y1)
+    -- Consumer connections (One-way)
+    for _, conn in ipairs(powerNetwork.consumerConnections) do
+        local node, consumer = conn[1], conn[2]
+        local x1, y1 = (node.tileX + 0.5) * wtz, (node.tileY + 0.5) * wtz
+        local x2, y2 = (consumer.tileX + 0.5) * wtz, (consumer.tileY + 0.5) * wtz
 
-        for _, other in ipairs(node.connectsPowerNodes) do
-            local _, cat = g.getItemInfo(other.type)
-            if cat ~= "powergen" then
-                local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
-
-                if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                    if nodeSelected or htx == other.tileX and hty == other.tileY then
-                        love.graphics.setColor(POWER_COLOR)
-                        drawArrows(x1, y1, x2, y2, 6, t)
-                    end
-                end
-            end
-        end
-
-        for _, other in ipairs(node.connectsTo) do
-            local _, cat = g.getItemInfo(other.type)
-            if cat ~= "powergen" then
-                local x2, y2 = (other.tileX + 0.5) * wtz, (other.tileY + 0.5) * wtz
-
-                if nodeHasCoords or visibleArea:containsCoords(x2, y2) then
-                    if nodeSelected or htx == other.tileX and hty == other.tileY then
-                        love.graphics.setColor(POWER_COLOR)
-                        drawArrows(x1, y1, x2, y2, 6, t)
-                    end
-                end
+        if visibleArea:containsCoords(x1, y1) or visibleArea:containsCoords(x2, y2) then
+            if htx == node.tileX and hty == node.tileY or htx == consumer.tileX and hty == consumer.tileY then
+                love.graphics.setColor(POWER_COLOR)
+                drawArrows(x1, y1, x2, y2, 6, t)
             end
         end
     end
@@ -312,34 +270,12 @@ end
 
 local PHYSICAL_DATA_SIZE = 5
 
----@param wire g.World.Wire<g.World.ItemData, any>
+---@param wire g.World.Wire2
 local function getWireLength(wire)
     return helper.magnitude(
-        wire.server.tileX - wire.source.tileX,
-        wire.server.tileY - wire.source.tileY
+        wire.from.tileX - wire.to.tileX,
+        wire.from.tileY - wire.to.tileY
     ) * consts.WORLD_TILE_SIZE
-end
-
----@param lp number
----@param wdps number
----@param dt number
----@param wire g.World.Wire<g.World.ItemData, any>
-local function updateWire(lp, wdps, dt, wire)
-    local lp2 = math.max(worldutil.getLoadPercentage(wire.server), lp)
-    local wireLength = getWireLength(wire)
-    local padding = PHYSICAL_DATA_SIZE / wireLength
-    local ndt = (wdps * dt * lp2) / wireLength
-
-    for i = #wire.positions, 1, -1 do
-        local wall
-        if wire.positions[i + 1] then
-            wall = wire.positions[i + 1] - padding
-        else
-            wall = 1 -- Make sure exact value
-        end
-
-        wire.positions[i] = helper.clamp(wire.positions[i] + ndt, 0, wall)
-    end
 end
 
 ---@param grid objects.Grid<g.World.ItemData[]>
@@ -357,29 +293,15 @@ end
 
 function World:init()
     self.entities = objects.BufferedSet()
-    ---@type objects.Grid<g.World.ItemData?>
+    ---@type objects.Grid<g.World.MachineData?>
     self.items = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
     ---@type objects.Grid<number>
     self.heat = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
-    ---@type table<g.JobCategory, number>
-    self.jobFreqModByCategory = setmetatable({}, {__index = function() return 0 end})
-    ---@type table<g.JobCategory, number>
-    self.jobFreqMulByCategory = setmetatable({}, {__index = function() return 1 end})
+    ---@type table<g.World.MachineData, g.World.Wire2[]> `from == key`
+    self.wireOutput = {}
+    ---@type table<g.World.MachineData, g.World.Wire2[]> `to == key`
+    self.wireInput = {}
 
-    ---@type table<integer, g.World.BoosterData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
-    self.boosters = {}
-    ---@type table<integer, g.World.ItemData[]>
-    self.boostersInTiles = {}
-    ---@type table<integer, g.World.DataOutputData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
-    self.dataProcessors = {}
-    ---@type table<integer, g.World.DataInputData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
-    self.dataInputs = {}
-    ---@type table<integer, g.World.ServerData> for quick lookup (key is 1D grid coord, use Grid:indexToCoords)
-    self.servers = {}
-    ---@type table<integer, g.World.PowerData>
-    self.powerGens = {}
-    ---@type table<integer, g.World.PowerData>
-    self.powerRelays = {}
     ---@type g.World.PowerNetwork[]
     self.powerNetworks = {}
     self.particles = ParticleService()
@@ -391,12 +313,6 @@ function World:init()
     self.cpsCollector = DataCollector(60)
     ---@type table<string, {dirty:boolean,modifier:number,multiplier:number}>
     self.loadModifiers = {}
-    -- 1st value is current time, 2nd value is spawn time, 3rd value is coordinate cycle (0-based)
-    ---@type table<string, [number,number,number]>
-    self.jobPoller = {}
-    for jobType in pairs(g.VALID_JOBS) do
-        self.jobPoller[jobType] = {0, 0, 0}
-    end
 
     self.worldTexture = generateWorldTexture(12345)
 
@@ -427,8 +343,9 @@ end
 ---@param e g.Entity
 local function drawEntity(e)
     if e.drawBelow then
-        love.graphics.setColor(1, 1, 1)
+        local col = gsman.setColor(1, 1, 1)
         e:drawBelow()
+        col:pop()
     end
 
     local sx,sy = e.sx or 1, e.sy or 1
@@ -440,28 +357,17 @@ local function drawEntity(e)
     end
 
     if e.image then
-        -- We need this need blendmode boolean check.
-        -- LOVE doesn't check the blending mode internally
-        -- and will always break batching even if the specified
-        -- blend mode in `setBlendMode` is same as `getBlendMode`.
-        local needblendmode = e.blendmode or e.blendalphamode
-
-        love.graphics.setColor(1, 1, 1, e.alpha or 1)
-
-        if needblendmode then
-            love.graphics.setBlendMode(e.blendmode or "alpha", e.blendalphamode or "alphamultiply")
-        end
-
+        local blend = gsman.setBlendMode(e.blendmode or "alpha", e.blendalphamode or "alphamultiply")
+        local col = gsman.setColor(1, 1, 1, e.alpha or 1)
         g.drawImage(e.image, e.x+(e.ox or 0), e.y+(e.oy or 0), e.rot or 0, sx,sy)
-
-        if needblendmode then
-            love.graphics.setBlendMode("alpha", "alphamultiply")
-        end
+        blend:pop()
+        col:pop()
     end
 
     if e.draw then
-        love.graphics.setColor(1, 1, 1)
+        local col = gsman.setColor(1, 1, 1)
         e:draw()
+        col:pop()
     end
 end
 
@@ -495,150 +401,111 @@ function World:_update(dt)
         v.dirty = true
     end
 
-    -- Update electricity load
-    local loads = 0
-    table.clear(self.jobFreqModByCategory)
-    table.clear(self.jobFreqMulByCategory)
-    table.clear(self.boosters)
-    table.clear(self.boostersInTiles)
-    table.clear(self.dataProcessors)
-    table.clear(self.dataInputs)
+    -- Reset stuff
     self.diAreaAutoConnect:foreach(table.clear)
     self.doAreaAutoConnect:foreach(table.clear)
-    table.clear(self.servers)
-    table.clear(self.powerGens)
-    table.clear(self.powerRelays)
     table.clear(self.powerNetworks)
     table.clear(self.itemCounts)
     table.clear(self.itemInventoryCounts)
-    ---@param item g.World.ItemData?
-    self.items:foreach(function(item, x, y)
-        if item then
-            local itemInfo, category = g.getItemInfo(item.type)
-            item.load = self:computeLoadModifier(itemInfo)
-            item.powerNetwork = nil
-            self.itemCounts[item.type] = self.itemCounts[item.type] + 1
-
-            loads = loads + item.load
-            local index = self.items:coordsToIndex(x, y)
-
-            if category == "booster" then
-                ---@cast item g.World.BoosterData
-                self.boosters[index] = item
-                item.effectiveness = 1
-                table.clear(item.connectsTo)
-            elseif category == "data" then
-                ---@cast item g.World.DataOutputData
-                ---@cast itemInfo g.DataOutInfo
-                self.dataProcessors[index] = item
-                markExistInArea(self.doAreaAutoConnect, item, itemInfo.wireLength)
-            elseif category == "server" then
-                ---@cast item g.World.ServerData
-                self.servers[index] = item
-                item.dataBottlenecked = false
-                table.clear(item.connectedInputs)
-                table.clear(item.connectedOutputs)
-            elseif category == "powergen" then
-                ---@cast item g.World.PowerData
-                self.powerGens[index] = item
-            elseif category == "powerrelay" then
-                ---@cast item g.World.PowerData
-                self.powerRelays[index] = item
+    ---@type g.World.MachineData[]
+    local allMachines = {}
+    self.items:foreach(function(machine, x, y)
+        if machine then
+            if machine.removed then
+                self.wireInput[machine] = nil
+                self.wireOutput[machine] = nil
+                self.items:set(x, y, nil)
+            else
+                local minfo = g.getMachineInfo(machine.type)
+                -- Update (SSOT)
+                machine.tileX = x
+                machine.tileY = y
+                machine.powerLoad = minfo.powerLoad or 0
+                machine.powerGenerate = minfo.powerGenerate
+                machine.heat = minfo.heat
+                machine.wireSpeedMultiplier = 1
+                machine.processSpeedMultiplier = 1
+                allMachines[#allMachines+1] = machine
             end
-
-            -- Update tile positions
-            item.tileX = x
-            item.tileY = y
         end
     end)
 
-    -- Update booster connections and effectiveness
-    for _, booster in pairs(self.boosters) do
-        ---@cast booster g.World.BoosterData
-        local boosterInfo = g.getItemInfo(booster.type, "booster")
-        if boosterInfo.connectable then
-            local range = boosterInfo.radiate -- Use radiate as range
-            for dx = -range, range do
-                for dy = -range, range do
-                    local dist = worldutil.getDistance(boosterInfo.radiateAlgorithm, dx, dy)
-                    if dist <= range then
-                        local tx, ty = booster.tileX + dx, booster.tileY + dy
-                        if self:isWithinWorldLimit(booster.tileX, booster.tileY) and self:isWithinWorldLimit(tx, ty) then
-                            local targetItem = self.items:get(tx, ty) --[[@as g.World.ItemData?]]
-                            if targetItem and not targetItem.removed then
-                                local _, category = g.getItemInfo(targetItem.type)
-                                if category == boosterInfo.connectable.target then
-                                    table.insert(booster.connectsTo, targetItem)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
-            -- Effectiveness scales down if overloaded
-            if #booster.connectsTo > 0 then
-                ---@cast booster g.World.BoosterData
-                booster.effectiveness = math.min(boosterInfo.connectable.max / #booster.connectsTo, 1)
-                for _, target in ipairs(booster.connectsTo) do
-                    local tindex = self.items:coordsToIndex(target.tileX, target.tileY)
-                    self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
-                    table.insert(self.boostersInTiles[tindex], booster)
-                end
-            end
-        else
-            -- Radiating booster
-            local affectedTiles = worldutil.getSpreadTiles(boosterInfo.radiateAlgorithm, boosterInfo.radiate)
-            for _, tile in ipairs(affectedTiles) do
-                local tx, ty = booster.tileX + tile[1], booster.tileY + tile[2]
-                if self:isWithinWorldLimit(booster.tileX, booster.tileY) and self:isWithinWorldLimit(tx, ty) then
-                    local tindex = self.items:coordsToIndex(tx, ty)
-                    self.boostersInTiles[tindex] = self.boostersInTiles[tindex] or {}
-                    table.insert(self.boostersInTiles[tindex], booster)
-                end
-            end
+    -- Update power consumption
+    for _, machine in ipairs(allMachines) do
+        local minfo = g.getMachineInfo(machine.type)
+        if minfo.onUpdatePowerStage then
+            minfo.onUpdatePowerStage(machine, dt)
         end
-
-        booster.animationTime = (booster.animationTime + dt * booster.effectiveness) % 1
     end
 
-    -- Apply booster load multipliers
-    for _, machine in pairs(self.servers) do self:_applyBoosterLoad(machine) end
-    for _, machine in pairs(self.dataProcessors) do self:_applyBoosterLoad(machine) end
-    for _, machine in pairs(self.dataInputs) do self:_applyBoosterLoad(machine) end
+    -- Update heat
+    zeroTileHeat(self.heat)
+    for _, machine in ipairs(allMachines) do
+        local minfo = g.getMachineInfo(machine.type)
+        if minfo.onUpdateHeatStage then
+            minfo.onUpdateHeatStage(machine, dt)
+        end
+    end
+    for _, machine in ipairs(allMachines) do
+        local minfo = g.getMachineInfo(machine.type)
+        if minfo.onUpdateTileHeatStage then
+            minfo.onUpdateTileHeatStage(machine, dt)
+        end
+    end
+    -- Radiate heat
+    for _, machine in ipairs(allMachines) do
+        local minfo = g.getMachineInfo(machine.type)
+        for _, tile in ipairs(worldutil.getSpreadTiles("taxicab", minfo.heatRadiate)) do
+            local tx, ty = machine.tileX + tile[1], machine.tileY + tile[2]
 
+            if self.items:contains(tx, ty) then
+                local divider = 2 ^ worldutil.getDistance("taxicab", tile[1], tile[2])
+                local heat = machine.heat / divider
+                self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
+            end
+        end
+    end
+
+    -- Update most properties for all machines
+    for _, machine in ipairs(allMachines) do
+        local minfo = g.getMachineInfo(machine.type)
+        if minfo.onUpdate then
+            minfo.onUpdate(machine, dt)
+        end
+    end
+
+    --[[ TODO: Move this to individual machine
     -- Update power generator power
     for _, powerGen in pairs(self.powerGens) do
         local powerGenInfo = g.getItemInfo(powerGen.type, "powergen")
         powerGen.power = g.getProperty("getGeneratorLoad", powerGenInfo.power, 1, powerGenInfo)
     end
+    ]]
 
     -- Run power network update
-    ---@type g.World.PowerData[]
+    ---@type g.World.MachineData[]
     local allPowerNodes = {}
-    for _, node in pairs(self.powerGens) do
-        table.clear(node.connectsPowerNodes)
-        allPowerNodes[#allPowerNodes+1] = node
-    end
-    for _, node in pairs(self.powerRelays) do
-        table.clear(node.connectsPowerNodes)
-        allPowerNodes[#allPowerNodes+1] = node
+    for _, machine in ipairs(allMachines) do
+        if machine.powerGenerate ~= nil then
+            allPowerNodes[#allPowerNodes+1] = machine
+        end
     end
 
-    ---@type table<g.World.PowerData, boolean?>
+    ---@type table<g.World.MachineData, boolean?>
     local visited = {}
     for _, startNode in ipairs(allPowerNodes) do
         if not visited[startNode] then
             -- TODO: Table pooling
             ---@type g.World.PowerNetwork
             local network = {
-                generators = {},
-                relays = {},
+                powerNodes = {},
                 consumers = {},
+                nodeConnections = {},
+                consumerConnections = {},
                 totalPower = 0,
                 totalLoad = 0,
             }
-            ---@type table<g.World.ItemData, boolean?>
+            ---@type table<g.World.MachineData, boolean?>
             local consumerSet = {} -- To avoid duplicates in network.consumers
 
             -- BFS to find connected power nodes
@@ -649,29 +516,31 @@ function World:_update(dt)
                 local node = queue[head]
                 head = head + 1
 
-                local nodeInfo = g.getItemInfo(node.type)
-                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
-                if nodeInfo.category == "powergen" then
-                    network.generators[#network.generators+1] = node
-                else
-                    network.relays[#network.relays+1] = node
-                end
+                network.powerNodes[#network.powerNodes+1] = node
                 node.powerNetwork = network
 
                 -- Find connected power nodes
                 for _, other in ipairs(allPowerNodes) do
                     if node ~= other then
-                        local otherInfo = g.getItemInfo(other.type)
-                        ---@cast otherInfo g.PowerGenInfo | g.PowerRelayInfo
+                        local nodeInfo = g.getMachineInfo(node.type)
+                        local otherInfo = g.getMachineInfo(other.type)
                         local dist = worldutil.getDistance("chessboard", node.tileX - other.tileX, node.tileY - other.tileY)
                         if
                             self:isWithinWorldLimit(node.tileX, node.tileY) and
                             self:isWithinWorldLimit(other.tileX, other.tileY) and
-                            dist <= math.max(nodeInfo.wireLength, otherInfo.wireLength)
+                            dist <= math.max(nodeInfo.wireLength or 0, otherInfo.wireLength or 0)
                         then
-                            -- Always record the connection for drawing
-                            if not helper.index(node.connectsPowerNodes, other) then
-                                node.connectsPowerNodes[#node.connectsPowerNodes+1] = other
+                            -- Store connection in the network
+                            -- Check if the reverse connection is already there to avoid duplicates
+                            local alreadyPresent = false
+                            for _, conn in ipairs(network.nodeConnections) do
+                                if (conn[1] == node and conn[2] == other) or (conn[1] == other and conn[2] == node) then
+                                    alreadyPresent = true
+                                    break
+                                end
+                            end
+                            if not alreadyPresent then
+                                network.nodeConnections[#network.nodeConnections+1] = {node, other}
                             end
 
                             if not visited[other] then
@@ -686,25 +555,23 @@ function World:_update(dt)
             -- Find consumers for this network
             for _, node in ipairs(queue) do
                 node.powerNetwork = network
-                local nodeInfo = g.getItemInfo(node.type)
-                ---@cast nodeInfo g.PowerGenInfo | g.PowerRelayInfo
-                table.clear(node.connectsTo)
+                local nodeInfo = g.getMachineInfo(node.type)
 
-                local range = nodeInfo.wireLength
+                local range = nodeInfo.wireLength or 0
                 for dx = -range, range do
                     for dy = -range, range do
                         local tx, ty = node.tileX + dx, node.tileY + dy
                         if self:isWithinWorldLimit(node.tileX, node.tileY) and self:isWithinWorldLimit(tx, ty) then
-                            local item = self.items:get(tx, ty) --[[@as g.World.ItemData]]
-                            if item and not item.removed and item.load > 0 then
+                            local item = self.items:get(tx, ty) --[[@as g.World.MachineData]]
+                            if item and not item.removed and item.powerLoad > 0 then
                                 -- Only add unique consumers to network
                                 if not consumerSet[item] then
                                     item.powerNetwork = network
                                     network.consumers[#network.consumers+1] = item
                                     consumerSet[item] = true
                                 end
-                                -- Keep track of what this node is specifically powering
-                                node.connectsTo[#node.connectsTo+1] = item
+                                -- Record the consumer connection in the network
+                                network.consumerConnections[#network.consumerConnections+1] = {node, item}
                             end
                         end
                     end
@@ -714,13 +581,13 @@ function World:_update(dt)
             -- Calculate power usage and total power
             local totalLoad = 0
             for _, consumer in ipairs(network.consumers) do
-                totalLoad = totalLoad + consumer.load
+                totalLoad = totalLoad + consumer.powerLoad
             end
             network.totalLoad = totalLoad
 
             local totalPower = 0
-            for _, generator in ipairs(network.generators) do
-                totalPower = totalPower + generator.power
+            for _, powerNode in ipairs(network.powerNodes) do
+                totalPower = totalPower + (powerNode.powerGenerate or 0)
             end
             network.totalPower = totalPower
 
@@ -728,258 +595,84 @@ function World:_update(dt)
         end
     end
 
-    -- Update tile heat
-    zeroTileHeat(self.heat)
-    ---@param itemData g.World.ItemData
-    self.items:foreach(function(itemData, x, y)
-        if itemData then
-            local itemInfo, category = g.getItemInfo(itemData.type)
-            if category == "booster" then
-                ---@cast itemData g.World.BoosterData
-                ---@cast itemInfo g.BoosterInfo
-                itemData.effectiveness = itemData.effectiveness * worldutil.getLoadPercentage(itemData)
+    -- Run wire update
+    local wireSet = objects.Set() --[[@as objects.Set<g.World.Wire2>]]
+    for _, wire in pairs(self.wireInput) do
+        wireSet:add(wire)
+    end
+    for _, wire in pairs(self.wireOutput) do
+        wireSet:add(wire)
+    end
+    for _, wire in ipairs(wireSet) do
+        local srcLP = worldutil.getLoadPercentage(wire.from)
+        local dstLP = worldutil.getLoadPercentage(wire.to)
+        local lp1 = (wire.from.wireSpeedMultiplier + wire.to.wireSpeedMultiplier) / 2
+        local lp2 = srcLP * dstLP * lp1
+        local wireLength = getWireLength(wire)
+        local padding = PHYSICAL_DATA_SIZE / wireLength
+        local ndt = (World.WIRE_DPS * dt * lp2) / wireLength
 
-                if itemInfo.connectable then
-                    for _, target in ipairs(itemData.connectsTo) do
-                        local reltx = target.tileX - x
-                        local relty = target.tileY - y
-                        ---@cast itemData g.World.BoosterData
-                        local heat = itemInfo.getTileHeat(reltx, relty) * itemData.effectiveness
-                        self.heat:set(target.tileX, target.tileY, self.heat:get(target.tileX, target.tileY) + heat)
+        for i = #wire.positions, 1, -1 do
+            local wall
+            if wire.positions[i + 1] then
+                wall = wire.positions[i + 1] - padding
+            else
+                wall = 1 -- Make sure exact value
+            end
+
+            -- If they can reach 1 then add it to queue if possible
+            local newpos = wire.positions[i] + ndt
+            if newpos >= 1 then
+                local got = false
+
+                for _, iset in ipairs(wire.to.input) do
+                    if #iset.queue < iset.amount then
+                        if iset.colors:contains(wire.colors[i]) and iset.shapes:contains(wire.shapes[i]) then
+                            iset.queue[#iset.queue+1] = {wire.shapes[i], wire.colors[i]}
+                            got = true
+                            break
+                        end
                     end
+                end
+
+                if got then
+                    table.remove(wire.shapes, i)
+                    table.remove(wire.colors, i)
+                    table.remove(wire.positions, i)
                 else
-                    local affectedTiles = worldutil.getSpreadTiles(itemInfo.radiateAlgorithm, itemInfo.radiate)
-                    for _, tile in ipairs(affectedTiles) do
-                        local tx, ty = x + tile[1], y + tile[2]
-
-                        if self.items:contains(tx, ty) then
-                            local heat = itemInfo.getTileHeat(tile[1], tile[2]) * worldutil.getLoadPercentage(itemData)
-                            self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
-                        end
-                    end
-                end
-            elseif category == "server" then
-                ---@cast itemData g.World.ServerData
-                ---@cast itemInfo g.ServerInfo
-                if itemInfo.heatRadiate > 0 then
-                    local affectedTiles = worldutil.getSpreadTiles(itemInfo.heatRadiateAlgorithm, itemInfo.heatRadiate)
-                    for _, tile in ipairs(affectedTiles) do
-                        local divider = 2 ^ worldutil.getDistance(itemInfo.heatRadiateAlgorithm, tile[1], tile[2])
-                        local tx, ty = x + tile[1], y + tile[2]
-
-                        if self.items:contains(tx, ty) then
-                            local heat = itemInfo.heat / divider
-                            self.heat:set(tx, ty, self.heat:get(tx, ty) + heat)
-                        end
-                    end
+                    newpos = helper.clamp(newpos, 0, wall)
                 end
             end
-        end
-    end)
 
-    -- Run data output update
-    for _, dpData in pairs(self.dataProcessors) do
-        local dpInfo = g.getItemInfo(dpData.type, "data")
-
-        --- Compute booster
-        local boosterMod = 0
-        local boosterMul = 1
-        local biTiles = self.boostersInTiles[self.items:coordsToIndex(dpData.tileX, dpData.tileY)]
-        if biTiles then
-            for _, booster in ipairs(biTiles) do
-                ---@cast booster g.World.BoosterData
-                local boosterInfo = g.getItemInfo(booster.type, "booster")
-                local reltx = dpData.tileX - booster.tileX
-                local relty = dpData.tileY - booster.tileY
-                local bMod = boosterInfo.getPerformanceModifier(reltx, relty)
-                local bMul = boosterInfo.getPerformanceMultiplier(reltx, relty)
-                boosterMod = boosterMod + bMod * booster.effectiveness
-                boosterMul = boosterMul * (1 + (bMul - 1) * booster.effectiveness)
-            end
-        end
-
-        --- Compute DPS
-        local loadPercentage = worldutil.getLoadPercentage(dpData)
-        dpData.dataPerSecond = g.getProperty(
-            "getDataThroughput",
-            dpInfo.dataPerSecond + boosterMod,
-            loadPercentage * boosterMul,
-            dpInfo
-        )
-
-        --- Update data output wires
-        if loadPercentage > 0 then
-            for _, wire in ipairs(dpData.connects) do
-                table.insert(wire.server.connectedOutputs, wire)
-                updateWire(loadPercentage, World.WIRE_DPS, dt, wire)
-            end
-        end
-
-        --- Update data output
-        if dpData.dataRemaining > 0 then
-            local dataToProcess = dpData.dataPerSecond * dt
-            local remaining = dpData.dataRemaining - dataToProcess
-            dpData.rewardToShow = 0
-            if remaining <= 0 then
-                dataToProcess = -remaining
-                g.addResource("money", dpData.reward)
-                dpData.dataRemaining = 0
-                dpData.rewardToShow = dpData.rewardToShow + dpData.reward
-                dpData.reward = 0
-            else
-                dpData.dataRemaining = remaining
-            end
-        end
-
-        if dpData.dataRemaining <= 0 then
-            -- Poll wire
-            for _ = 1, #dpData.connects do
-                local i = (dpData.next + 1) % #dpData.connects + 1
-                dpData.next = i - 1
-                local wire = dpData.connects[i]
-                if #wire.positions > 0 and wire.positions[#wire.positions] >= 1 then
-                    table.remove(wire.positions)
-                    dpData.reward = table.remove(wire.objects)
-                    dpData.dataRemaining = 1
-                    break
-                end
-            end
+            wire.positions[i] = helper.clamp(newpos, 0, wall)
         end
     end
 
-    -- Run data input update
-    for _, diData in pairs(self.dataInputs) do
-        local loadPercentage = worldutil.getLoadPercentage(diData)
-
-        if loadPercentage > 0 then
-            for _, wire in ipairs(diData.connects) do
-                table.insert(wire.server.connectedInputs, wire)
-                updateWire(loadPercentage, World.WIRE_DPS, dt, wire)
-            end
+    -- Run "processing" step
+    for _, machine in ipairs(allMachines) do
+        local processAdvanced = false
+        if machine.processTimeCurrent >= machine.processTime then
+            processAdvanced = self:_tryAdvanceProcess(machine)
         end
-    end
 
-    -- Run server update
-    -- We need to do the server update in multiple pass: Computing the CPS, then updating the job progress.
-    local cps = 0
-    -- Pass 1: Compute CPS
-    for _, serverData in pairs(self.servers) do
-        local serverInfo = g.getItemInfo(serverData.type, "server")
-
-        if #serverData.connectedOutputs > 0 and #serverData.connectedInputs > 0 and not serverData.currentJob then
-            -- Pull job queue from data input wires
-            for _ = 1, #serverData.connectedInputs do
-                local i = (serverData.nextInput + 1) % #serverData.connectedInputs + 1
-                serverData.nextInput = i - 1
-                local wire = serverData.connectedInputs[i]
-                if #wire.positions > 0 and wire.positions[#wire.positions] >= 1 then
-                    table.remove(wire.positions)
-                    serverData.currentJob = table.remove(wire.objects)
-                    serverData.dataTotalEmitted = 0
-                    break
-                end
+        local inputSatisfied = true
+        for _, iset in ipairs(machine.input) do
+            if #iset.queue < iset.amount then
+                inputSatisfied = false
+                break
             end
         end
 
-        -- Compute heat
-        local heat = self.heat:get(serverData.tileX, serverData.tileY)
-        local heatPerfMul = 1
-        local heatdiff = serverInfo.heatTolerance[2] - serverInfo.heatTolerance[1]
-        if heat > serverInfo.heatTolerance[2] then
-            -- Overheat. Reduce performance
-            local diff = heat - serverInfo.heatTolerance[2]
-            heatPerfMul = 2 ^ (-diff / heatdiff)
-        elseif heat < serverInfo.heatTolerance[1] then
-            -- Chilling. Increase performance
-            local diff = serverInfo.heatTolerance[1] - heat
-            heatPerfMul = 1 + diff / heatdiff
-        end
+        if inputSatisfied then
+            machine.processTimeCurrent = math.min(
+                machine.processTimeCurrent + dt * machine.processSpeedMultiplier,
+                machine.processTime
+            )
 
-        -- Compute booster
-        local boosterMod = 0
-        local boosterMul = 1
-        local biTiles = self.boostersInTiles[self.items:coordsToIndex(serverData.tileX, serverData.tileY)]
-        if biTiles then
-            for _, booster in ipairs(biTiles) do
-                ---@cast booster g.World.BoosterData
-                local boosterInfo = g.getItemInfo(booster.type, "booster")
-                local reltx = serverData.tileX - booster.tileX
-                local relty = serverData.tileY - booster.tileY
-                local bMod = boosterInfo.getPerformanceModifier(reltx, relty)
-                local bMul = boosterInfo.getPerformanceMultiplier(reltx, relty)
-                boosterMod = boosterMod + bMod * booster.effectiveness
-                boosterMul = boosterMul * (1 + (bMul - 1) * booster.effectiveness)
+            if not processAdvanced and machine.processTimeCurrent >= machine.processTime then
+                self:_tryAdvanceProcess(machine)
             end
         end
-
-        -- Compute CPS
-        local perfMod = g.ask("getPerformanceModifier", serverInfo) --[[@as number]]
-        local perfMultiplier = g.ask("getPerformanceMultiplier", serverInfo) --[[@as number]]
-        local finalMod = serverInfo.computePerSecond + perfMod + boosterMod
-        local finalMul = perfMultiplier * worldutil.getLoadPercentage(serverData) * heatPerfMul * boosterMul
-        serverData.computePerSecond = math.max(finalMod, 0) * finalMul
-    end
-    -- Pass 2: Data transmit logic (bottlenecking & proportional scaling)
-    for _, serverData in pairs(self.servers) do
-        local job = serverData.currentJob
-        if job and #serverData.connectedOutputs > 0 then
-            -- Process job
-            local reward = job.resource.money / job.outputData
-            local stagedDataTotalEmitted = serverData.dataTotalEmitted
-            local maxDataEmit = job.outputData - stagedDataTotalEmitted
-            local dataEmitted = math.min(serverData.computePerSecond * job.outputData * dt / job.computePower, maxDataEmit)
-            -- Get fractional from the totalDataEmitted and add it
-            dataEmitted = dataEmitted + (stagedDataTotalEmitted % 1)
-            stagedDataTotalEmitted = math.floor(stagedDataTotalEmitted)
-
-            local dataEmittedInt = math.floor(dataEmitted)
-            local hasSent = false
-            if dataEmittedInt > 0 then
-                for _ = 1, #serverData.connectedOutputs do
-                    local i = (serverData.nextOutput + 1) % #serverData.connectedOutputs + 1
-                    serverData.nextOutput = i - 1
-
-                    local wire = serverData.connectedOutputs[i]
-                    local maxSend = math.floor(getWireLength(wire) / PHYSICAL_DATA_SIZE) - #wire.objects
-
-                    if maxSend > 0 then
-                        hasSent = true
-
-                        for _ = 1, math.min(maxSend, dataEmittedInt) do
-                            -- Push data to wire
-                            table.insert(wire.objects, 1, reward)
-                            table.insert(wire.positions, 1, 0)
-                            dataEmittedInt = dataEmittedInt - 1
-                            dataEmitted = dataEmitted - 1
-                            stagedDataTotalEmitted = stagedDataTotalEmitted + 1
-                        end
-                    end
-
-                    if dataEmittedInt == 0 then
-                        break
-                    end
-                end
-            else
-                -- Actually there's none but "virtually" fraction of the data is being processed
-                hasSent = true
-            end
-
-            serverData.dataBottlenecked = not hasSent
-            if hasSent then
-                -- (dataEmitted - dataEmittedInt) will only contain the fractional part
-                local newDataTotalEmitted = stagedDataTotalEmitted + (dataEmitted - dataEmittedInt)
-                local dd = newDataTotalEmitted - serverData.dataTotalEmitted
-                serverData.dataTotalEmitted = newDataTotalEmitted
-                cps = cps + dd * serverData.computePerSecond / job.outputData
-            end
-
-            if dataEmittedInt > 0 then
-                serverData.dataBottlenecked = true
-            end
-        end
-    end
-    if dt > 0 then
-        self.cpsCollector:insert(dt, cps)
     end
 
     -- Run per second update event bus on upgrades
@@ -996,6 +689,14 @@ function World:_update(dt)
         end
 
         g.call("perSecondUpdate", self.seconds)
+
+        for _, machine in ipairs(allMachines) do
+            local minfo = g.getMachineInfo(machine.type)
+            if minfo.perSecondUpdate then
+                minfo.perSecondUpdate(machine, self.seconds)
+            end
+        end
+
         self.timer = self.timer - 1
 
         self.analyticsSendTime = self.analyticsSendTime + 1
@@ -1142,66 +843,66 @@ function World:_draw()
     local center = math.floor(World.TILE_SIZE / 2)
     local worldSize = g.stats.WorldTileSize
     local visibleAreaPadded = visibleArea:padUnit(-consts.WORLD_TILE_SIZE)
+    local wiresToBeDrawn = objects.Set() --[[@as objects.Set<g.World.Wire2>]]
     self.items:foreachInArea(
         center - worldSize,
         center - worldSize,
         center + worldSize,
         center + worldSize,
-        function(itemData, x, y)
-            if itemData then
+        function(machine, x, y)
+            if machine then
                 local cx, cy = (x + 0.5) * wtz, (y + 0.5) * wtz
+
                 if visibleAreaPadded:containsCoords(cx, cy) then
-                    if not itemData.removable then
+                    if not machine.removable then
                         love.graphics.setColor(0, 0, 0)
                         love.graphics.draw(NONREMOVABLE_MESH, x * wtz, y * wtz, 0, wtz, wtz)
                     end
 
-                    local itemInfo, cat = g.getItemInfo(itemData.type)
-                    if cat == "server" then
-                        ---@cast itemData g.World.ServerData
-                        local probs = g.getItemProblems(itemData)
-                        local hasError = false
-                        for _, prob in ipairs(probs) do
-                            local probInfo = g.getItemProblemInfo(prob)
-                            if probInfo.error then
-                                hasError = true
-                                break
-                            end
+                    local probs = g.getMachineProblems(machine)
+                    local hasError = false
+                    for _, prob in ipairs(probs) do
+                        local probInfo = g.getItemProblemInfo(prob)
+                        if probInfo.error then
+                            hasError = true
+                            break
                         end
-
-                        if hasError then
-                            love.graphics.setColor(1, 0.3, 0.3)
-                        elseif itemData.currentJob then
-                            love.graphics.setColor(0.3, 1, 0.3)
-                        else
-                            love.graphics.setColor(0.3, 0.3, 1)
-                        end
-
-                        love.graphics.draw(STATUS_MESH, cx, cy, 0, wtz * 1.1, wtz * 1.1, 0.5, 0.5)
                     end
+
+                    if hasError then
+                        love.graphics.setColor(1, 0.3, 0.3)
+                    -- elseif itemData.currentJob then
+                    --     love.graphics.setColor(0.3, 1, 0.3)
+                    else
+                        love.graphics.setColor(0.3, 0.3, 1)
+                    end
+
+                    love.graphics.draw(STATUS_MESH, cx, cy, 0, wtz * 1.1, wtz * 1.1, 0.5, 0.5)
 
                     love.graphics.setColor(0, 1, 0)
+                    local minfo = g.getMachineInfo(machine.type)
                     if self.htx == x and self.hty == y then
-                        if cat == "booster" then
-                            ---@cast itemInfo g.BoosterInfo
-                            drawRangeVisualization(x, y, itemInfo.radiateAlgorithm, itemInfo.radiate)
-                        elseif cat == "data" or cat == "indata" or cat == "powergen" or cat == "powerrelay" then
-                            ---@cast itemInfo g.PowerGenInfo|g.PowerRelayInfo|g.DataOutInfo|g.DataInInfo
-                            drawRangeVisualization(x, y, "chessboard", itemInfo.wireLength)
+                        if minfo.wireLength then
+                            drawRangeVisualization(x, y, "chessboard", minfo.wireLength)
                         end
                     end
+
                     local trans = gsman.transform(cx, cy)
                     love.graphics.setColor(1, 1, 1)
-                    ---@cast itemInfo g.ItemInfo<g.World.ItemData>
-                    itemInfo.draw(itemData)
+                    minfo.onDraw(machine)
                     trans:pop()
+
+                    for _, wire in ipairs(self.wireInput[machine] or {}) do
+                        wiresToBeDrawn:add(wire)
+                    end
+                    for _, wire in ipairs(self.wireOutput[machine] or {}) do
+                        wiresToBeDrawn:add(wire)
+                    end
                 end
             end
         end
     )
     prof_pop() -- prof_push("item_draw")
-
-    local lw = gsman.setLineWidth(2)
 
     -- Draw power network connectors
     prof_push("power_draw")
@@ -1210,122 +911,51 @@ function World:_draw()
     end
     prof_pop() -- prof_push("power_draw")
 
-    -- Draw data output connectors
-    prof_push("dataoutput_draw")
+    -- Draw wire connectors
+    prof_push("wire_draw")
+    local t = love.timer.getTime()
     love.graphics.setColor(0, 0, 0)
-    for _, itemData in pairs(self.dataProcessors) do
-        local x, y = itemData.tileX, itemData.tileY
-        local dpSelected = self.htx == x and self.hty == y
-        local dpx, dpy = (x + 0.5) * wtz, (y + 0.5) * wtz
-        local dpVisible = visibleAreaPadded:containsCoords(dpx, dpy)
-        for _, wire in ipairs(itemData.connects) do
-            local svr = wire.server
-            local svrx, svry = (svr.tileX + 0.5) * wtz, (svr.tileY + 0.5) * wtz
-            if dpVisible or visibleAreaPadded:containsCoords(svrx, svry) then
-                local alpha = UNHIGHLIGHT_ALPHA
-                if dpSelected or self.htx == svr.tileX and self.hty == svr.tileY then
-                    alpha = HIGHLIGHT_ALPHA
-                end
-
-                -- Draw wire
-                love.graphics.setColor(0, 0, 0, alpha)
-                drawLine(svrx, svry, dpx, dpy, 3)
-
-                -- Draw physical data
-                --[[
-                local svrInfo = g.getItemInfo(svr.type, "server")
-                local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
-                love.graphics.setColor(catinfo.color)
-                for _, pos in ipairs(wire.positions) do
-                    local objx = helper.lerp(svrx, dpx, pos)
-                    local objy = helper.lerp(svry, dpy, pos)
-                    -- TODO: rotation
-                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.2, 0.2)
-                end
-                ]]
-            end
+    for _, wire in ipairs(wiresToBeDrawn) do
+        local selectedSrc = self.htx == wire.from.tileX and self.hty == wire.from.tileY
+        local selectedDst = self.htx == wire.to.tileX and self.hty == wire.to.tileY
+        if selectedSrc or selectedDst then
+            love.graphics.setColor(0, 0, 0, HIGHLIGHT_ALPHA)
+        else
+            love.graphics.setColor(0, 0, 0, UNHIGHLIGHT_ALPHA)
         end
 
-        if itemData.rewardToShow > 0 then
-            worldutil.spawnText(
-                "{o}+{money}"..g.formatNumber(itemData.rewardToShow).."{/o}",
-                (x + 0.5) * wtz,
-                (y + 0.5) * wtz,
-                0.3,
-                15
-            )
-            itemData.rewardToShow = 0
+        -- Draw line
+        local x1 = (wire.from.tileX + 0.5) * wtz
+        local y1 = (wire.from.tileY + 0.5) * wtz
+        local x2 = (wire.to.tileX + 0.5) * wtz
+        local y2 = (wire.to.tileY + 0.5) * wtz
+        drawLine(x1, y1, x2, y2, 3)
+        -- Draw arrow
+        drawArrows(x1, y1, x2, y2, 6, t % 1)
+    end
+    prof_pop() -- prof_push("wire_draw")
+
+    -- Draw packets
+    prof_push("packet_draw")
+    for _, wire in ipairs(wiresToBeDrawn) do
+        for i, pos in ipairs(wire.positions) do
+            local x = helper.lerp(wire.from.tileX + 0.5, wire.to.tileX + 0.5, pos) * wtz
+            local y = helper.lerp(wire.from.tileY + 0.5, wire.to.tileY + 0.5, pos) * wtz
+            love.graphics.setColor(g.SHAPE_COLORS[wire.colors[i]])
+            -- TODO: Wire position
+            g.drawImage(g.SHAPES[wire.shapes[i]].image, x, y, 0, 0.2, 0.2)
         end
     end
-    prof_pop() -- prof_push("dataoutput_draw")
-
-    prof_push("datainput_draw")
-    for _, itemData in pairs(self.dataInputs) do
-        local x, y = itemData.tileX, itemData.tileY
-        local diSelected = self.htx == x and self.hty == y
-        local dix, diy = (x + 0.5) * wtz, (y + 0.5) * wtz
-        local diVisible = visibleAreaPadded:containsCoords(dix, diy)
-        for _, wire in ipairs(itemData.connects) do
-            local svr = wire.server
-            local svrx, svry = (svr.tileX + 0.5) * wtz, (svr.tileY + 0.5) * wtz
-            if diVisible or visibleAreaPadded:containsCoords(svrx, svry) then
-                local alpha = UNHIGHLIGHT_ALPHA
-                if diSelected or self.htx == svr.tileX and self.hty == svr.tileY then
-                    alpha = HIGHLIGHT_ALPHA
-                end
-
-                -- Draw wire
-                love.graphics.setColor(0, 0, 0, alpha)
-                drawLine(dix, diy, svrx, svry, 3)
-
-                -- Draw physical data
-                --[[
-                local svrInfo = g.getItemInfo(svr.type, "server")
-                local catinfo = g.getJobCategoryInfo(svrInfo.computeType)
-                love.graphics.setColor(catinfo.color)
-                for _, pos in ipairs(wire.positions) do
-                    local objx = helper.lerp(dix, svrx, pos)
-                    local objy = helper.lerp(diy, svry, pos)
-                    -- TODO: rotation
-                    g.drawImage(catinfo.symbol, objx, objy, 0, 0.2, 0.2)
-                end
-                ]]
-            end
-        end
-    end
-    prof_pop() -- prof_push("datainput_draw")
-
-    -- Draw booster connectors
-    prof_push("boostercon_draw")
-    for _, booster in pairs(self.boosters) do
-        local boosterSelected = self.htx == booster.tileX and self.hty == booster.tileY
-
-        local bx, by = (booster.tileX + 0.5) * wtz, (booster.tileY + 0.5) * wtz
-        local boosterVisible = visibleAreaPadded:containsCoords(bx, by)
-
-        for _, target in ipairs(booster.connectsTo) do
-            local tx, ty = (target.tileX + 0.5) * wtz, (target.tileY + 0.5) * wtz
-            if boosterVisible or visibleAreaPadded:containsCoords(tx, ty) then
-                local alpha = UNHIGHLIGHT_ALPHA
-                local targetSelected = self.htx == target.tileX and self.hty == target.tileY
-                if boosterSelected or targetSelected then
-                    alpha = HIGHLIGHT_ALPHA
-                end
-                love.graphics.setColor(1, 0, 0, alpha)
-                drawArrows(bx, by, tx, ty, 6, booster.animationTime)
-            end
-        end
-    end
-    prof_pop() -- prof_push("boostercon_draw")
-    lw:pop()
+    prof_pop()
 
     -- Draw item problems status icons
     prof_push("item_problems_draw")
     love.graphics.setColor(1, 1, 1)
     local statusIconF = g.getMainFont(12)
-    self.items:foreach(function(itemData, tx, ty)
-        if itemData then
-            local problems = g.getItemProblems(itemData)
+    self.items:foreach(function(machine, tx, ty)
+        if machine then
+            local problems = g.getMachineProblems(machine)
+
             if #problems > 0 then
                 -- Get error texts
                 local txt = {}
@@ -1456,28 +1086,29 @@ function World:_drawWiresForPotentialItem(itemInfo, tx, ty)
 end
 
 
-
----@param itemData g.World.ItemData
-function World:_applyBoosterLoad(itemData)
-    local biTiles = self.boostersInTiles[self.items:coordsToIndex(itemData.tileX, itemData.tileY)]
-    if biTiles then
-        local mul = 1
-        for _, booster in ipairs(biTiles) do
-            ---@cast booster g.World.BoosterData
-            local bInfo = g.getItemInfo(booster.type, "booster")
-            local reltx, relty = itemData.tileX - booster.tileX, itemData.tileY - booster.tileY
-            local bMul = bInfo.getLoadMultiplier(reltx, relty)
-            ---@cast booster g.World.BoosterData
-            mul = mul * (1 + (bMul - 1) * booster.effectiveness)
-        end
-        itemData.load = itemData.load * mul
-    end
-end
-
 ---@param tx integer?
 ---@param ty integer?
 function World:_setHoveredTile(tx, ty)
     self.htx, self.hty = tx, ty
+end
+
+
+
+---@param machine g.World.MachineData
+function World:_tryAdvanceProcess(machine)
+    local minfo = g.getMachineInfo(machine.type)
+    if minfo.onProcessFinished(machine) then
+        machine.processTimeCurrent = 0
+
+        -- Destroy input datas
+        for _, iset in ipairs(machine.input) do
+            table.clear(iset.queue)
+        end
+
+        return true
+    end
+
+    return false
 end
 
 
@@ -1556,122 +1187,51 @@ function World:putItem(itemId, tx, ty, removable)
         error("Cannot put item '"..itemId.."' at '"..tx..","..ty.."'")
     end
 
-    local itemInfo, category = g.getItemInfo(itemId)
-    local itemData
-    if category == "server" then
-        ---@type g.World.ServerData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            removable = removable,
-            load = itemInfo.load,
-            currentJob = nil,
-            dataTotalEmitted = 0,
-            connectedOutputs = {},
-            connectedInputs = {},
-            nextInput = 0,
-            nextOutput = 0,
-            computePerSecond = 0,
-            dataBottlenecked = false,
+    local minfo = g.getMachineInfo(itemId)
+    ---@type g.World.MachineData
+    local machine = {
+        type = itemId,
+        tileX = tx,
+        tileY = ty,
+        heat = minfo.heat,
+        powerLoad = minfo.powerLoad,
+        powerGenerate = minfo.powerGenerate,
+        powerNetwork = nil,
+        processTime = minfo.processTime,
+        processTimeCurrent = 0,
+        processSpeedMultiplier = 1,
+        input = {},
+        output = nil,
+        wireSpeedMultiplier = 1,
+        removed = false,
+        removable = removable,
+    }
+
+    for _, v in ipairs(minfo.input) do
+        machine.input[#machine.input+1] = {
+            queue = {},
+            amount = v.amount,
+            shapes = objects.Set(v.shapes),
+            colors = objects.Set(v.colors),
         }
-    elseif category == "data" then
-        ---@type g.World.DataOutputData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            removable = removable,
-            load = itemInfo.load,
-            connects = {},
-            dataRemaining = 0,
-            reward = 0,
-            rewardToShow = 0,
-            next = 0,
-            dataPerSecond = 0,
-            requestedLoad = 0,
-            dataScale = 1,
-        }
-    elseif category == "booster" then
-        ---@type g.World.BoosterData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            removable = removable,
-            load = itemInfo.load,
-            connectsTo = {},
-            effectiveness = 1,
-            animationTime = 0,
-        }
-    elseif category == "indata" then
-        ---@type g.World.DataInputData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            removable = removable,
-            load = itemInfo.load,
-            connects = {},
-            next = 0,
-        }
-    elseif category == "powergen" or category == "powerrelay" then
-        ---@type g.World.PowerData
-        itemData = {
-            type = itemId,
-            tileX = tx,
-            tileY = ty,
-            removed = false,
-            removable = removable,
-            load = itemInfo.load,
-            power = 0,
-            connectsTo = {},
-            connectsPowerNodes = {},
-        }
-    else
-        error("fixme category "..category)
     end
 
-    self.items:set(tx, ty, itemData)
-
-    -- Auto-wiring
-    if self.autowire then
-        if category == "server" then
-            ---@cast itemData g.World.ServerData
-            -- Find input and output datas
-            for _, di in ipairs(self.diAreaAutoConnect:get(tx, ty)) do
-                g.connectDataWire(itemData, di)
-            end
-            for _, doobj in ipairs(self.doAreaAutoConnect:get(tx, ty)) do
-                g.connectDataWire(itemData, doobj)
-            end
-        elseif category == "data" or category == "indata" then
-            ---@cast itemData g.World.DataInputData|g.World.DataOutputData
-            ---@cast itemInfo g.DataInInfo|g.DataOutInfo
-            for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
-                local x, y = tile[1] + tx, tile[2] + ty
-                if self.items:contains(x, y) then
-                    local targetItem = self.items:get(x, y)
-
-                    if targetItem then
-                        local _, targetCat = g.getItemInfo(targetItem.type)
-                        if targetCat == "server" then
-                            ---@cast targetItem g.World.ServerData
-                            g.connectDataWire(targetItem, itemData)
-                        end
-                    end
-                end
-            end
-
-            local targetT = category == "data" and self.doAreaAutoConnect or self.diAreaAutoConnect
-            markExistInArea(targetT, itemData, itemInfo.wireLength)
-        end
+    if minfo.output then
+        machine.output = {
+            queue = {},
+            amount = minfo.output.amount,
+            shapes = objects.Set(minfo.output.shapes),
+            colors = objects.Set(minfo.output.colors),
+        }
     end
-    return itemData
+
+    if minfo.init then
+        minfo.init(machine)
+    end
+
+    self.items:set(tx, ty, machine)
+
+    return machine
 end
 
 
@@ -1691,33 +1251,7 @@ function World:_setupPlaceables()
 end
 
 
-
-
----@generic T
----@param counterVal integer
----@param criteria fun(t:g.World.ItemData):boolean
-function World:_cycleNextItem(counterVal, criteria)
-    local sz = self.items.width * self.items.height
-    local j = counterVal
-    for _ = 1, sz do
-        local i = (j + 1) % sz + 1
-        j = i - 1
-
-        local x, y = self.items:indexToCoords(i)
-        local val = self.items:get(x, y)
-        if val and self:isWithinWorldLimit(val.tileX, val.tileY) and criteria(val) then
-            return j, val
-        end
-    end
-    return counterVal, nil
-end
-
-
-
-
 --- Buses
-
-
 
 --- End Buses
 
