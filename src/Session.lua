@@ -73,7 +73,7 @@ function Session:init()
     self.paused = false
 
     self.showTutorials = {
-        start = settings.isTutorialShown() and 0 or -1,
+        start = -1, --settings.isTutorialShown() and 0 or -1,
         upgrades = settings.isTutorialShown()
     }
 end
