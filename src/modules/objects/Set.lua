@@ -15,7 +15,7 @@ Order is not consistent, and will change quite dynamically.
 
 ]]
 ---Availability: Client and Server
----@class objects.Set<T>: objects.Class
+---@class objects.Set<T>: objects.Class, {[integer]:T}
 local Set = Class("objects:Set")
 
 if false then
