@@ -1271,6 +1271,53 @@ end
 
 
 
+local drawLockOpen = helper.genDrawUIIntuition("lock_open", "theme", "theme")
+
+---@generic T
+---@param id string
+---@param name string
+---@param shape fun(r:kirigami.Region,col:objects.Color):kirigami.Region
+---@param def g._CommonSpecificItemDef<T>
+---@param pricemul number?
+local function defineItemUpgrades(id, name, shape, def, pricemul)
+    pricemul = pricemul or 1
+    g.defineUpgrade(id.."_unlock", "Unlock "..name, {
+        description = "Unlocks "..name,
+        descriptionContext = "Upgrade that unlock an item.",
+        kind = "UNLOCKS",
+        targetItem = id,
+        maxLevel = 1,
+        drawUI = function(uinfo, level, r)
+            -- Draw server
+            local r2 = shape(r:padRatio(0.125), def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+            drawLockOpen(uinfo, level, r)
+        end,
+        isItemUnlocked = function(uinfo, level, iid)
+            return iid == id
+        end
+    })
+    g.defineUpgrade(id, name, {
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        kind = "INVENTORY",
+        targetItem = id,
+        maxLevel = g.UPGRADE_INFINITE_LEVEL,
+        drawUI = function(uinfo, level, r)
+            -- Draw server
+            local r2 = shape(r:padRatio(0.125), def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end,
+        getItemTotalInventory = function(uinfo, level, iid)
+            return iid == id and level or 0
+        end
+    })
+end
+
 ---------------------
 -- Items or Buildings
 ---------------------
@@ -1294,7 +1341,6 @@ do
 g.CATEGORIES = {
     server = true,
     data = true,
-    indata = true,
     booster = true,
     powergen = true,
     powerrelay = true
@@ -1324,186 +1370,10 @@ g.CATEGORIES = {
 
 ---@alias g.RadiateAlgorithm "taxicab"|"chessboard"
 
----@class g._ServerInfoCommon
----@field public category "server"
----@field public computePerSecond number
----@field public computeType g.JobCategory
----@field public heatTolerance [number, number]
----@field public heat number
-
----@class g.ServerInfo: g.ItemInfo<g.World.ServerData>, g._ServerInfoCommon
----@field public heatRadiate integer
----@field public heatRadiateAlgorithm g.RadiateAlgorithm
-
----@class g.ServerDefinition: g.ItemDefinition<g.World.ServerData>, g._ServerInfoCommon
----@field public heatRadiate integer? 1 is default
----@field public heatRadiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
-
-
----@class g._DataInfoCommon: g.ItemInfo<g.World.DataOutputData>
----@field public category "data"
----@field public dataPerSecond number
----@field public wireLength integer
-
----@class g.DataOutInfo: g.ItemInfo<g.World.DataOutputData>, g._DataInfoCommon
----@class g.DataOutDefinition: g.ItemDefinition<g.World.DataOutputData>, g._DataInfoCommon
-
-
----@class g._DataInInfoCommon: g.ItemInfo<g.World.DataInputData>
----@field public category "indata"
----@field public queuesJob g.JobCategory
----@field public maxJobQueue integer
----@field public wireLength integer
-
----@class g.DataInInfo: g.ItemInfo<g.World.DataInputData>, g._DataInInfoCommon
----@field public jobFrequencyModifier number
----@field public jobFrequencyMultiplier number
-
----@class g.DataInDefinition: g.ItemDefinition<g.World.DataInputData>, g._DataInInfoCommon
----@field public jobFrequencyModifier number?
----@field public jobFrequencyMultiplier number?
-
-
----@class g.BoosterInfo: g.ItemInfo<g.World.BoosterData>
----@field public category "booster"
----@field public radiate integer
----@field public radiateAlgorithm g.RadiateAlgorithm
----@field public connectable {max:integer,target:g.ItemCategory}?
----@field public getTileHeat fun(reltx:integer,relty:integer):number
----@field public getPerformanceModifier fun(reltx:integer,relty:integer):number
----@field public getPerformanceMultiplier fun(reltx:integer,relty:integer):number
----@field public getLoadMultiplier fun(reltx:integer,relty:integer):number
-
----@class g.BoosterDefinition: g.ItemDefinition<g.World.BoosterData>
----@field public category "booster"
----@field public radiate integer? 1 is default
----@field public radiateAlgorithm g.RadiateAlgorithm? Chessboard algorithm is default
----@field public connectable {max:integer,target:g.ItemCategory}? If exist, booster connects instead of radiate. Exceeding this connection reduces its effectiveness.
----@field public getTileHeat (fun(reltx:integer,relty:integer):number)?
----@field public getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
----@field public getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
----@field public getLoadMultiplier (fun(reltx:integer,relty:integer):number)?
-
-
----@class g.PowerGenInfo: g.ItemInfo<g.World.PowerData>
----@field public category "powergen"
----@field public power number
----@field public wireLength integer
-
----@class g.PowerGenDefinition: g.ItemDefinition<g.World.PowerData>
----@field public load? integer (forced to 0)
----@field public category "powergen"
----@field public power number
----@field public wireLength integer? (defaults to 1)
-
-
----@class g.PowerRelayInfo: g.ItemInfo<g.World.PowerData>
----@field public category "powerrelay"
----@field public wireLength integer
-
----@class g.PowerRelayDefinition: g.ItemDefinition<g.World.PowerData>
----@field public load? integer (forced to 0)
----@field public category "powerrelay"
----@field public wireLength integer? (defaults to 1)
-
 ---@type string[]
 g.ITEMS = {}
 ---@type table<string, g.ItemInfo<g.World.ItemData>>
 local itemList = {}
-
-local function return0() return 0 end
-local function return1() return 1 end
-local function dummy() end
-
----@alias _ItemDef
----| g.ServerDefinition
----| g.DataInDefinition
----| g.DataOutDefinition
----| g.BoosterDefinition
----| g.PowerGenDefinition
----| g.PowerRelayDefinition
-
----@param id string
----@param def _ItemDef
-function g.defineItem(id, def)
-    if itemList[id] then
-        error("Redefined item: "..id)
-    end
-
-    if not g.CATEGORIES[def.category] then
-        error("Invalid category: "..def.category)
-    end
-
-    -- Set the name and description
-    def.id = id
-    def.draw = def.draw or dummy
-    def.name = loc(def.name, nil, {context = def.nameContext})
-    assert(not (def.rawDescription and def.description), "raw description and description is mutually exclusive")
-    if def.rawDescription then
-        def.description = def.rawDescription
-    elseif def.description then
-        def.description = loc(def.description, nil, {context = def.descriptionContext})
-    end
-
-    ---@cast def g.ItemInfo
-    assert(def.price, "invalid price")
-    def.getPriceMultiplier = def.getPriceMultiplier or return1
-    if def.category == "powergen" or def.category == "powerrelay" then
-        def.load = 0
-    else
-        assert(def.load, "invalid load")
-    end
-    def.tags = objects.Set(def.tags or {})
-
-    if def.category == "server" then
-        ---@cast def g.ServerInfo
-        assert(def.computePerSecond, "invalid computePerSecond")
-        assert(def.heatTolerance, "invalid heatTolerance")
-        def.heatTolerance = {
-            math.min(def.heatTolerance[1], def.heatTolerance[2]),
-            math.max(def.heatTolerance[1], def.heatTolerance[2])
-        }
-        def.heatRadiate = def.heatRadiate or 1
-        def.heatRadiateAlgorithm = def.heatRadiateAlgorithm or "chessboard"
-        assert(def.computeType, "invalid computeType")
-        g.getJobCategoryInfo(def.computeType)
-    elseif def.category == "data" then
-        ---@cast def g.DataOutInfo
-        assert(def.dataPerSecond, "invalid dps")
-        assert(def.wireLength and def.wireLength > 0, "invalid wire length")
-    elseif def.category == "indata" then
-        ---@cast def g.DataInInfo
-        assert(g.VALID_JOB_CATEGORIES[def.queuesJob], "invalid queuesJob")
-        assert(def.maxJobQueue and def.maxJobQueue > 0, "invalid maxJobQueue")
-        assert(def.wireLength and def.wireLength > 0, "invalid wireLength")
-        def.jobFrequencyModifier = def.jobFrequencyModifier or 0
-        def.jobFrequencyMultiplier = def.jobFrequencyMultiplier or 1
-    elseif def.category == "booster" then
-        ---@cast def g.BoosterInfo
-        def.radiate = def.radiate or 1
-        def.radiateAlgorithm = def.radiateAlgorithm or "chessboard"
-        def.getTileHeat = def.getTileHeat or return0
-        def.getPerformanceModifier = def.getPerformanceModifier or return0
-        def.getPerformanceMultiplier = def.getPerformanceMultiplier or return1
-        def.getLoadMultiplier = def.getLoadMultiplier or return1
-        if def.connectable then
-            assert(def.connectable.max and def.connectable.max > 0, "invalid max connections")
-            assert(g.CATEGORIES[def.connectable.target], "invalid connect target")
-        end
-    elseif def.category == "powergen" then
-        ---@cast def g.PowerGenInfo
-        assert(def.power and def.power > 0, "invalid power")
-        def.wireLength = math.floor(def.wireLength or 1)
-        assert(def.wireLength > 0, "invalid wireLength")
-    elseif def.category == "powerrelay" then
-        ---@cast def g.PowerRelayInfo
-        def.wireLength = math.floor(def.wireLength or 1)
-        assert(def.wireLength > 0, "invalid wireLength")
-    end
-
-    itemList[id] = def
-    g.ITEMS[#g.ITEMS+1] = id
-end
 
 ---@param itemid string
 ---@param assertCategory g.ItemCategory?
@@ -1558,336 +1428,6 @@ end
 
 -- Quick item registration for specific category
 
-local drawLockOpen = helper.genDrawUIIntuition("lock_open", "theme", "theme")
-
----@generic T
----@param id string
----@param name string
----@param shape fun(r:kirigami.Region,col:objects.Color):kirigami.Region
----@param def g._CommonSpecificItemDef<T>
----@param pricemul number?
-local function defineItemUpgrades(id, name, shape, def, pricemul)
-    pricemul = pricemul or 1
-    g.defineUpgrade(id.."_unlock", "Unlock "..name, {
-        description = "Unlocks "..name,
-        descriptionContext = "Upgrade that unlock an item.",
-        kind = "UNLOCKS",
-        targetItem = id,
-        maxLevel = 1,
-        drawUI = function(uinfo, level, r)
-            -- Draw server
-            local r2 = shape(r:padRatio(0.125), def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-            drawLockOpen(uinfo, level, r)
-        end,
-        isItemUnlocked = function(uinfo, level, iid)
-            return iid == id
-        end
-    })
-    g.defineUpgrade(id, name, {
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        kind = "INVENTORY",
-        targetItem = id,
-        maxLevel = g.UPGRADE_INFINITE_LEVEL,
-        drawUI = function(uinfo, level, r)
-            -- Draw server
-            local r2 = shape(r:padRatio(0.125), def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-        end,
-        getItemTotalInventory = function(uinfo, level, iid)
-            return iid == id and level or 0
-        end
-    })
-end
-
----@class g._CommonSpecificItemDef<T>
----@field nameContext string?
----@field rawDescription string?
----@field description string?
----@field descriptionContext string?
----@field draw fun(r:kirigami.Region,itemData:T?)?
----@field tags string[]?
----@field color objects.Color
----@field price number
----@field getPriceMultiplier (fun(count:integer):number)?
----@field load number
-
----@class g._ServerDef: g._CommonSpecificItemDef<g.World.ServerData>
----@field color objects.Color?
----@field computePerSecond number
----@field computeType string
----@field heatTolerance [number, number]
----@field heat number
-
----@param id string
----@param name string
----@param def g._ServerDef
-function g.defineServer(id, name, def)
-    defineItemUpgrades(id, name, worldutil.drawServerShape, def)
-    def.color = def.color or g.getJobCategoryInfo(def.computeType).color
-
-    return g.defineItem(id, {
-        category = "server",
-        name = name,
-        nameContext = def.nameContext,
-        rawDescription = def.rawDescription,
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        tags = def.tags,
-        load = def.load,
-        price = def.price,
-        getPriceMultiplier = def.getPriceMultiplier,
-        computePerSecond = def.computePerSecond,
-        computeType = def.computeType,
-        heatTolerance = def.heatTolerance,
-        heat = def.heat,
-        draw = function(itemData)
-            ---@cast itemData g.World.ServerData
-            local wtz = consts.WORLD_TILE_SIZE * 0.75
-            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawServerShape(r, def.color)
-            if def.draw then
-                def.draw(r2, itemData)
-            end
-        end,
-        drawItem = function(r)
-            local r2 = worldutil.drawServerShape(r, def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-        end
-    })
-end
-
----@class g._DataDef: g._CommonSpecificItemDef<g.World.DataOutputData>
----@field dataPerSecond number
----@field wireLength integer
-
----@param id string
----@param name string
----@param def g._DataDef
-function g.defineDataOutput(id, name, def)
-    defineItemUpgrades(id, name, worldutil.drawDataOutShape, def)
-
-    return g.defineItem(id, {
-        category = "data",
-        name = name,
-        nameContext = def.nameContext,
-        rawDescription = def.rawDescription,
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        tags = def.tags,
-        price = def.price,
-        getPriceMultiplier = def.getPriceMultiplier,
-        load = def.load,
-        dataPerSecond = def.dataPerSecond,
-        wireLength = def.wireLength,
-        draw = function(itemData)
-            ---@cast itemData g.World.DataOutputData
-            local wtz = consts.WORLD_TILE_SIZE * 0.75
-            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawDataOutShape(r, def.color)
-            if def.draw then
-                def.draw(r2, itemData)
-            end
-        end,
-        drawItem = function(r)
-            local r2 = worldutil.drawDataOutShape(r, def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-        end
-    })
-end
-
----@class g._DataInDef: g._CommonSpecificItemDef<g.World.DataInputData>
----@field color objects.Color?
----@field queuesJob g.JobCategory
----@field maxJobQueue integer
----@field jobFrequencyModifier number?
----@field jobFrequencyMultiplier number?
----@field wireLength integer
-
----@param id string
----@param name string
----@param def g._DataInDef
-function g.defineDataInput(id, name, def)
-    defineItemUpgrades(id, name, worldutil.drawDataInShape, def, 2)
-    def.color = def.color or g.getJobCategoryInfo(def.queuesJob).color
-
-    return g.defineItem(id, {
-        category = "indata",
-        name = name,
-        nameContext = def.nameContext,
-        rawDescription = def.rawDescription,
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        tags = def.tags,
-        price = def.price,
-        getPriceMultiplier = def.getPriceMultiplier,
-        load = def.load,
-        queuesJob = def.queuesJob,
-        maxJobQueue = def.maxJobQueue,
-        jobFrequencyModifier = def.jobFrequencyModifier,
-        jobFrequencyMultiplier = def.jobFrequencyMultiplier,
-        wireLength = def.wireLength,
-        draw = function(itemData)
-            ---@cast itemData g.World.DataInputData
-            local wtz = consts.WORLD_TILE_SIZE * 0.75
-            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawDataInShape(r, def.color)
-            if def.draw then
-                def.draw(r2, itemData)
-            end
-        end,
-        drawItem = function(r)
-            local r2 = worldutil.drawDataInShape(r, def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-        end
-    })
-end
-
----@class g._BoosterDef: g._CommonSpecificItemDef<g.World.BoosterData>
----@field radiate integer
----@field radiateAlgorithm g.RadiateAlgorithm
----@field connectable {max:integer,target:g.ItemCategory}?
----@field getTileHeat (fun(reltx:integer,relty:integer):number)?
----@field getPerformanceModifier (fun(reltx:integer,relty:integer):number)?
----@field getPerformanceMultiplier (fun(reltx:integer,relty:integer):number)?
----@field getLoadMultiplier (fun(reltx:integer,relty:integer):number)?
-
----@param id string
----@param name string
----@param def g._BoosterDef
-function g.defineBooster(id, name, def)
-    defineItemUpgrades(id, name, worldutil.drawBoosterShape, def, 3)
-
-    return g.defineItem(id, {
-        category = "booster",
-        name = name,
-        nameContext = def.nameContext,
-        rawDescription = def.rawDescription,
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        tags = def.tags,
-        price = def.price,
-        getPriceMultiplier = def.getPriceMultiplier,
-        load = def.load,
-        radiate = def.radiate,
-        radiateAlgorithm = def.radiateAlgorithm,
-        connectable = def.connectable,
-        getTileHeat = def.getTileHeat,
-        getPerformanceModifier = def.getPerformanceModifier,
-        getPerformanceMultiplier = def.getPerformanceMultiplier,
-        getLoadMultiplier = def.getLoadMultiplier,
-
-        draw = function(itemData)
-            ---@cast itemData g.World.BoosterData
-            local wtz = consts.WORLD_TILE_SIZE * 0.75
-            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawBoosterShape(r, def.color)
-            if def.draw then
-                def.draw(r2, itemData)
-            end
-        end,
-        drawItem = function(r)
-            local r2 = worldutil.drawBoosterShape(r, def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-        end
-    })
-end
-
----@class g._PowerGenDef: g._CommonSpecificItemDef<g.World.PowerData>
----@field load number? (always 0)
----@field power number
----@field wireLength integer
-
----@param id string
----@param name string
----@param def g._PowerGenDef
-function g.definePowerGenerator(id, name, def)
-    defineItemUpgrades(id, name, worldutil.drawPowerGenShape, def)
-
-    return g.defineItem(id, {
-        category = "powergen",
-        name = name,
-        nameContext = def.nameContext,
-        rawDescription = def.rawDescription,
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        tags = def.tags,
-        price = def.price,
-        getPriceMultiplier = def.getPriceMultiplier,
-        load = 0,
-        power = def.power,
-        wireLength = def.wireLength,
-        draw = function(itemData)
-            ---@cast itemData g.World.PowerData
-            local wtz = consts.WORLD_TILE_SIZE * 0.75
-            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawPowerGenShape(r, def.color)
-            if def.draw then
-                def.draw(r2, itemData)
-            end
-        end,
-        drawItem = function(r)
-            local r2 = worldutil.drawPowerGenShape(r, def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-        end
-    })
-end
-
----@class g._PowerRelayDef: g._CommonSpecificItemDef<g.World.PowerData>
----@field load number? (always 0)
----@field wireLength integer
-
----@param id string
----@param name string
----@param def g._PowerRelayDef
-function g.definePowerRelay(id, name, def)
-    defineItemUpgrades(id, name, worldutil.drawPowerRelayShape, def, 0.5)
-
-    return g.defineItem(id, {
-        category = "powerrelay",
-        name = name,
-        nameContext = def.nameContext,
-        rawDescription = def.rawDescription,
-        description = def.description,
-        descriptionContext = def.descriptionContext,
-        tags = def.tags,
-        price = def.price,
-        getPriceMultiplier = def.getPriceMultiplier,
-        load = 0,
-        wireLength = def.wireLength,
-        draw = function(itemData)
-            ---@cast itemData g.World.PowerData
-            local wtz = consts.WORLD_TILE_SIZE * 0.75
-            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-            local r2 = worldutil.drawPowerRelayShape(r, def.color)
-            if def.draw then
-                def.draw(r2, itemData)
-            end
-        end,
-        drawItem = function(r)
-            local r2 = worldutil.drawPowerRelayShape(r, def.color)
-            if def.draw then
-                def.draw(r2)
-            end
-        end
-    })
-end
-
 end
 
 
@@ -1912,6 +1452,7 @@ local function defineShape(def)
     def.name = loc(def.name, nil, {context = def.nameContext})
     def.nameContext = nil
     assert(g.isImage(def.image))
+    ---@diagnostic disable-next-line: cast-type-mismatch
     ---@cast def g.ShapeInfo
     return def
 end
@@ -1931,6 +1472,7 @@ local function defineShapeColor(def)
     def.name = loc(def.name, nil, {context = def.nameContext})
     def.nameContext = nil
     def.color = objects.Color(def.color)
+    ---@diagnostic disable-next-line: cast-type-mismatch
     ---@cast def g.ShapeColorInfo
     return def
 end
@@ -1958,8 +1500,6 @@ end
 
 do
 
----@type string[]
-g.MACHINES = {}
 ---@type table<string, g.MachineInfo>
 local machineInfo = {}
 
@@ -2088,7 +1628,7 @@ function g.defineMachine(id, name, def)
         }
     end
 
-    g.MACHINES[#g.MACHINES+1] = id
+    g.ITEMS[#g.ITEMS+1] = id
     machineInfo[id] = info
 end
 
@@ -2104,30 +1644,53 @@ end
 
 -- Machine quick helper functions
 
+---@param tags string[]?
+---@param append string
+local function appendTag(tags, append)
+    if tags and helper.index(tags, append) then
+        return tags
+    end
 
----@class g._DataEmitterDef: g._CommonSpecificItemDef<g.World.MachineData>
+    local newTags = helper.shallowCopy(tags or {})
+    newTags[#newTags+1] = append
+    return newTags
+end
+
+
+---@class g._CommonSpecificItemDef<T>
+---@field nameContext string?
+---@field rawDescription string?
+---@field description string?
+---@field descriptionContext string?
+---@field draw fun(r:kirigami.Region,itemData:T?)?
+---@field tags string[]?
+---@field color objects.Color
+---@field price number
+---@field getPriceMultiplier (fun(count:integer):number)?
+---@field load number
+---@field heat number?
+---@field heatTolerance [number, number]?
+
+---@class g._ServerDef: g._CommonSpecificItemDef<g.World.MachineData>
 ---@field emitShape [g.Shape, g.ShapeColor]
 ---@field duration number
----@field heat number
----@field heatTolerance [number, number]?
 
 ---@param id string
 ---@param name string
----@param def g._DataEmitterDef
-function g.defineDataEmitter(id, name, def)
-    local tags = helper.shallowCopy(def.tags or {})
-    tags[#tags+1] = "emitter"
+---@param def g._ServerDef
+function g.defineServer(id, name, def)
+    defineItemUpgrades(id, name, worldutil.drawServerShape, def)
     g.defineMachine(id, name, {
         nameContext = def.nameContext,
         description = def.description,
         descriptionContext = def.descriptionContext,
         powerLoad = def.load,
-        tags = tags,
+        tags = appendTag(def.tags, "server"),
         heat = def.heat,
         heatTolerance = def.heatTolerance,
         processTime = def.duration,
 
-        onProcessFinished = function(itemData)
+        onProcessFinished = function(inst)
             -- TODO: Emit single shape with specific color
             return true
         end,
@@ -2148,6 +1711,286 @@ function g.defineDataEmitter(id, name, def)
     })
 end
 
+
+
+---@class g._DataRewardProcDef: g._CommonSpecificItemDef<g.World.MachineData>
+---@field inputs [integer, g.Shape|"any", g.ShapeColor|"any"][] amount, shape, color
+---@field rewards g.Bundle
+---@field duration number
+
+---@param id string
+---@param name string
+---@param def g._DataRewardProcDef
+function g.defineDataRewardProcessor(id, name, def)
+    defineItemUpgrades(id, name, worldutil.drawDataOutShape, def)
+
+    assert(#def.inputs > 0, "need at least 1 input")
+    ---@type g._AcceptShape[]
+    local newInputs = {}
+    for _, v in ipairs(def.inputs) do
+        newInputs[#newInputs+1] = {
+            amount = v[1],
+            shape = v[2] == "any" and "any" or {v[2]},
+            color = v[3] == "any" and "any" or {v[3]},
+        }
+    end
+
+    return g.defineMachine(id, name, {
+        nameContext = def.nameContext,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        powerLoad = def.load,
+        tags = appendTag(def.tags, "data"),
+        heat = def.heat,
+        heatTolerance = def.heatTolerance,
+        processTime = def.duration,
+        inputs = newInputs,
+
+        onProcessFinished = function(inst)
+            -- TODO: More sophisticated (e.g. effects, buses)
+            g.addResources(def.rewards)
+            return true
+        end,
+        onDraw = function(inst)
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2, inst)
+            end
+        end,
+        onDrawItem = function(r)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+---@class g._DataTransformerDef: g._CommonSpecificItemDef<g.World.MachineData>
+---@field inputs [integer, g.Shape|"any", g.ShapeColor|"any"][] amount, shape, color
+---@field output [integer, g.Shape, g.ShapeColor] amount, shape, color
+---@field duration number
+
+---@param id string
+---@param name string
+---@param def g._DataTransformerDef
+function g.defineDataTransformer(id, name, def)
+    defineItemUpgrades(id, name, worldutil.drawDataInShape, def)
+    assert(#def.inputs > 0, "use g.defineServer instead")
+    ---@type g._AcceptShape[]
+    local newInputs = {}
+    for _, v in ipairs(def.inputs) do
+        newInputs[#newInputs+1] = {
+            amount = v[1],
+            shape = v[2] == "any" and "any" or {v[2]},
+            color = v[3] == "any" and "any" or {v[3]},
+        }
+    end
+
+    return g.defineMachine(id, name, {
+        nameContext = def.nameContext,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        powerLoad = def.load,
+        tags = appendTag(def.tags, "transform"),
+        heat = def.heat,
+        heatTolerance = def.heatTolerance,
+        processTime = def.duration,
+        inputs = def.inputs,
+        output = {
+            amount = def.output[1],
+            shape = {def.output[2]},
+            color = {def.output[3]},
+        },
+
+        onProcessFinished = function(inst)
+            -- TODO: Emit shape with specific color
+            return true
+        end,
+        onDraw = function(inst)
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2, inst)
+            end
+        end,
+        onDrawItem = function(r)
+            local r2 = worldutil.drawServerShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+
+---@class g._PowerGenDef: g._CommonSpecificItemDef<g.World.GeneratorData>
+---@field power number
+---@field wireLength integer
+---@field fuel [integer, g.Shape|"any", g.ShapeColor|"any"][]? amount, shape, color
+---@field fuelProcessDuration number?
+---@field powerDuration number?
+
+---@param id string
+---@param name string
+---@param def g._PowerGenDef
+function g.definePowerGenerator(id, name, def)
+    defineItemUpgrades(id, name, worldutil.drawPowerGenShape, def)
+
+    ---@type g._AcceptShape[]?
+    local newInputs = nil
+    if def.fuel then
+        assert(def.powerDuration and def.powerDuration > 0, "need generation duration")
+        assert(def.fuelProcessDuration and def.fuelProcessDuration > 0, "need fuel process duration")
+        for _, v in ipairs(def.fuel) do
+            newInputs[#newInputs+1] = {
+                amount = v[1],
+                shape = v[2] == "any" and "any" or {v[2]},
+                color = v[3] == "any" and "any" or {v[3]},
+            }
+        end
+    end
+
+    return g.defineMachine(id, name, {
+        name = name,
+        nameContext = def.nameContext,
+        rawDescription = def.rawDescription,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        tags = appendTag(def.tags, "powergen"),
+        price = def.price,
+        getPriceMultiplier = def.getPriceMultiplier,
+        powerLoad = 0,
+        powerGenerate = def.power,
+        wireLength = def.wireLength,
+        input = newInputs,
+        processTime = def.fuelProcessDuration or 0,
+
+        init = function(inst)
+            ---@cast inst g.World.GeneratorData
+            inst.duration = def.powerDuration or 0
+            inst.timeout = 0
+        end,
+        onProcessFinished = function(inst)
+            ---@cast inst g.World.GeneratorData
+            inst.timeout = inst.duration
+            return true
+        end,
+        onUpdatePowerStage = function(inst, dt)
+            ---@cast inst g.World.GeneratorData
+            inst.timeout = math.max(inst.timeout - dt, 0)
+            if inst.timeout > 0 or inst.duration == 0 then
+                inst.powerGenerate = def.power
+            else
+                inst.powerGenerate = 0
+            end
+        end,
+        onDraw = function(inst)
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawPowerGenShape(r, def.color)
+            if def.draw then
+                ---@cast inst g.World.GeneratorData
+                def.draw(r2, inst)
+            end
+        end,
+        onDrawItem = function(r)
+            local r2 = worldutil.drawPowerGenShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+end
+
+---@class g._PowerRelayDef: g._CommonSpecificItemDef<g.World.MachineData>
+---@field wireLength integer
+
+---@param id string
+---@param name string
+---@param def g._PowerRelayDef
+function g.definePowerRelay(id, name, def)
+    defineItemUpgrades(id, name, worldutil.drawPowerRelayShape, def, 0.5)
+
+    return g.defineMachine(id, name, {
+        nameContext = def.nameContext,
+        description = def.description,
+        descriptionContext = def.descriptionContext,
+        powerLoad = 0,
+        powerGenerate = 0,
+        input = {
+            {
+                amount = 1,
+                shape = "any",
+                color = "any"
+            }
+        },
+        output = {
+            amount = 1,
+            shape = "any",
+            color = "any"
+        },
+        wireLength = def.wireLength,
+        tags = appendTag(def.tags, "powerrelay"),
+        heat = def.heat,
+        heatTolerance = def.heatTolerance,
+        processTime = 0,
+
+        onProcessFinished = function (inst)
+            -- TODO: Emit shape with specific color
+            return true
+        end,
+        onUpdate = function(inst)
+            -- TODO: Query the first input and change output accordingly
+        end,
+        onDraw = function(inst)
+            local wtz = consts.WORLD_TILE_SIZE * 0.75
+            local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+            local r2 = worldutil.drawPowerRelayShape(r, def.color)
+            if def.draw then
+                def.draw(r2, inst)
+            end
+        end,
+        onDrawItem = function(r)
+            local r2 = worldutil.drawPowerRelayShape(r, def.color)
+            if def.draw then
+                def.draw(r2)
+            end
+        end
+    })
+
+    -- return g.defineItem(id, {
+    --     category = "powerrelay",
+    --     name = name,
+    --     nameContext = def.nameContext,
+    --     rawDescription = def.rawDescription,
+    --     description = def.description,
+    --     descriptionContext = def.descriptionContext,
+    --     tags = def.tags,
+    --     price = def.price,
+    --     getPriceMultiplier = def.getPriceMultiplier,
+    --     load = 0,
+    --     wireLength = def.wireLength,
+    --     draw = function(itemData)
+    --         ---@cast itemData g.World.PowerData
+    --         local wtz = consts.WORLD_TILE_SIZE * 0.75
+    --         local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
+    --         local r2 = worldutil.drawPowerRelayShape(r, def.color)
+    --         if def.draw then
+    --             def.draw(r2, itemData)
+    --         end
+    --     end,
+    --     drawItem = function(r)
+    --         local r2 = worldutil.drawPowerRelayShape(r, def.color)
+    --         if def.draw then
+    --             def.draw(r2)
+    --         end
+    --     end
+    -- })
+end
 
 end
 

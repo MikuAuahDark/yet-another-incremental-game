@@ -38,6 +38,10 @@ end
 ---@field removed boolean
 ---@field removable boolean
 
+---@class g.World.GeneratorData: g.World.MachineData
+---@field duration number (readwrite; duration of the generating)
+---@field timeout number (readwrite; if 0 = no power)
+
 ---@class g.World.ItemData
 ---@field type string Item ID
 ---@field tileX integer (readonly; updated every frame)
@@ -420,7 +424,7 @@ function World:_update(dt)
                 -- Update (SSOT)
                 machine.tileX = x
                 machine.tileY = y
-                machine.powerLoad = minfo.powerLoad or 0
+                machine.powerLoad = minfo.powerLoad
                 machine.powerGenerate = minfo.powerGenerate
                 machine.heat = minfo.heat
                 machine.wireSpeedMultiplier = 1
@@ -1097,6 +1101,10 @@ end
 ---@param machine g.World.MachineData
 function World:_tryAdvanceProcess(machine)
     local minfo = g.getMachineInfo(machine.type)
+    if not minfo.onProcessFinished then
+        return true
+    end
+
     if minfo.onProcessFinished(machine) then
         machine.processTimeCurrent = 0
 
