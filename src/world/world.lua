@@ -32,6 +32,7 @@ end
 ---@field processTime number? (readwrite; in seconds)
 ---@field processTimeCurrent number (readwrite; in seconds)
 ---@field processSpeedMultiplier number (readwrite)
+---@field problems objects.Set<g.ItemProblems> (readwrite; updated every frame)
 ---@field input g.World.QueuedInput[]
 ---@field output g._InputSetWithAmount? (readwrite; only applicable if it has outputs)
 ---@field wireSpeedMultiplier number (readwrite)
@@ -429,6 +430,7 @@ function World:_update(dt)
                 machine.heat = minfo.heat
                 machine.wireSpeedMultiplier = 1
                 machine.processSpeedMultiplier = 1
+                machine.problems:clear()
                 allMachines[#allMachines+1] = machine
             end
         end
@@ -655,9 +657,9 @@ function World:_update(dt)
     -- Run "processing" step
     for _, machine in ipairs(allMachines) do
         if machine.processTime then
-            local processAdvanced = false
+            local processWasAdvanced = false
             if machine.processTimeCurrent >= machine.processTime then
-                processAdvanced = self:_tryAdvanceProcess(machine)
+                processWasAdvanced = self:_tryAdvanceProcess(machine)
             end
 
             local inputSatisfied = true
@@ -671,14 +673,33 @@ function World:_update(dt)
             if inputSatisfied then
                 machine.processTimeCurrent = math.min(
                     machine.processTimeCurrent + dt * machine.processSpeedMultiplier,
-                    machine.processTime
+                    machine.processTime or 0
                 )
 
-                if not processAdvanced and machine.processTimeCurrent >= machine.processTime then
-                    self:_tryAdvanceProcess(machine)
+                if not processWasAdvanced and machine.processTimeCurrent >= machine.processTime then
+                    processWasAdvanced = self:_tryAdvanceProcess(machine)
+                end
+
+                if not processWasAdvanced then
+                    machine.problems:add("data_bottleneck")
                 end
             end
         end
+    end
+
+    -- Update machine problems
+    for _, machine in ipairs(allMachines) do
+        -- Power network
+        if not machine.powerGenerate and machine.powerLoad > 0 then
+            if not machine.powerNetwork then
+                machine.problems:add("no_power")
+            elseif machine.powerNetwork.totalLoad > machine.powerNetwork.totalPower then
+                machine.problems:add("overloaded")
+            end
+        end
+
+        -- Input wire
+        -- TODO
     end
 
     -- Run per second update event bus on upgrades
@@ -1132,6 +1153,7 @@ function World:putItem(itemId, tx, ty, removable)
         processTime = minfo.processTime,
         processTimeCurrent = 0,
         processSpeedMultiplier = 1,
+        problems = objects.Set(),
         input = {},
         output = nil,
         wireSpeedMultiplier = 1,

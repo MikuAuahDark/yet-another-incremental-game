@@ -2265,62 +2265,29 @@ local ITEM_PROBLEMS = {
     }
 }
 
----@param itemData g.World.ItemData
-function g.getItemProblems(itemData)
-    ---@type g.ItemProblems[]
-    local result = {}
-
-    if not itemData.powerNetwork then
-        result[#result+1] = "no_power"
-    elseif itemData.powerNetwork.totalLoad > itemData.powerNetwork.totalPower then
-        result[#result+1] = "overloaded"
+---@param a g.ItemProblems
+---@param b g.ItemProblems
+local function sortMachineProblems(a, b)
+    local ai = ITEM_PROBLEMS[a]
+    local bi = ITEM_PROBLEMS[b]
+    -- Make sure "Error" one is first
+    if ai.error ~= bi.error then
+        return ai.error
     end
-
-    local itemInfo, category = g.getItemInfo(itemData.type)
-
-    if category == "server" then
-        ---@cast itemData g.World.ServerData
-        ---@cast itemInfo g.ServerInfo
-        local nInputs = #itemData.connectedInputs
-        local nOutputs = #itemData.connectedOutputs
-
-        if nOutputs == 0 and nInputs == 0 then
-            result[#result+1] = "no_io_connection"
-        elseif nOutputs == 0 then
-            result[#result+1] = "not_connected"
-        elseif nInputs == 0 then
-            result[#result+1] = "no_input_connection"
-        end
-
-        if itemData.currentJob and itemData.dataBottlenecked then
-            result[#result+1] = "data_bottleneck"
-        end
-
-        if g.getTileHeat(itemData.tileX, itemData.tileY) > itemInfo.heatTolerance[2] then
-            result[#result+1] = "overheat"
-        end
-    elseif category == "data" then
-        ---@cast itemData g.World.DataOutputData
-        ---@cast itemInfo g.DataOutInfo
-        if #itemData.connects == 0 then
-            result[#result+1] = "no_connection"
-        end
-    elseif category == "indata" then
-        ---@cast itemData g.World.DataInputData
-        ---@cast itemInfo g.DataInInfo
-        if #itemData.connects == 0 then
-            result[#result+1] = "input_not_connected"
-        end
-    end
-
-    return result
+    return a < b
 end
 
 ---@param machine g.World.MachineData
----@return g.ItemProblems[]
+---@deprecated use g.getMachineProblems instead
+function g.getItemProblems(machine)
+    return g.getMachineProblems(machine)
+end
+
+---@param machine g.World.MachineData
 function g.getMachineProblems(machine)
-    -- TODO
-    return {}
+    local r = machine.problems:totable()
+    table.sort(r, sortMachineProblems)
+    return r
 end
 
 ---@param problem g.ItemProblems
