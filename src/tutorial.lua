@@ -3,7 +3,7 @@
 local function renderTutorial0(safeArea)
     local mode = 0
     local textF = g.getMainFont(12)
-    local mainpower = g.getItemInfo("main_power", "powergen")
+    local mainpower = g.getMachineInfo("main_power")
 
     local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 200)
     builder:addText(TEXT.TUTORIAL_0_1, textF, "center")
@@ -36,7 +36,7 @@ end
 local function renderTutorial1(safeArea)
     local skipped = false
     local textF = g.getMainFont(12)
-    local bs = g.getItemInfo("basic_server", "server")
+    local bs = g.getMachineInfo("basic_server")
 
     local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 150)
     builder:addText(TEXT.TUTORIAL_1_1, textF, "center")
@@ -60,7 +60,7 @@ end
 local function renderTutorial2(safeArea)
     local skipped = false
     local textF = g.getMainFont(12)
-    local bdi = g.getItemInfo("basic_indata", "indata")
+    local bdi = g.getMachineInfo("basic_indata")
 
     local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 180)
     builder:addText(TEXT.TUTORIAL_2_1, textF, "center")
@@ -85,7 +85,7 @@ end
 local function renderTutorial3(safeArea)
     local skipped = false
     local textF = g.getMainFont(12)
-    local bdo = g.getItemInfo("basic_data", "data")
+    local bdo = g.getMachineInfo("basic_data")
 
     local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 150)
     builder:addText(TEXT.TUTORIAL_3_1, textF, "center")
@@ -177,9 +177,9 @@ end
 local function renderTutorial7(safeArea)
     local skipped = false
     local textF = g.getMainFont(12)
-    local bs = g.getItemInfo("basic_server", "server")
-    local bdi = g.getItemInfo("basic_indata", "indata")
-    local bdo = g.getItemInfo("basic_data", "data")
+    local bs = g.getMachineInfo("basic_server")
+    local bdi = g.getMachineInfo("basic_indata")
+    local bdo = g.getMachineInfo("basic_data")
 
     local builder = ui.TooltipBuilder(safeArea.x + safeArea.w, safeArea.y + safeArea.h, 1, 1, safeArea, 180)
     -- builder:addText(TEXT.TUTORIAL_7_1, textF, "center") -- this is just repeating same thing as 6_1, I dont think we need?

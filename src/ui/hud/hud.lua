@@ -140,21 +140,21 @@ local function drawActionButton(r, image, title, desc)
 end
 
 
----@param cat g.ItemCategory
-local function filterServer(cat)
-    return cat == "server"
+---@param minfo g.MachineInfo
+local function filterServer(minfo)
+    return not not (#minfo.input == 0 and minfo.output)
 end
----@param cat g.ItemCategory
-local function filterData(cat)
-    return cat == "data" or cat == "indata"
+---@param minfo g.MachineInfo
+local function filterData(minfo)
+    return #minfo.input > 0
 end
----@param cat g.ItemCategory
-local function filterBooster(cat)
-    return cat == "booster"
+---@param minfo g.MachineInfo
+local function filterBooster(minfo)
+    return minfo.tags:contains("booster")
 end
----@param cat g.ItemCategory
-local function filterPower(cat)
-    return cat == "powergen" or cat == "powerrelay"
+---@param minfo g.MachineInfo
+local function filterPower(minfo)
+    return not not minfo.powerGenerate
 end
 
 
@@ -196,7 +196,7 @@ function HUD:draw(show)
                 tabF:getWidth(TEXT.CATEGORY_POWER) + 2 * (TRAPEZOID_PADDING + 1),
                 0
             )
-            ---@type table<string, [(fun(cat:g.ItemCategory):boolean), kirigami.Region, string]>
+            ---@type table<string, [(fun(minfo:g.MachineInfo):boolean), kirigami.Region, string]>
             local tabs = {
                 server = {filterServer, serversTabR, TEXT.CATEGORY_SERVER},
                 data = {filterData, dataTabR, TEXT.CATEGORY_DATA},
@@ -234,13 +234,13 @@ function HUD:draw(show)
             end
 
             -- Get item list to be drawn
-            ---@type g.ItemInfo[] contains unlocked items
+            ---@type g.MachineInfo[] contains unlocked items
             local items = {}
             for _, v in ipairs(g.ITEMS) do
                 if g.isItemUnlocked(v) then
-                    local itemInfo, cat = g.getItemInfo(v)
-                    if tabs[self.activeTab][1](cat) then
-                        items[#items+1] = itemInfo
+                    local minfo = g.getMachineInfo(v)
+                    if tabs[self.activeTab][1](minfo) then
+                        items[#items+1] = minfo
                     end
                 end
             end
@@ -321,14 +321,14 @@ function HUD:draw(show)
                         local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
                         local itemInfo = items[i]
                         local x, y, w, h = clickAreaR:get()
-                        local inventory = g.getItemInventoryCount(itemInfo.id)
+                        local inventory = g.getItemInventoryCount(itemInfo.type)
 
                         -- Tutorial State 0: Highlight Basic Server
                         if s then
                             local highlightForTutorial =
-                                (s.showTutorials.start == 1 and itemInfo.id == "basic_server") or
-                                (s.showTutorials.start == 2 and itemInfo.id == "basic_indata") or
-                                (s.showTutorials.start == 3 and itemInfo.id == "basic_data")
+                                (s.showTutorials.start == 1 and itemInfo.type == "basic_server") or
+                                (s.showTutorials.start == 2 and itemInfo.type == "basic_indata") or
+                                (s.showTutorials.start == 3 and itemInfo.type == "basic_data")
 
                             if highlightForTutorial then
                                 local t = math.sin(love.timer.getTime() * 3) ^ 2
@@ -349,10 +349,10 @@ function HUD:draw(show)
                         local col
                         if inventory > 0 then
                             if iml.wasJustClicked(x, y, w, h, 1, itemInfo) then
-                                if self.selectedItem == itemInfo.id then
+                                if self.selectedItem == itemInfo.type then
                                     self.selectedItem = nil
                                 else
-                                    self.selectedItem = itemInfo.id
+                                    self.selectedItem = itemInfo.type
                                 end
                             end
                             col = gsman.setColor(1, 1, 1)
@@ -362,7 +362,7 @@ function HUD:draw(show)
 
                         -- Draw actual item
                         local itemR = itemPlacementR:padRatio(0.1):shrinkToAspectRatio(1, 1):center(itemPlacementR)
-                        itemInfo.drawItem(itemR)
+                        itemInfo.onDrawItem(itemR)
                         col:pop()
 
                         -- Draw inventory quantity

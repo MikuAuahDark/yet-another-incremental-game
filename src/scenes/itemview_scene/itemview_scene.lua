@@ -39,13 +39,13 @@ function ItemViewScene:draw()
     else
         love.graphics.setColor(objects.Color.BLACK)
     end
-    local itemInfo = g.getItemInfo(g.ITEMS[self.itemIndices])
+    local itemInfo = g.getMachineInfo(g.ITEMS[self.itemIndices])
     local f = g.getThickFont(18)
-    love.graphics.print(itemInfo.name.."\nID: "..itemInfo.id.."\nIdx: "..self.itemIndices, f, 4, 4)
+    love.graphics.print(itemInfo.name.."\nID: "..itemInfo.type.."\nIdx: "..self.itemIndices, f, 4, 4)
     ui.debugRegion(itemR)
 
     love.graphics.setColor(1, 1, 1)
-    itemInfo.drawItem(itemR)
+    itemInfo.onDrawItem(itemR)
 
     ui.endUI()
 end

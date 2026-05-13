@@ -1598,7 +1598,7 @@ end
 ---@field public name string
 ---@field public tags objects.Set<string>
 ---@field public powerLoad number
----@field public input g._InputSetWithAmount[]?
+---@field public input g._InputSetWithAmount[]
 ---@field public output g._InputSetWithAmount?
 ---@field public processTime number?
 ---@field public wireLength integer (output only)

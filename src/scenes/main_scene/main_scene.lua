@@ -67,7 +67,7 @@ function MainScene:draw()
                 if g.getItemInventoryCount(hud.selectedItem) > 0 then
                     if g.canPutItem(tx, ty) then
                         love.graphics.setColor(0, 1, 0, t)
-                        drawItemPreview = g.getItemInfo(hud.selectedItem)
+                        drawItemPreview = g.getMachineInfo(hud.selectedItem)
                     else
                         love.graphics.setColor(1, 0, 0, t)
                     end
@@ -82,7 +82,7 @@ function MainScene:draw()
         if drawItemPreview then
             local itemR = Kirigami(tx * wtz, ty * wtz, wtz, wtz)
             local col = gsman.setColor(1, 1, 1, 0.5)
-            drawItemPreview.drawItem(itemR:padRatio(0.25))
+            drawItemPreview.onDrawItem(itemR:padRatio(0.25))
             col:pop()
         end
     else
@@ -262,9 +262,9 @@ function MainScene:draw()
             col:pop()
         else
             -- Place
-            local itemInfo = g.getItemInfo(hud.selectedItem)
+            local itemInfo = g.getMachineInfo(hud.selectedItem)
             local col = gsman.setColor(1, 1, 1, 0.5)
-            itemInfo.drawItem(itemR)
+            itemInfo.onDrawItem(itemR)
             col:pop()
         end
     end
