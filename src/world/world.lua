@@ -35,7 +35,9 @@ end
 ---@field processSpeedMultiplier number (readwrite)
 ---@field problems objects.Set<g.ItemProblems> (readwrite; updated every frame)
 ---@field input g.World.QueuedInput[]
+---@field inputCycle integer round-robin indices cycle for the wire input
 ---@field output g._InputSetWithAmount? (readwrite; only applicable if it has outputs)
+---@field outputCycle integer round-robin indices cycle for the wire output
 ---@field wireSpeedMultiplier number (readwrite)
 ---@field removed boolean
 ---@field removable boolean
@@ -542,6 +544,7 @@ function World:_update(dt)
     for _, wire in pairs(self.wireOutput) do
         wireSet:add(wire)
     end
+    -- Update data in wires
     for _, wire in ipairs(wireSet) do
         local srcLP = worldutil.getLoadPercentage(wire.from)
         local dstLP = worldutil.getLoadPercentage(wire.to)
@@ -556,34 +559,40 @@ function World:_update(dt)
             if wire.positions[i + 1] then
                 wall = wire.positions[i + 1] - padding
             else
-                wall = 1 -- Make sure exact value
+                wall = 1
             end
 
-            -- If they can reach 1 then add it to queue if possible
-            local newpos = wire.positions[i] + ndt
-            if newpos >= 1 then
-                local got = false
+            wire.positions[i] = helper.clamp(wire.positions[i] + ndt, 0, wall)
+        end
+    end
+    -- Poll data from wire inputs
+    for _, machine in ipairs(allMachines) do
+        if #machine.input > 0 and self.wireInput[machine] then
+            for _, iset in ipairs(machine.input) do
+                if #iset.queue < iset.amount then
+                    local wis = self.wireInput[machine]
+                    for j = 1, #wis do
+                        local i = (machine.inputCycle + j) % #wis + 1
+                        machine.inputCycle = i
 
-                for _, iset in ipairs(wire.to.input) do
-                    if #iset.queue < iset.amount then
-                        if iset.colors:contains(wire.colors[i]) and iset.shapes:contains(wire.shapes[i]) then
-                            iset.queue[#iset.queue+1] = {wire.shapes[i], wire.colors[i]}
-                            got = true
-                            break
+                        local wire = wis[i]
+                        if g.isDataWireCompatible(wire, iset) then
+                            local pos1 = helper.index(wire.positions, 1)
+                            if pos1 then
+                                iset.queue[#iset.queue+1] = {
+                                    table.remove(wire.shapes, pos1),
+                                    table.remove(wire.colors, pos1)
+                                }
+                                table.remove(wire.positions, pos1)
+                            end
+
+                            if #iset.queue >= iset.amount then
+                                break
+                            end
                         end
                     end
                 end
-
-                if got then
-                    table.remove(wire.shapes, i)
-                    table.remove(wire.colors, i)
-                    table.remove(wire.positions, i)
-                else
-                    newpos = helper.clamp(newpos, 0, wall)
-                end
             end
-
-            wire.positions[i] = helper.clamp(newpos, 0, wall)
         end
     end
 
@@ -1086,7 +1095,9 @@ function World:putItem(itemId, tx, ty, removable)
         processSpeedMultiplier = 1,
         problems = objects.Set(),
         input = {},
+        inputCycle = 1,
         output = nil,
+        outputCycle = 1,
         wireSpeedMultiplier = 1,
         removed = false,
         removable = removable,

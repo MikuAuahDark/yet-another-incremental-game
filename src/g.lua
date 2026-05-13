@@ -1400,6 +1400,15 @@ function g.getRichtextForShapeAndColor(shape, color)
     return helper.wrapRichtextColor(colorInfo.color, "{"..shapeInfo.image.."}")
 end
 
+
+---@param wire g.World.Wire2
+---@param input g._InputSet
+function g.isDataWireCompatible(wire, input)
+    local intersectShape = input.shapes:intersection(wire.criterion.shapes)
+    local intersectColor = input.colors:intersection(wire.criterion.colors)
+    return intersectShape:equals(input.shapes) and intersectColor:equals(input.colors)
+end
+
 end
 
 --------------
