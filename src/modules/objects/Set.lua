@@ -188,4 +188,21 @@ function Set:totable()
     return result
 end
 
+---@generic T
+---@param self objects.Set<T>
+---@param other objects.Set<T>
+function Set:equals(other)
+    if self.len ~= other.len then
+        return false
+    end
+
+    for _, v in ipairs(other) do
+        if not self:has(v) then
+            return false
+        end
+    end
+
+    return true
+end
+
 return Set
