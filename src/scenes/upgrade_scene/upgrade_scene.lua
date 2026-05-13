@@ -155,23 +155,8 @@ local function drawUpgradeBox(mode, upgrade, noframe)
             love.graphics.rectangle(mode, x, y, w, h, 12, 12)
             col:pop()
         elseif uinfo.kind == "INVENTORY" then
-            -- Rectangle but purple
+            -- Purple diamond
             bgColor = g.COLORS.UPGRADE_KINDS.INVENTORY
-            local col = gsman.mulColor(bgColor)
-            local x, y, w, h = frameR:get()
-            love.graphics.rectangle(mode, x, y, w, h, 4, 4)
-            col:pop()
-        elseif uinfo.kind == "EFFICIENCY" then
-            -- Circle
-            local x, y, w, h = frameR:get()
-            local r = (w + h) / 4
-            bgColor = uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK
-            local col = gsman.mulColor(bgColor)
-            love.graphics.circle(mode, x + r, y + r, r * 0.9)
-            col:pop()
-        elseif uinfo.kind == "JOB" then
-            -- Diamond
-            bgColor = g.COLORS.UPGRADE_KINDS.JOB
             local col = gsman.mulColor(bgColor)
             local x, y, w, h = frameR:get()
             love.graphics.polygon(mode,
@@ -180,6 +165,14 @@ local function drawUpgradeBox(mode, upgrade, noframe)
                 x + w / 2, y + h * 1.07,
                 x - w * 0.07, y + h / 2
             )
+            col:pop()
+        elseif uinfo.kind == "EFFICIENCY" then
+            -- Circle
+            local x, y, w, h = frameR:get()
+            local r = (w + h) / 4
+            bgColor = uinfo.frameColor or g.COLORS.UPGRADE_KINDS.FALLBACK
+            local col = gsman.mulColor(bgColor)
+            love.graphics.circle(mode, x + r, y + r, r * 0.9)
             col:pop()
         elseif uinfo.kind == "MISC" then
             -- Hexagon
@@ -192,7 +185,7 @@ local function drawUpgradeBox(mode, upgrade, noframe)
                 polygons[#polygons+1] = cx + rx * math.cos(a)
                 polygons[#polygons+1] = cy + ry * math.sin(a)
             end
-            bgColor = g.COLORS.UPGRADE_KINDS.JOB
+            bgColor = g.COLORS.UPGRADE_KINDS.MISC
             local col = gsman.mulColor(bgColor)
             love.graphics.polygon(mode, polygons)
             col:pop()
@@ -210,24 +203,7 @@ local function drawUpgradeBox(mode, upgrade, noframe)
         uinfo:drawUI(upgrade.level, iconR)
     end
 
-    -- Tutorial state 5 highlight (wth is this abomination)
-    if
-        g.getSn().showTutorials.start == 7 and
-        uinfo.kind == "INVENTORY" and
-        upgrade.level <= 1 and
-        (
-            uinfo.targetItem == "basic_server" or
-            uinfo.targetItem == "basic_indata" or
-            uinfo.targetItem == "basic_data"
-        )
-    then
-        local col = gsman.setColor(g.COLORS.JOBS.GENERAL)
-        local lw = gsman.setLineWidth(6)
-        local x, y = clickableR:getCenter()
-        helper.circleHighlight(x, y, clickableR.w / 1.7)
-        col:pop()
-        lw:pop()
-    end
+    -- TODO: Tutorial state 5 highlight (wth is this abomination)
 end
 
 ---@param self UpgradesScene

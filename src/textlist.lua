@@ -6,8 +6,6 @@
 
 ---@class TEXTLIST
 local text = {
-    JOB_QUEUE_INFO = loc("Tasks", nil, {
-        context = "Used in place to list available task categories"}),
     MONEY = loc("Money", nil, {
         context = "A resource"}),
     MONEY_DESCRIPTION = loc("Use the money to buy servers, data output, boosters, and unlock upgrades.", nil, {
@@ -80,10 +78,6 @@ local text = {
         context = "How many load is used and power available across the whole power network? %{s} will be replaced by `load/total`."}),
     LEVEL_TOOLTIP = interp("Level: %{level}", {
         context = "Denotes the level of an upgrade."}),
-    JOB_FREQUENCY_MODIFIER = interp("+%{modifier}s %{jobtype} tasks.", {
-        context = "Denotes the job frequency modifier of a data input."}),
-    JOB_FREQUENCY_MULTIPLIER = interp("%{multiplier}% %{jobtype} tasks.", {
-        context = "Denotes the job frequency multiplier of a data input."}),
 
     MENU_CONTINUE = loc("Continue", nil, {
         context = "A button to continue the game from title screen"}),
@@ -146,7 +140,7 @@ local text = {
         context = "Tutorial on the tech tree."}),
     TUTORIAL_6_2 = loc("Click and drag mouse to look around."),
     -- TUTORIAL_7_1 = TUTORIAL_6_1
-    TUTORIAL_7_2 = interp("For now, let's get another {COLORS_JOBS_GENERAL}%{bs}{/COLORS_JOBS_GENERAL}, {COLORS_JOBS_GENERAL}%{di}{/COLORS_JOBS_GENERAL}, and {COLORS_JOBS_GENERAL}%{do}{/COLORS_JOBS_GENERAL}. You may need to wait until you have enough {money} money to buy them.", {
+    TUTORIAL_7_2 = interp("For now, let's get another %{bs}, %{di}, and %{do}. You may need to wait until you have enough {money} money to buy them.", {
         context = "Tutorial on the tech tree."}),
     TUTORIAL_8_1 = loc("You can also buy other sorts of upgrades in here, unlocking the tech tree.", nil, {
         context = "Tutorial on the tech tree."}),
@@ -156,11 +150,11 @@ local text = {
         context = "Tutorial on the other mechanics."}),
     TUTORIAL_9_1 = loc("Servers and data inputs can only connect within their same colored types or icons, or task types.", nil, {
         context = "Tutorial on task types."}),
-    TUTORIAL_9_2 = loc("{COLORS_JOBS_GENERAL}Yellow {change_history_fill_20dp}{/COLORS_JOBS_GENERAL} - General Tasks", nil, {
+    TUTORIAL_9_2 = loc("Yellow {change_history_fill_20dp} - General Tasks", nil, {
         context = "Tutorial on task types."}),
-    TUTORIAL_9_3 = loc("{COLORS_JOBS_VIDEO}Blue {crop_square_fill_20dp}{/COLORS_JOBS_VIDEO} - Video Tasks", nil, {
+    TUTORIAL_9_3 = loc("Blue {crop_square_fill_20dp} - Video Tasks", nil, {
         context = "Tutorial on task types."}),
-    TUTORIAL_9_4 = loc("{COLORS_JOBS_AI}Red {circle_fill_20dp}{/COLORS_JOBS_AI} - AI Tasks", nil, {
+    TUTORIAL_9_4 = loc("Red {circle_fill_20dp} - AI Tasks", nil, {
         context = "Tutorial on task types."}),
 }
 text.TUTORIAL_7_1 = text.TUTORIAL_6_1

@@ -741,7 +741,6 @@ end
 local UPGRADE_KINDS = {
     UNLOCKS=true,
     INVENTORY=true,
-    JOB=true,
     EFFICIENCY=true,
     MISC=true
 }
@@ -2562,7 +2561,6 @@ g.COLORS = {
     UPGRADE_KINDS = {
         UNLOCKS = objects.Color("#43b4e8"),
         INVENTORY = objects.Color("FF6F43E8"),
-        JOB = objects.Color("#61d4b1"),
         MISC = objects.Color("#c4d14d"),
         FALLBACK = objects.Color.WHITE,
     },
@@ -2609,13 +2607,6 @@ g.COLORS = {
 
     TILE_HOT = objects.Color("7fD63900"),
     TILE_COLD = objects.Color("7fabeeff"),
-
-    -- FIXME: Register the color in `g.defineJobCategory`?
-    JOBS = {
-        GENERAL = g.getJobCategoryInfo("general").color,
-        VIDEO = g.getJobCategoryInfo("video").color,
-        AI = g.getJobCategoryInfo("ai").color,
-    },
 }
 
 do

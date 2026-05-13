@@ -827,8 +827,6 @@ function World:_draw()
 
                     if hasError then
                         love.graphics.setColor(1, 0.3, 0.3)
-                    -- elseif itemData.currentJob then
-                    --     love.graphics.setColor(0.3, 1, 0.3)
                     else
                         love.graphics.setColor(0.3, 0.3, 1)
                     end
