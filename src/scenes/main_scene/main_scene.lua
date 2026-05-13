@@ -83,7 +83,6 @@ function MainScene:draw()
             local itemR = Kirigami(tx * wtz, ty * wtz, wtz, wtz)
             local col = gsman.setColor(1, 1, 1, 0.5)
             drawItemPreview.drawItem(itemR:padRatio(0.25))
-            world:_drawWiresForPotentialItem(drawItemPreview, tx, ty)
             col:pop()
         end
     else
@@ -304,48 +303,6 @@ function MainScene:_regionFromUIToWorld(r)
     local x1, y1 = self.camera:toWorld(uit:transformPoint(r.x, r.y))
     local x2, y2 = self.camera:toWorld(uit:transformPoint(r.x + r.w, r.y + r.h))
     return Kirigami(x1, y1, x2 - x1, y2 - y1)
-end
-
-function MainScene:_getServerAndDP(tx1, ty1, tx2, ty2)
-    local world = g.getMainWorld()
-    local server, dp = nil, nil
-    -- Get info on 1st tile pos
-    local firstItem = g.getItem(tx1, ty1)
-    if firstItem then
-        local _, category = g.getItemInfo(firstItem.type)
-        if category == "server" then
-            ---@cast firstItem g.World.ServerData
-            server = firstItem
-        elseif category == "data" then
-            ---@cast firstItem g.World.DataOutputData
-            dp = firstItem
-        end
-    end
-    -- Get info on 2nd tile pos
-    local secondItem = g.getItem(tx2, ty2)
-    if secondItem then
-        local _, category = g.getItemInfo(secondItem.type)
-        if category == "server" then
-            ---@cast secondItem g.World.ServerData
-            server = secondItem
-        elseif category == "data" then
-            ---@cast secondItem g.World.DataOutputData
-            dp = secondItem
-        end
-    end
-
-    return server, dp
-end
-
----@param server g.World.ServerData
----@param dp g.World.DataOutputData
-function MainScene:_canConnectOrDisconnect(server, dp)
-    if helper.index(server.connectedOutputs, dp) then
-        return true
-    elseif g.canConnectDataWire(server, dp) then
-        return true
-    end
-    return false
 end
 
 

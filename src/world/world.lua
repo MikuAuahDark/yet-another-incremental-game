@@ -29,7 +29,7 @@ end
 ---@field powerLoad number (readonly; updated every frame)
 ---@field powerGenerate? number (readonly; updated every frame; if exist, can be in power network)
 ---@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
----@field processTime number (readonly; in seconds)
+---@field processTime number? (readwrite; in seconds)
 ---@field processTimeCurrent number (readwrite; in seconds)
 ---@field processSpeedMultiplier number (readwrite)
 ---@field input g.World.QueuedInput[]
@@ -654,27 +654,29 @@ function World:_update(dt)
 
     -- Run "processing" step
     for _, machine in ipairs(allMachines) do
-        local processAdvanced = false
-        if machine.processTimeCurrent >= machine.processTime then
-            processAdvanced = self:_tryAdvanceProcess(machine)
-        end
-
-        local inputSatisfied = true
-        for _, iset in ipairs(machine.input) do
-            if #iset.queue < iset.amount then
-                inputSatisfied = false
-                break
+        if machine.processTime then
+            local processAdvanced = false
+            if machine.processTimeCurrent >= machine.processTime then
+                processAdvanced = self:_tryAdvanceProcess(machine)
             end
-        end
 
-        if inputSatisfied then
-            machine.processTimeCurrent = math.min(
-                machine.processTimeCurrent + dt * machine.processSpeedMultiplier,
-                machine.processTime
-            )
+            local inputSatisfied = true
+            for _, iset in ipairs(machine.input) do
+                if #iset.queue < iset.amount then
+                    inputSatisfied = false
+                    break
+                end
+            end
 
-            if not processAdvanced and machine.processTimeCurrent >= machine.processTime then
-                self:_tryAdvanceProcess(machine)
+            if inputSatisfied then
+                machine.processTimeCurrent = math.min(
+                    machine.processTimeCurrent + dt * machine.processSpeedMultiplier,
+                    machine.processTime
+                )
+
+                if not processAdvanced and machine.processTimeCurrent >= machine.processTime then
+                    self:_tryAdvanceProcess(machine)
+                end
             end
         end
     end
@@ -827,14 +829,10 @@ function World:_draw()
     if self.htx and self.hty then
         local itemData = self.items:get(self.htx, self.hty)
         if itemData then
-            local itemInfo, cat = g.getItemInfo(itemData.type)
-            love.graphics.setColor(0, 1, 0)
-            if cat == "booster" then
-                ---@cast itemInfo g.BoosterInfo
-                drawRangeVisualization(self.htx, self.hty, itemInfo.radiateAlgorithm, itemInfo.radiate)
-            elseif cat == "data" or cat == "indata" or cat == "powergen" or cat == "powerrelay" then
-                ---@cast itemInfo g.PowerGenInfo|g.PowerRelayInfo|g.DataOutInfo|g.DataInInfo
-                drawRangeVisualization(self.htx, self.hty, "chessboard", itemInfo.wireLength)
+            local minfo = g.getMachineInfo(itemData.type)
+            if minfo.wireLength > 0 then
+                love.graphics.setColor(0, 1, 0)
+                drawRangeVisualization(self.htx, self.hty, "chessboard", minfo.wireLength)
             end
         end
     end
@@ -1013,80 +1011,6 @@ function World:_draw()
     self.particles:draw()
 
     prof_pop() -- prof_push("world:_draw")
-end
-
-
-
----@param itemInfo g.ItemInfo<g.World.ItemData>
----@param tx integer
----@param ty integer
-function World:_drawWiresForPotentialItem(itemInfo, tx, ty)
-    local col = gsman.setColor(0, 0, 0)
-    if itemInfo.category == "server" then
-        -- Connection to DI, DO.
-        -- TODO: Connectable boosters
-        ---@cast itemInfo g.ServerInfo
-
-        -- Data input
-        for _, di in ipairs(self.diAreaAutoConnect:get(tx, ty)) do
-            local diInfo = g.getItemInfo(di.type, "indata")
-            if diInfo.queuesJob == itemInfo.computeType then
-                drawLine(
-                    (tx + 0.5) * consts.WORLD_TILE_SIZE,
-                    (ty + 0.5) * consts.WORLD_TILE_SIZE,
-                    (di.tileX + 0.5) * consts.WORLD_TILE_SIZE,
-                    (di.tileY + 0.5) * consts.WORLD_TILE_SIZE,
-                    3
-                )
-            end
-        end
-        -- Data output
-        for _, dout in ipairs(self.doAreaAutoConnect:get(tx, ty)) do
-            drawLine(
-                (tx + 0.5) * consts.WORLD_TILE_SIZE,
-                (ty + 0.5) * consts.WORLD_TILE_SIZE,
-                (dout.tileX + 0.5) * consts.WORLD_TILE_SIZE,
-                (dout.tileY + 0.5) * consts.WORLD_TILE_SIZE,
-                3
-            )
-        end
-    elseif itemInfo.category == "data" or itemInfo.category == "indata" then
-        ---@cast itemInfo g.DataOutDefinition|g.DataInDefinition
-        -- Range visualization
-        local col2 = gsman.setColor(0, 0, 1)
-        drawRangeVisualization(tx, ty, "chessboard", itemInfo.wireLength)
-        col2:pop()
-
-        -- Connection to servers
-        for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", itemInfo.wireLength)) do
-            local x, y = tile[1] + tx, tile[2] + ty
-            if self.items:contains(x, y) then
-                local targetItem = self.items:get(x, y)
-
-                if targetItem then
-                    local targetInfo, targetCat = g.getItemInfo(targetItem.type)
-                    if targetCat == "server" then
-                        ---@cast targetInfo g.ServerInfo
-                        if
-                            itemInfo.category == "indata" and
-                            itemInfo.queuesJob == targetInfo.computeType or
-                            itemInfo.category ~= "indata"
-                        then
-                            drawLine(
-                                (tx + 0.5) * consts.WORLD_TILE_SIZE,
-                                (ty + 0.5) * consts.WORLD_TILE_SIZE,
-                                (targetItem.tileX + 0.5) * consts.WORLD_TILE_SIZE,
-                                (targetItem.tileY + 0.5) * consts.WORLD_TILE_SIZE,
-                                3
-                            )
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    col:pop()
 end
 
 
