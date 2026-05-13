@@ -237,7 +237,7 @@ function HUD:draw(show)
             ---@type g.MachineInfo[] contains unlocked items
             local items = {}
             for _, v in ipairs(g.ITEMS) do
-                if g.isItemUnlocked(v) then
+                if g.isMachineUnlocked(v) then
                     local minfo = g.getMachineInfo(v)
                     if tabs[self.activeTab][1](minfo) then
                         items[#items+1] = minfo
@@ -321,7 +321,7 @@ function HUD:draw(show)
                         local itemPlacementR, itemNameR = helper.splitRegionByExactSizes(itemBaseR, "vertical", 0, itemNameF:getHeight() * 2)
                         local itemInfo = items[i]
                         local x, y, w, h = clickAreaR:get()
-                        local inventory = g.getItemInventoryCount(itemInfo.type)
+                        local inventory = g.getMachineInventoryCount(itemInfo.type)
 
                         -- Tutorial State 0: Highlight Basic Server
                         if s then

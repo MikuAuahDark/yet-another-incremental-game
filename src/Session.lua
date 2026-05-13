@@ -187,7 +187,7 @@ function Session.deserialize(data)
             for k,v in pairs(data.world.items) do
                 ---@cast k string
                 ---@cast v string
-                if g.isValidItem(v) then
+                if g.isValidMachine(v) then
                     local z = assert(tonumber(k))
                     local x, y = Z.decode(z)
                     sess.mainWorld:putItem(v, x, y, not persistenceLookup[z])
@@ -212,7 +212,6 @@ function Session:serialize()
     local items = {}
     ---@type integer[]
     local persistence = {}
-    ---@param item g.World.ItemData?
     self.mainWorld.items:foreach(function(item, x, y)
         if item then
             local z = Z.encode(x, y)

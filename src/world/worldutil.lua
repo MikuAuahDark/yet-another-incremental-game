@@ -422,7 +422,7 @@ end
 
 
 
----@param itemData g.World.ItemData|g.World.MachineData
+---@param itemData g.World.MachineData
 function worldutil.getLoadPercentage(itemData)
     if itemData.powerNetwork and itemData.powerNetwork.totalPower > 0 then
         -- If the totalLoad is 0, it will be 1/0 -> inf -> 1 again

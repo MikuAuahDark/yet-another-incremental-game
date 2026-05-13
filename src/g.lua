@@ -1318,118 +1318,6 @@ local function defineItemUpgrades(id, name, shape, def, pricemul)
     })
 end
 
----------------------
--- Items or Buildings
----------------------
-
-do
-
-
----@class g._MixinHasNameDefinition
----@field public name string
----@field public nameContext string?
----@field public rawDescription string?
----@field public description string?
----@field public descriptionContext string?
-
----@class g._MixinHasNameInfo
----@field public name string
----@field public description string?
-
-
----@enum (key) g.ItemCategory
-g.CATEGORIES = {
-    server = true,
-    data = true,
-    booster = true,
-    powergen = true,
-    powerrelay = true
-}
-
----@generic T: g.World.ItemData
----@class g.ItemDefinition<T>: g._MixinHasNameDefinition
----@field public category g.ItemCategory
----@field public tags string[]?
----@field public price number
----@field public load number
----@field public drawItem fun(r: kirigami.Region) (not translated)
----@field public draw (fun(itemData: T))? (already translated to center of tile)
----@field public getPriceMultiplier (fun(count:integer):number)?
-
----@generic T: g.World.ItemData
----@class g.ItemInfo<T>: g._MixinHasNameInfo
----@field public id string
----@field public category g.ItemCategory
----@field public tags objects.Set<string>
----@field public price number
----@field public load number
----@field public drawItem fun(r: kirigami.Region) (not translated)
----@field public draw fun(itemData: T) (already translated to center of tile)
----@field public getPriceMultiplier fun(count:integer):number
-
-
----@alias g.RadiateAlgorithm "taxicab"|"chessboard"
-
----@type string[]
-g.ITEMS = {}
----@type table<string, g.ItemInfo<g.World.ItemData>>
-local itemList = {}
-
----@param itemid string
----@param assertCategory g.ItemCategory?
----@return g.ItemInfo<g.World.ItemData>, g.ItemCategory
----@overload fun(itemid: string, assertCategory: "server"):(g.ServerInfo, "server")
----@overload fun(itemid: string, assertCategory: "data"):(g.DataOutInfo, "data")
----@overload fun(itemid: string, assertCategory: "indata"):(g.DataInInfo, "indata")
----@overload fun(itemid: string, assertCategory: "booster"):(g.BoosterInfo, "booster")
----@overload fun(itemid: string, assertCategory: "powergen"):(g.PowerGenInfo, "powergen")
----@overload fun(itemid: string, assertCategory: "powerrelay"):(g.PowerRelayInfo, "powerrelay")
-function g.getItemInfo(itemid, assertCategory)
-    local itemInfo = itemList[itemid]
-    if not itemInfo then
-        error("unknown item id '"..itemid.."'")
-    end
-
-    if assertCategory and itemInfo.category ~= assertCategory then
-        error("item '"..itemid.."' is not '"..assertCategory.."'")
-    end
-
-    return itemInfo, itemInfo.category
-end
-
----@param itemid string
-function g.isItemUnlocked(itemid)
-    if not g.isValidItem(itemid) then
-        error("unknown item id '"..itemid.."'")
-    end
-
-    return FLAGS.UNLOCK_ALL_ITEMS or g.ask("isItemUnlocked", itemid)
-end
-
----@param itemid string
-function g.isValidItem(itemid)
-    return not not itemList[itemid]
-end
-
----@param itemid string
-function g.getItemInventoryCount(itemid)
-    assert(g.isValidItem(itemid))
-
-    if FLAGS.UNLOCK_ALL_ITEMS then
-        return 1
-    end
-
-    local world = g.getMainWorld()
-    local total = world:getItemTotalInventory_NOTABUS(itemid)
-    return math.max(total - world.itemCounts[itemid], 0)
-end
-
-
-
--- Quick item registration for specific category
-
-end
-
 
 ----------------------
 -- Shape and Colors --
@@ -1520,6 +1408,11 @@ end
 --------------
 
 do
+
+---@alias g.RadiateAlgorithm "taxicab"|"chessboard"
+
+---@type string[]
+g.ITEMS = {}
 
 ---@type table<string, g.MachineInfo>
 local machineInfo = {}
@@ -1659,6 +1552,33 @@ function g.getMachineInfo(id)
         error("Machine not found: " .. id)
     end
     return machineInfo[id]
+end
+
+---@param itemid string
+function g.isMachineUnlocked(itemid)
+    if not g.isValidMachine(itemid) then
+        error("unknown item id '"..itemid.."'")
+    end
+
+    return FLAGS.UNLOCK_ALL_ITEMS or g.ask("isItemUnlocked", itemid)
+end
+
+---@param itemid string
+function g.isValidMachine(itemid)
+    return not not machineInfo[itemid]
+end
+
+---@param itemid string
+function g.getMachineInventoryCount(itemid)
+    assert(g.isValidMachine(itemid))
+
+    if FLAGS.UNLOCK_ALL_ITEMS then
+        return 1
+    end
+
+    local world = g.getMainWorld()
+    local total = world:getItemTotalInventory_NOTABUS(itemid)
+    return math.max(total - world.itemCounts[itemid], 0)
 end
 
 

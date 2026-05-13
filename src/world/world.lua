@@ -21,6 +21,7 @@ end
 ---@class g.World.QueuedInput: g._InputSetWithAmount
 ---@field queue [g.Shape, g.ShapeColor][]
 
+
 ---@class g.World.MachineData
 ---@field type string Item ID
 ---@field tileX integer (readonly; updated every frame)
@@ -43,44 +44,6 @@ end
 ---@field duration number (readwrite; duration of the generating)
 ---@field timeout number (readwrite; if 0 = no power)
 
----@class g.World.ItemData
----@field type string Item ID
----@field tileX integer (readonly; updated every frame)
----@field tileY integer (readonly; updated every frame)
----@field load number (readonly; updated every frame)
----@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
----@field removed boolean
----@field removable boolean
-
----@class g.World.BoosterData: g.World.ItemData
----@field connectsTo g.World.ItemData[]
----@field effectiveness number
----@field package animationTime number (duration cycles)
-
----@class g.World.ServerData: g.World.ItemData
----@field currentJob g.Job?
----@field dataTotalEmitted number (readwrite; if same as currentJob.dataOutput then done)
----@field connectedOutputs g.World.DataOutputWire[] (readonly; connected data outputs, quick lookup only)
----@field connectedInputs g.World.DataInputWire[] (readonly; connected data inputs, quick lookup only)
----@field computePerSecond number (readonly; updated every frame) CPS with heat, buff, and load applied
----@field nextInput integer (wraparound, 0-based)
----@field nextOutput integer (wraparound, 0-based)
----@field dataBottlenecked boolean
-
----@class g.World.DataInputData: g.World.ItemData
----@field connects g.World.DataInputWire[] (readwrite; connects to this server, source of truth)
----@field next integer (wraparound, 0-based)
-
----@class g.World.DataOutputData: g.World.ItemData
----@field connects g.World.DataOutputWire[] (readwrite; connects to this server, source of truth)
----@field dataPerSecond number (readonly; updated every frame)
----@field dataRemaining number
----@field reward number
----@field rewardToShow number
----@field next integer (wraparound, 0-based)
----@field package requestedLoad number
----@field package dataScale number
-
 
 ---@class g.World.PowerNetwork
 ---@field powerNodes g.World.MachineData[]
@@ -90,15 +53,6 @@ end
 ---@field totalPower number (readonly; updated every frame)
 ---@field totalLoad number (readonly; updated every frame)
 
----@generic U, T: g.World.ItemData
----@class g.World.Wire<T, U>
----@field source T
----@field server g.World.ServerData
----@field objects U[]
----@field positions number[] normalized [0, 1]
-
----@alias g.World.DataInputWire g.World.Wire<g.World.DataInputData, g.Job>
----@alias g.World.DataOutputWire g.World.Wire<g.World.DataOutputData, number>
 
 ---@class g.World.Wire2
 ---@field from g.World.MachineData (note: it's unidirectional)
@@ -107,6 +61,7 @@ end
 ---@field shapes g.Shape[]
 ---@field colors g.ShapeColor[]
 ---@field positions number[] normalized [0, 1]
+
 
 ---@class g.World: objects.Class
 local World = objects.Class("g:World")
@@ -283,18 +238,6 @@ local function getWireLength(wire)
     ) * consts.WORLD_TILE_SIZE
 end
 
----@param grid objects.Grid<g.World.ItemData[]>
----@param item g.World.ItemData
----@param length integer
-local function markExistInArea(grid, item, length)
-    for _, tile in ipairs(worldutil.getSpreadTiles("chessboard", length)) do
-        local tx, ty = tile[1] + item.tileX, tile[2] + item.tileY
-        if grid:contains(tx, ty) then
-            table.insert(grid:get(tx, ty), item)
-        end
-    end
-end
-
 
 function World:init()
     self.entities = objects.BufferedSet()
@@ -333,14 +276,6 @@ function World:init()
 
     self.averageCPS = 0 -- (read-only)
     self.peakCPS = 0 -- (read-only)
-
-    ---@type objects.Grid<g.World.DataInputData[]>
-    self.diAreaAutoConnect = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
-    self.diAreaAutoConnect:foreach(function(v, x, y) self.diAreaAutoConnect:set(x, y, {}) end)
-    ---@type objects.Grid<g.World.DataOutputData[]>
-    self.doAreaAutoConnect = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
-    self.doAreaAutoConnect:foreach(function(v, x, y) self.doAreaAutoConnect:set(x, y, {}) end)
-    self.autowire = true
 end
 
 
@@ -407,8 +342,6 @@ function World:_update(dt)
     end
 
     -- Reset stuff
-    self.diAreaAutoConnect:foreach(table.clear)
-    self.doAreaAutoConnect:foreach(table.clear)
     table.clear(self.powerNetworks)
     table.clear(self.itemCounts)
     table.clear(self.itemInventoryCounts)
@@ -1066,23 +999,23 @@ end
 
 
 
----@param itemInfo g.ItemInfo<any>
+---@param minfo g.MachineInfo
 ---@param mod number?
 ---@param mul number?
-function World:computeLoadModifier(itemInfo, mod, mul)
-    local v = self.loadModifiers[itemInfo.id]
+function World:computeLoadModifier(minfo, mod, mul)
+    local v = self.loadModifiers[minfo.type]
     if not v then
         v = {dirty = true, modifier = 0, multiplier = 1}
-        self.loadModifiers[itemInfo.id] = v
+        self.loadModifiers[minfo.type] = v
     end
 
     if v.dirty then
-        v.modifier = g.ask("getLoadModifier", itemInfo)
-        v.multiplier = g.ask("getLoadMultiplier", itemInfo)
+        v.modifier = g.ask("getLoadModifier", minfo)
+        v.multiplier = g.ask("getLoadMultiplier", minfo)
         v.dirty = false
     end
 
-    return math.max(math.max(itemInfo.load + v.modifier + (mod or 0), 0) * v.multiplier * (mul or 1), 0)
+    return math.max(math.max(minfo.powerLoad + v.modifier + (mod or 0), 0) * v.multiplier * (mul or 1), 0)
 end
 
 ---@param tx integer
@@ -1099,7 +1032,7 @@ end
 ---@param itemid string
 function World:getItemTotalInventory_NOTABUS(itemid)
     if not self.itemInventoryCounts[itemid] then
-        if g.isItemUnlocked(itemid) then
+        if g.isMachineUnlocked(itemid) then
             self.itemInventoryCounts[itemid] = g.ask("getItemTotalInventory", itemid)
         else
             self.itemInventoryCounts[itemid] = 0
