@@ -23,49 +23,8 @@ local function description(upgrade, tree, x, y, safeArea)
 
     -- Attributes (if kind == "UNLOCKS" or "INVENTORY")
     if (uinfo.kind == "UNLOCKS" or uinfo.kind == "INVENTORY") and uinfo.targetItem then
-        local attrF = ui.ItemTooltip.getAttrFont()
-        local itemInfo, category = g.getItemInfo(uinfo.targetItem)
-        local world = g.getMainWorld()
-
-        -- Load
-        local load = world:computeLoadModifier(itemInfo)
-        if load > 0 then
-            builder:addText(TEXT.LOAD_TOOLTIP({load = g.formatNumber(load)}), attrF, "left")
-        end
-
-        if category == "server" then
-            ---@cast itemInfo g.ServerInfo
-            -- CPS
-            builder:addText(
-                helper.wrapRichtextColor(g.COLORS.UI.TEXT_CPS, TEXT.CPS_NUMBER({cps = g.formatNumber(itemInfo.computePerSecond)})),
-                attrF, "left"
-            )
-            -- Heat Tolerance
-            builder:addText(TEXT.HEAT_TOLERANCE({
-                min_heat = itemInfo.heatTolerance[1],
-                max_heat = itemInfo.heatTolerance[2]
-            }), attrF, "left")
-        elseif category == "data" then
-            ---@cast itemInfo g.DataOutInfo
-            -- DPS
-            builder:addText(
-                helper.wrapRichtextColor(
-                    g.COLORS.UI.TEXT_DPS,
-                    TEXT.DPS_NUMBER({dps = g.formatNumber(itemInfo.dataPerSecond)})
-                ),
-                attrF, "left"
-            )
-        elseif category == "indata" then
-            ---@cast itemInfo g.DataInInfo
-            -- Queued Job Category
-            -- builder:addText(TEXT.CATEGORY_LIST({
-            --     categories = g.getJobCategoryInfo(itemInfo.queuesJob).name
-            -- }), attrF, "left")
-        elseif category == "powergen" then
-            ---@cast itemInfo g.PowerGenInfo
-            -- Power
-            builder:addText(TEXT.PROVIDE_LOAD_TOOLTIP({load = g.formatNumber(itemInfo.power)}), attrF, "left")
-        end
+        local minfo = g.getMachineInfo(uinfo.targetItem)
+        ui.ItemTooltip.ProvideCommonTooltipHUD(minfo, builder)
     end
 
     -- Padding

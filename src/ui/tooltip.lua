@@ -155,29 +155,12 @@ function ItemTooltip.DrawWorldTooltip(machine, mx, my, safeArea)
 end
 
 
-
 ---@param minfo g.MachineInfo
----@param x number relative to bottom center
----@param y number relative to bottom center
----@param safeArea kirigami.Region?
-local function tempTooltipHUD(minfo, x, y, safeArea)
-end
-
----@param minfo g.ItemInfo<g.World.ItemData>
----@param x number
----@param y number
----@param safeArea kirigami.Region?
-function ItemTooltip.DrawHUDTooltip(minfo, x, y, safeArea)
-    local col = gsman.setColor(1, 1, 1)
-    local titleF = ItemTooltip.getTitleFont()
+---@param builder ui.TooltipBuilder
+function ItemTooltip.ProvideCommonTooltipHUD(minfo, builder)
     local attrF = ItemTooltip.getAttrFont()
     local descF = ItemTooltip.getDescFont()
     local descFH = descF:getHeight()
-
-    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
-
-    -- Title
-    builder:addText(minfo.name, titleF, "center")
 
     -- Description
     if minfo.description then
@@ -232,6 +215,22 @@ function ItemTooltip.DrawHUDTooltip(minfo, x, y, safeArea)
             max_heat = g.formatNumber(minfo.heatTolerance[2])
         }), attrF, "left")
     end
+end
+
+---@param minfo g.MachineInfo
+---@param x number
+---@param y number
+---@param safeArea kirigami.Region?
+function ItemTooltip.DrawHUDTooltip(minfo, x, y, safeArea)
+    local col = gsman.setColor(1, 1, 1)
+    local titleF = ItemTooltip.getTitleFont()
+
+    local builder = ui.TooltipBuilder(x, y, 0.5, 1, safeArea)
+
+    -- Title
+    builder:addText(minfo.name, titleF, "center")
+
+    ItemTooltip.ProvideCommonTooltipHUD(minfo, builder)
 
     builder:render()
     col:pop()
