@@ -103,7 +103,7 @@ end
 ---@class g.World.Wire2
 ---@field from g.World.MachineData (note: it's unidirectional)
 ---@field to g.World.MachineData (note: it's unidirectional)
----@field criterion g._InputSet
+---@field criterion g._InputSet (the set in this is passed by reference)
 ---@field shapes g.Shape[]
 ---@field colors g.ShapeColor[]
 ---@field positions number[] normalized [0, 1]
@@ -303,9 +303,9 @@ function World:init()
     ---@type objects.Grid<number>
     self.heat = objects.Grid(World.TILE_SIZE, World.TILE_SIZE)
     ---@type table<g.World.MachineData, g.World.Wire2[]> `from == key`
-    self.wireOutput = {}
+    self.wireOutput = setmetatable({}, {__mode = "k"})
     ---@type table<g.World.MachineData, g.World.Wire2[]> `to == key`
-    self.wireInput = {}
+    self.wireInput = setmetatable({}, {__mode = "k"})
 
     ---@type g.World.PowerNetwork[]
     self.powerNetworks = {}
@@ -1186,6 +1186,23 @@ function World:putItem(itemId, tx, ty, removable)
     self.items:set(tx, ty, machine)
 
     return machine
+end
+
+---@param wire g.World.Wire2
+function World:_disconnectWire(wire)
+    for i, w in ipairs(self.wireInput[wire.to]) do
+        if w == wire then
+            table.remove(self.wireInput[wire.to], i)
+            break
+        end
+    end
+
+    for i, w in ipairs(self.wireOutput[wire.from]) do
+        if w == wire then
+            table.remove(self.wireOutput[wire.from], i)
+            break
+        end
+    end
 end
 
 

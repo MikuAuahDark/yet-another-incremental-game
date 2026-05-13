@@ -2036,7 +2036,6 @@ end
 
 ---@param tx integer
 ---@param ty integer
----@return g.World.ItemData?
 function g.getItem(tx, ty)
     local world = g.getMainWorld()
 
@@ -2047,7 +2046,7 @@ function g.getItem(tx, ty)
     return nil
 end
 
----@param item g.World.ItemData
+---@param item g.World.MachineData
 ---@return boolean
 ---@diagnostic disable-next-line: duplicate-set-field, missing-return
 function g.removeItem(item) end
@@ -2059,9 +2058,16 @@ function g.removeItem(tx, ty)
     local world = g.getMainWorld()
     local item = nil
     if type(tx) == "table" then
-        item = tx --[[@as g.World.ItemData]]
+        item = tx --[[@as g.World.MachineData]]
         tx, ty = item.tileX, item.tileY
-        assert(world.items:get(tx, ty) == item, "position source of truth violation")
+
+        local it = world.items:get(tx, ty)
+        if not it == item then
+            log.error("item "..tostring(item).." retrieved but world pos ("..tx..","..ty..") has different item "..tostring(it))
+            if consts.DEV_MODE then
+                error("position source of truth violation")
+            end
+        end
     else
         item = world.items:get(tx, ty)
     end
@@ -2069,22 +2075,19 @@ function g.removeItem(tx, ty)
     local ok = false
     if item then
         -- Remove connections
-        local _, cat = g.getItemInfo(item.type)
-        if cat == "server" then
-            ---@cast item g.World.ServerData
-            local connIn = helper.shallowCopy(item.connectedInputs)
-            for _, wire in ipairs(connIn) do
-                g.disconnectDataWire(item, wire.source)
+        local wos = world.wireOutput[item] or {}
+        if #wos > 0 then
+            for i = #wos, 1, -1 do
+                local wire = wos[i]
+                world:_disconnectWire(wire)
             end
-            local connOut = helper.shallowCopy(item.connectedOutputs)
-            for _, wire in ipairs(connOut) do
-                g.disconnectDataWire(item, wire.source)
-            end
-        elseif cat == "data" or cat == "indata" then
-            ---@cast item g.World.DataOutputData|g.World.DataInputData
-            local conn = helper.shallowCopy(item.connects)
-            for _, wire in ipairs(conn) do
-                g.disconnectDataWire(wire.server, item)
+        end
+
+        local wis = world.wireInput[item] or {}
+        if #wis > 0 then
+            for i = #wis, 1, -1 do
+                local wire = wis[i]
+                world:_disconnectWire(wire)
             end
         end
 
@@ -2095,82 +2098,145 @@ function g.removeItem(tx, ty)
     return ok
 end
 
----@param server g.World.ServerData
----@param dp g.World.DataOutputData|g.World.DataInputData
-function g.disconnectDataWire(server, dp)
-    local _, cat = g.getItemInfo(dp.type)
-    assert(cat == "data" or cat == "indata")
+---@param wire g.World.Wire2
+local function logErrorWire(wire)
+    log.error("wire info; from="..tostring(wire.from).."; to="..tostring(wire.to))
+end
 
-    for i, wire in ipairs(dp.connects) do
-        if wire.server == server then
-            table.remove(dp.connects, i)
-
-            local t = cat == "data" and server.connectedOutputs or server.connectedInputs
-            local si = helper.index(t, wire)
-            assert(si, "source of truth violation")
-            table.remove(t, si)
-            return true
+---@param output g.World.MachineData
+---@param input g.World.MachineData
+function g.disconnectWire(output, input)
+    local world = g.getMainWorld()
+    ---@type g.World.Wire2?
+    local targetWireOut = nil
+    for _, wire in ipairs(world.wireOutput[output] or {}) do
+        if wire.to == input then
+            targetWireOut = wire
+            break
         end
+    end
+
+    ---@type g.World.Wire2?
+    local targetWireIn = nil
+    for _, wire in ipairs(world.wireInput[input] or {}) do
+        if wire.from == output then
+            targetWireIn = wire
+            break
+        end
+    end
+
+    if targetWireOut ~= targetWireIn then
+        log.error("source of truth violation on wires")
+        log.error("target output wire is: "..tostring(targetWireOut))
+        if targetWireOut then
+            logErrorWire(targetWireOut)
+        end
+        log.error("target input wire is: "..tostring(targetWireIn))
+        if targetWireIn then
+            logErrorWire(targetWireIn)
+        end
+        if consts.DEV_MODE then
+            error("source of truth violation on wires")
+        else
+            return false
+        end
+    end
+
+    if targetWireOut and targetWireIn then
+        assert(targetWireOut == targetWireIn, "???")
+        world:_disconnectWire(targetWireOut)
+        return true
     end
 
     return false
 end
 
----This only checks the server position and DP wire length/count
----@param server g.World.ServerData
----@param dp g.World.DataOutputData|g.World.DataInputData
-function g.canConnectDataWire(server, dp)
-    local dpInfo, cat = g.getItemInfo(dp.type)
-    assert(cat == "data" or cat == "indata")
-    ---@cast dpInfo g.DataInInfo|g.DataOutInfo
-    if worldutil.getDistance("chessboard", server.tileX - dp.tileX, server.tileY - dp.tileY) > dpInfo.wireLength then
+---@param output g.World.MachineData source
+---@param input g.World.MachineData destination
+function g.canConnectWire(output, input)
+    local outinfo = g.getMachineInfo(output.type)
+    local ininfo = g.getMachineInfo(input.type)
+
+    if not output.output then
+        -- No output. Can't connect.
         return false
     end
 
-    if cat == "indata" then
-        ---@cast dpInfo g.DataInInfo
-        -- Need to check if the compute type is compatible
-        local srvInfo = g.getItemInfo(server.type, "server")
-        if srvInfo.computeType ~= dpInfo.queuesJob then
-            return false
-        end
+    if #input.input == 0 then
+        -- No input. Can't connect.
+        return false
     end
 
+    local wireLength = math.max(outinfo.wireLength, ininfo.wireLength)
+    if worldutil.getDistance("chessboard", output.tileX - input.tileX, output.tileY - input.tileY) > wireLength then
+        -- Too far
+        return false
+    end
+
+    -- Check input compatibility
+    local outshape = objects.Set(output.output.shapes)
+    local outcolor = objects.Set(output.output.colors)
+    for _, iset in ipairs(input.input) do
+        outshape = outshape:filter(function(item)
+            return not iset.shapes:contains(item)
+        end)
+        outcolor = outcolor:filter(function(item)
+            return not iset.colors:contains(item)
+        end)
+
+        if outshape:length() == 0 and outcolor:length() == 0 then
+            break
+        end
+    end
+    if outshape:length() > 0 or outcolor:length() > 0 then
+        -- Not all inputs can accept the output type
+        return false
+    end
+
+    -- Input satisfied
     return true
 end
 
----@param server g.World.ServerData
----@param dp g.World.DataOutputData|g.World.DataInputData
-function g.connectDataWire(server, dp)
-    local _, cat = g.getItemInfo(dp.type)
-    assert(cat == "data" or cat == "indata")
-
-    for _, wire in ipairs(dp.connects) do
-        if wire.server == server then
-            -- already connected
-            return false
-        end
-    end
-
-    if not g.canConnectDataWire(server, dp) then
-        -- not connectable
+---@param output g.World.MachineData source
+---@param input g.World.MachineData destination
+function g.connectWire(output, input)
+    if not g.canConnectWire(output, input) then
+        -- Not connectable
         return false
     end
 
-    ---@type g.World.DataInputWire|g.World.DataOutputWire
+    local world = g.getMainWorld()
+    if world.wireOutput[output] then
+        for _, wire in ipairs(world.wireOutput[output]) do
+            if wire.to == input then
+                -- Already connected
+                return false
+            end
+        end
+    end
+
+    ---@type g.World.Wire2
     local wire = {
-        source = dp,
-        server = server,
-        objects = {},
+        from = output,
+        to = input,
+        criterion = {
+            shapes = output.output.shapes,
+            colors = output.output.colors,
+        },
+        shapes = {},
+        colors = {},
         positions = {},
     }
 
-    dp.connects[#dp.connects+1] = wire
-    if cat == "data" then
-        server.connectedOutputs[#server.connectedOutputs+1] = wire
-    else
-        server.connectedInputs[#server.connectedInputs+1] = wire
+    if not world.wireOutput[output] then
+        world.wireOutput[output] = {}
     end
+    table.insert(world.wireOutput[output], wire)
+
+    if not world.wireInput[input] then
+        world.wireInput[input] = {}
+    end
+    table.insert(world.wireInput[input], wire)
 
     return true
 end
