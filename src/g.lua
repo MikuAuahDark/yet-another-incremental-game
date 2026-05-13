@@ -1492,6 +1492,27 @@ g.SHAPE_COLORS = {
     blue = defineShapeColor {name = "Blue", color = objects.Color("#12aae6")},
 }
 
+---@param shape g.Shape[]
+---@param color g.ShapeColor[]
+local function randomPickDataShapeAndColor(shape, color)
+    local idx = math.floor(love.timer.getTime())
+    local hash1 = helper.hashInteger(idx)
+    local hash2 = helper.hashInteger((-idx) % 4294967296)
+    local targetShape = shape[hash1 % #shape + 1]
+    local targetColor = color[hash2 % #color + 1]
+    return targetShape, targetColor
+end
+
+---Should this be in worldutil or somewhere else?
+---@param shape g.Shape[]
+---@param color g.ShapeColor[]
+function g.getRichtextForShapeAndColor(shape, color)
+    local targetShape, targetColor = randomPickDataShapeAndColor(shape, color)
+    local shapeInfo = g.SHAPES[targetShape]
+    local colorInfo = g.SHAPE_COLORS[targetColor]
+    return helper.wrapRichtextColor(colorInfo.color, "{"..shapeInfo.image.."}")
+end
+
 end
 
 --------------
