@@ -88,11 +88,11 @@ function ItemTooltip.DrawWorldTooltip(machine, mx, my, safeArea)
     end
 
     -- Requires
-    local showRequires = machine.powerLoad > 0 or #machine.input > 0
+    local showRequires = (machine.powerLoad and machine.powerLoad > 0) or #machine.input > 0
     if showRequires then
         builder:addText(TEXT.REQUIRES, attrF, "left")
 
-        if machine.powerLoad > 0 then
+        if machine.powerLoad and machine.powerLoad > 0 then
             local powerText = getItemLoadText(minfo, machine)
             builder:addText("  "..powerText, attrF, "left")
         end
@@ -170,11 +170,11 @@ function ItemTooltip.ProvideCommonTooltipHUD(minfo, builder)
     end
 
     -- Requires
-    local showRequires = minfo.powerLoad > 0 or #minfo.input > 0
+    local showRequires = (minfo.powerLoad and minfo.powerLoad > 0) or #minfo.input > 0
     if showRequires then
         builder:addText(TEXT.REQUIRES, attrF, "left")
 
-        if minfo.powerLoad > 0 then
+        if minfo.powerLoad and minfo.powerLoad > 0 then
             local powerText = getItemLoadText(minfo)
             builder:addText("  "..powerText, attrF, "left")
         end

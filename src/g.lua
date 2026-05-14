@@ -1498,7 +1498,7 @@ end
 ---@field public type string
 ---@field public name string
 ---@field public tags objects.Set<string>
----@field public powerLoad number
+---@field public powerLoad number?
 ---@field public input g._InputSetWithAmount[]
 ---@field public output g._InputSetWithAmount?
 ---@field public processTime number?
@@ -1518,7 +1518,7 @@ function g.defineMachine(id, name, def)
         name = loc(name, nil, {context = def.nameContext}),
         description = nil,
         tags = objects.Set(def.tags),
-        powerLoad = def.powerLoad or 0,
+        powerLoad = def.powerLoad,
         powerGenerate = def.powerGenerate,
         input = processInputSets(def.input or {}),
         output = nil,
