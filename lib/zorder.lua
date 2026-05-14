@@ -50,16 +50,29 @@ end
 
 ---@param x integer
 ---@param y integer
+local function z_hash_positive(x, y)
+    assert(x >= 0 and y >= 0)
+    return bor(spread_bits(x), lshift(spread_bits(y), 1))
+end
+
+---@param x integer
+---@param y integer
 local function z_hash(x, y)
     local ux = zigzag_encode(x)
     local uy = zigzag_encode(y)
-    return bor(spread_bits(ux), lshift(spread_bits(uy), 1))
+    return z_hash_positive(ux, uy)
+end
+
+---@param h integer
+local function z_unhash_positive(h)
+    local ux = compact_bits(h)
+    local uy = compact_bits(rshift(h, 1))
+    return ux, uy
 end
 
 ---@param h integer
 local function z_unhash(h)
-    local ux = compact_bits(h)
-    local uy = compact_bits(rshift(h, 1))
+    local ux, uy = z_unhash_positive(h)
     return zigzag_decode(ux), zigzag_decode(uy)
 end
 
@@ -83,5 +96,7 @@ end
 ---@class zorder
 return {
     encode = z_hash,
-    decode = z_unhash
+    encode_positive = z_hash_positive,
+    decode = z_unhash,
+    decode_positive = z_unhash_positive
 }
