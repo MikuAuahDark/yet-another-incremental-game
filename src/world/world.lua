@@ -7,6 +7,7 @@ World
 
 local ParticleService = require(".particle.ParticleService")
 local DataCollector = require(".data_collector")
+local Z = require("lib.zorder")
 
 
 ---@param grid objects.Grid<number>
@@ -27,7 +28,7 @@ end
 ---@field tileX integer (readonly; updated every frame)
 ---@field tileY integer (readonly; updated every frame)
 ---@field heat number (readwrite)
----@field powerLoad number (readonly; updated every frame)
+---@field powerLoad number? (readonly; updated every frame)
 ---@field powerGenerate? number (readonly; updated every frame; if exist, can be in power network)
 ---@field powerNetwork g.World.PowerNetwork? (readonly; if nil = not connected to any network)
 ---@field processTime number? (readwrite; in seconds)
@@ -48,10 +49,7 @@ end
 
 
 ---@class g.World.PowerNetwork
----@field powerNodes g.World.MachineData[]
----@field consumers g.World.MachineData[]
----@field nodeConnections [g.World.MachineData, g.World.MachineData][] -- Bi-directional connections between power nodes
----@field consumerConnections [g.World.MachineData, g.World.MachineData][] -- One-way from power node to consumer
+---@field machines objects.Set<g.World.MachineData>
 ---@field totalPower number (readonly; updated every frame)
 ---@field totalLoad number (readonly; updated every frame)
 
@@ -174,45 +172,23 @@ local function drawRangeVisualization(tx, ty, algo, dist)
 end
 
 
+---@param m g.World.MachineData
+local function isGeneratorMachine(m)
+    return m.powerGenerate ~= nil and m.powerLoad == nil
+end
+
+---@param m g.World.MachineData
+local function isConsumerMachine(m)
+    return m.powerGenerate == nil and m.powerLoad ~= nil
+end
+
+---@param m g.World.MachineData
+local function isRelayMachine(m)
+    return m.powerGenerate ~= nil and m.powerLoad ~= nil
+end
+
 local POWER_COLOR = objects.Color("#83d6d3")
 
----@param powerNetwork g.World.PowerNetwork
----@param visibleArea kirigami.Region
----@param htx integer?
----@param hty integer?
-local function drawPowerLines(powerNetwork, visibleArea, htx, hty)
-    local wtz = consts.WORLD_TILE_SIZE
-    local t = g.getSn().worldTime % 1
-
-    -- Power node connections (Bi-directional)
-    for _, conn in ipairs(powerNetwork.nodeConnections) do
-        local node1, node2 = conn[1], conn[2]
-        local x1, y1 = (node1.tileX + 0.5) * wtz, (node1.tileY + 0.5) * wtz
-        local x2, y2 = (node2.tileX + 0.5) * wtz, (node2.tileY + 0.5) * wtz
-
-        if visibleArea:containsCoords(x1, y1) or visibleArea:containsCoords(x2, y2) then
-            if htx == node1.tileX and hty == node1.tileY or htx == node2.tileX and hty == node2.tileY then
-                love.graphics.setColor(POWER_COLOR)
-                drawArrows(x1, y1, x2, y2, 6, t)
-                drawArrows(x2, y2, x1, y1, 6, t)
-            end
-        end
-    end
-
-    -- Consumer connections (One-way)
-    for _, conn in ipairs(powerNetwork.consumerConnections) do
-        local node, consumer = conn[1], conn[2]
-        local x1, y1 = (node.tileX + 0.5) * wtz, (node.tileY + 0.5) * wtz
-        local x2, y2 = (consumer.tileX + 0.5) * wtz, (consumer.tileY + 0.5) * wtz
-
-        if visibleArea:containsCoords(x1, y1) or visibleArea:containsCoords(x2, y2) then
-            if htx == node.tileX and hty == node.tileY or htx == consumer.tileX and hty == consumer.tileY then
-                love.graphics.setColor(POWER_COLOR)
-                drawArrows(x1, y1, x2, y2, 6, t)
-            end
-        end
-    end
-end
 
 
 ---This uses 1x1 from `g.drawImage` instead of `love.graphics.line` to improve batching.
@@ -414,116 +390,29 @@ function World:_update(dt)
     ]]
 
     -- Run power network update
-    ---@type g.World.MachineData[]
-    local allPowerNodes = {}
+    ---@type objects.Set<g.World.PowerNetwork>
+    local allPowerNodes = objects.Set()
     for _, machine in ipairs(allMachines) do
-        if machine.powerGenerate ~= nil then
-            allPowerNodes[#allPowerNodes+1] = machine
+        if machine.powerNetwork then
+            allPowerNodes:add(machine.powerNetwork)
         end
     end
 
-    ---@type table<g.World.MachineData, boolean?>
-    local visited = {}
-    for _, startNode in ipairs(allPowerNodes) do
-        if not visited[startNode] then
-            -- TODO: Table pooling
-            ---@type g.World.PowerNetwork
-            local network = {
-                powerNodes = {},
-                consumers = {},
-                nodeConnections = {},
-                consumerConnections = {},
-                totalPower = 0,
-                totalLoad = 0,
-            }
-            ---@type table<g.World.MachineData, boolean?>
-            local consumerSet = {} -- To avoid duplicates in network.consumers
+    for _, powerNetwork in ipairs(allPowerNodes) do
+        local totalLoad = 0
+        local totalPower = 0
 
-            -- BFS to find connected power nodes
-            local queue = {startNode}
-            visited[startNode] = true
-            local head = 1
-            while head <= #queue do
-                local node = queue[head]
-                head = head + 1
-
-                network.powerNodes[#network.powerNodes+1] = node
-                node.powerNetwork = network
-
-                -- Find connected power nodes
-                for _, other in ipairs(allPowerNodes) do
-                    if node ~= other then
-                        local nodeInfo = g.getMachineInfo(node.type)
-                        local otherInfo = g.getMachineInfo(other.type)
-                        local dist = worldutil.getDistance("chessboard", node.tileX - other.tileX, node.tileY - other.tileY)
-                        if
-                            self:isWithinWorldLimit(node.tileX, node.tileY) and
-                            self:isWithinWorldLimit(other.tileX, other.tileY) and
-                            dist <= math.max(nodeInfo.wireLength or 0, otherInfo.wireLength or 0)
-                        then
-                            -- Store connection in the network
-                            -- Check if the reverse connection is already there to avoid duplicates
-                            local alreadyPresent = false
-                            for _, conn in ipairs(network.nodeConnections) do
-                                if (conn[1] == node and conn[2] == other) or (conn[1] == other and conn[2] == node) then
-                                    alreadyPresent = true
-                                    break
-                                end
-                            end
-                            if not alreadyPresent then
-                                network.nodeConnections[#network.nodeConnections+1] = {node, other}
-                            end
-
-                            if not visited[other] then
-                                visited[other] = true
-                                queue[#queue+1] = other
-                            end
-                        end
-                    end
-                end
+        for _, machine in ipairs(powerNetwork.machines) do
+            if machine.powerGenerate then
+                totalPower = totalPower + machine.powerGenerate
             end
-
-            -- Find consumers for this network
-            for _, node in ipairs(queue) do
-                node.powerNetwork = network
-                local nodeInfo = g.getMachineInfo(node.type)
-
-                local range = nodeInfo.wireLength or 0
-                for dx = -range, range do
-                    for dy = -range, range do
-                        local tx, ty = node.tileX + dx, node.tileY + dy
-                        if self:isWithinWorldLimit(node.tileX, node.tileY) and self:isWithinWorldLimit(tx, ty) then
-                            local item = self.items:get(tx, ty) --[[@as g.World.MachineData]]
-                            if item and not item.removed and item.powerLoad > 0 then
-                                -- Only add unique consumers to network
-                                if not consumerSet[item] then
-                                    item.powerNetwork = network
-                                    network.consumers[#network.consumers+1] = item
-                                    consumerSet[item] = true
-                                end
-                                -- Record the consumer connection in the network
-                                network.consumerConnections[#network.consumerConnections+1] = {node, item}
-                            end
-                        end
-                    end
-                end
+            if machine.powerLoad then
+                totalLoad = totalLoad + machine.powerLoad
             end
-
-            -- Calculate power usage and total power
-            local totalLoad = 0
-            for _, consumer in ipairs(network.consumers) do
-                totalLoad = totalLoad + consumer.powerLoad
-            end
-            network.totalLoad = totalLoad
-
-            local totalPower = 0
-            for _, powerNode in ipairs(network.powerNodes) do
-                totalPower = totalPower + (powerNode.powerGenerate or 0)
-            end
-            network.totalPower = totalPower
-
-            self.powerNetworks[#self.powerNetworks+1] = network
         end
+
+        powerNetwork.totalPower = totalPower
+        powerNetwork.totalLoad = totalLoad
     end
 
     -- Run wire update
@@ -799,6 +688,7 @@ function World:_draw()
     local worldSize = g.stats.WorldTileSize
     local visibleAreaPadded = visibleArea:padUnit(-consts.WORLD_TILE_SIZE)
     local wiresToBeDrawn = objects.Set() --[[@as objects.Set<g.World.Wire2>]]
+    local powerNetworks = objects.Set() --[[@as objects.Set<g.World.PowerNetwork>]]
     self.items:foreachInArea(
         center - worldSize,
         center - worldSize,
@@ -807,6 +697,9 @@ function World:_draw()
         function(machine, x, y)
             if machine then
                 local cx, cy = (x + 0.5) * wtz, (y + 0.5) * wtz
+                if machine.powerNetwork then
+                    powerNetworks:add(machine.powerNetwork)
+                end
 
                 if visibleAreaPadded:containsCoords(cx, cy) then
                     if not machine.removable then
@@ -859,8 +752,8 @@ function World:_draw()
 
     -- Draw power network connectors
     prof_push("power_draw")
-    for _, v in ipairs(self.powerNetworks) do
-        drawPowerLines(v, visibleArea, self.htx, self.hty)
+    for _, v in ipairs(powerNetworks) do
+        self:_drawPowerLines(v, visibleArea, self.htx, self.hty)
     end
     prof_pop() -- prof_push("power_draw")
 
@@ -962,6 +855,72 @@ function World:_draw()
     self.particles:draw()
 
     prof_pop() -- prof_push("world:_draw")
+end
+
+
+---@param powerNetwork g.World.PowerNetwork
+---@param visibleArea kirigami.Region
+---@param htx integer?
+---@param hty integer?
+function World:_drawPowerLines(powerNetwork, visibleArea, htx, hty)
+    local wtz = consts.WORLD_TILE_SIZE
+    local t = g.getSn().worldTime % 1
+
+    ---@type objects.Set<integer>
+    local wires = objects.Set()
+
+    for _, machine in ipairs(powerNetwork.machines) do
+        if machine.powerGenerate or machine.powerLoad then
+            local minfo = g.getMachineInfo(machine.type)
+            local m1pos = self.items:coordsToIndex(machine.tileX, machine.tileY)
+            local m1isgen = isGeneratorMachine(machine)
+            local m1isrelay = isRelayMachine(machine)
+
+            for _, tile in worldutil.getSpreadTiles("chessboard", minfo.wireLength) do
+                local tx = tile[1] + machine.tileX
+                local ty = tile[2] + machine.tileY
+                -- The direction is encoded as Z.encode(from, to)
+                -- from = Z.encode(machine1)
+                -- to = Z.encode(machine2)
+                local machine2 = self.items:contains(tx, ty) and self.items:get(tx, ty)
+
+                if machine2 then
+                    -- Rules:
+                    -- Generator <-> Relay
+                    -- Generator -> Consumer
+                    -- Relay <-> Relay
+                    -- Relay -> Consumer
+                    local m2pos = self.items:coordsToIndex(tx, ty)
+                    local m2isrelay = isRelayMachine(machine2)
+                    if (m1isgen and m2isrelay) or (m1isrelay and m2isrelay) then
+                        -- Bi-directional
+                        wires:add(Z.encode_positive(m1pos, m2pos))
+                        wires:add(Z.encode_positive(m2pos, m1pos))
+                    elseif (m1isgen or m1isrelay) and isConsumerMachine(machine2) then
+                        -- Uni-directional
+                        wires:add(Z.encode_positive(m1pos, m2pos))
+                    end
+                end
+            end
+        end
+    end
+
+    -- Now draw them
+    for _, wire in ipairs(wires) do
+        local from, to = Z.decode_positive(wire)
+        local m1x, m1y = self.items:indexToCoords(from)
+        local m2x, m2y = self.items:indexToCoords(to)
+        local x1, y1 = (m1x + 0.5) * wtz, (m1y + 0.5) * wtz
+        local x2, y2 = (m2x + 0.5) * wtz, (m2y + 0.5) * wtz
+        -- FIXME: Do this check when iterating machines instead of wires?
+        if visibleArea:containsCoords(x1, y1) or visibleArea:containsCoords(x2, y2) then
+            if htx == m1x and hty == m1y or htx == m2x and hty == m2y then
+                love.graphics.setColor(POWER_COLOR)
+                drawArrows(x1, y1, x2, y2, 6, t)
+                drawArrows(x2, y2, x1, y1, 6, t)
+            end
+        end
+    end
 end
 
 
