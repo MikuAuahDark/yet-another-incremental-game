@@ -1628,6 +1628,9 @@ end
 ---@param name string
 ---@param def g._ServerDef
 function g.defineServer(id, name, def)
+    assert(g.SHAPES[def.emitShape[1]], "invalid shape")
+    assert(g.SHAPE_COLORS[def.emitShape[2]], "invalid shape color")
+
     defineItemUpgrades(id, name, worldutil.drawServerShape, def)
     g.defineMachine(id, name, {
         nameContext = def.nameContext,
@@ -1640,7 +1643,15 @@ function g.defineServer(id, name, def)
         processTime = def.duration,
 
         onProcessFinished = function(inst)
-            -- TODO: Emit single shape with specific color
+            local insertList, total = g.queryDataInsertionFor(inst, def.emitShape[1], def.emitShape[2], 1)
+            if total < 1 then
+                return false
+            end
+
+            for wire, amount in pairs(insertList) do
+                g.insertDataIntoWire(wire, def.emitShape[1], def.emitShape[2], amount)
+            end
+
             return true
         end,
         onDraw = function(itemData)
@@ -1726,8 +1737,10 @@ end
 ---@param name string
 ---@param def g._DataTransformerDef
 function g.defineDataTransformer(id, name, def)
-    defineItemUpgrades(id, name, worldutil.drawDataInShape, def)
     assert(#def.inputs > 0, "use g.defineServer instead")
+    assert(def.output, "need output")
+    defineItemUpgrades(id, name, worldutil.drawDataInShape, def)
+
     ---@type g._AcceptShape[]
     local newInputs = {}
     for _, v in ipairs(def.inputs) do
@@ -1755,7 +1768,15 @@ function g.defineDataTransformer(id, name, def)
         },
 
         onProcessFinished = function(inst)
-            -- TODO: Emit shape with specific color
+            local insertList, total = g.queryDataInsertionFor(inst, def.output[2], def.output[3], def.output[1])
+            if total < def.output[1] then
+                return false
+            end
+
+            for wire, amount in pairs(insertList) do
+                g.insertDataIntoWire(wire, def.output[2], def.output[3], amount)
+            end
+
             return true
         end,
         onDraw = function(inst)
@@ -1889,11 +1910,61 @@ function g.definePowerRelay(id, name, def)
         processTime = 0,
 
         onProcessFinished = function (inst)
-            -- TODO: Emit shape with specific color
+            local shapeAndColor = inst.input[1].queue[1]
+            if not shapeAndColor then
+                return false
+            end
+
+            local s, c = shapeAndColor[1], shapeAndColor[2]
+            local insertList, total = g.queryDataInsertionFor(inst, s, c, 1)
+            if total < 1 then
+                return false
+            end
+
+            for wire, amount in pairs(insertList) do
+                g.insertDataIntoWire(wire, s, c, amount)
+            end
+
+            table.remove(inst.input[1].queue, 1)
             return true
         end,
         onUpdate = function(inst)
-            -- TODO: Query the first input and change output accordingly
+            local world = g.getMainWorld()
+            local wires = world.wireInput[inst]
+            local targetShapeAndColor = nil
+
+            if wires and wires[1] then
+                local wire = wires[1]
+                targetShapeAndColor = {wire.criterion.shapes, wire.criterion.colors}
+            end
+
+            inst.input[1].shapes:clear()
+            inst.input[1].colors:clear()
+            inst.output.shapes:clear()
+            inst.output.colors:clear()
+            if targetShapeAndColor then
+                -- Lock in
+                for i = 1, #targetShapeAndColor[1] do
+                    inst.input[1].shapes:add(targetShapeAndColor[1][i])
+                    inst.output.shapes:add(targetShapeAndColor[1][i])
+                end
+
+                for i = 1, #targetShapeAndColor[2] do
+                    inst.input[1].colors:add(targetShapeAndColor[2][i])
+                    inst.output.colors:add(targetShapeAndColor[2][i])
+                end
+            else
+                -- Default to any
+                for k in pairs(g.SHAPES) do
+                    inst.input[1].shapes:add(k)
+                    inst.output.shapes:add(k)
+                end
+
+                for k in pairs(g.SHAPE_COLORS) do
+                    inst.input[1].colors:add(k)
+                    inst.output.colors:add(k)
+                end
+            end
         end,
         onDraw = function(inst)
             local wtz = consts.WORLD_TILE_SIZE * 0.75
@@ -1910,35 +1981,6 @@ function g.definePowerRelay(id, name, def)
             end
         end
     })
-
-    -- return g.defineItem(id, {
-    --     category = "powerrelay",
-    --     name = name,
-    --     nameContext = def.nameContext,
-    --     rawDescription = def.rawDescription,
-    --     description = def.description,
-    --     descriptionContext = def.descriptionContext,
-    --     tags = def.tags,
-    --     price = def.price,
-    --     getPriceMultiplier = def.getPriceMultiplier,
-    --     load = 0,
-    --     wireLength = def.wireLength,
-    --     draw = function(itemData)
-    --         ---@cast itemData g.World.PowerData
-    --         local wtz = consts.WORLD_TILE_SIZE * 0.75
-    --         local r = Kirigami(-wtz / 2, -wtz / 2, wtz, wtz)
-    --         local r2 = worldutil.drawPowerRelayShape(r, def.color)
-    --         if def.draw then
-    --             def.draw(r2, itemData)
-    --         end
-    --     end,
-    --     drawItem = function(r)
-    --         local r2 = worldutil.drawPowerRelayShape(r, def.color)
-    --         if def.draw then
-    --             def.draw(r2)
-    --         end
-    --     end
-    -- })
 end
 
 end
