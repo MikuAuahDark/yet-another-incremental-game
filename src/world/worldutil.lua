@@ -432,5 +432,25 @@ function worldutil.getLoadPercentage(itemData)
 end
 
 
+worldutil.PHYSICAL_DATA_SIZE_IN_WIRE = 5
+
+---@param wire g.World.Wire2
+function worldutil.getWireLength(wire)
+    return helper.magnitude(
+        wire.from.tileX - wire.to.tileX,
+        wire.from.tileY - wire.to.tileY
+    ) * consts.WORLD_TILE_SIZE
+end
+
+---@param wire g.World.Wire2
+---@return integer freeSpace
+---@return integer wireCapacity
+function worldutil.getWireDataCapacity(wire)
+    local len = worldutil.getWireLength(wire)
+    local capacity = math.floor(len / worldutil.PHYSICAL_DATA_SIZE_IN_WIRE)
+    return math.max(capacity - #wire.positions, 0), capacity
+end
+
+
 
 return worldutil

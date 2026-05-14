@@ -230,16 +230,6 @@ local function drawLine(x1, y1, x2, y2, thickness)
 end
 
 
-local PHYSICAL_DATA_SIZE = 5
-
----@param wire g.World.Wire2
-local function getWireLength(wire)
-    return helper.magnitude(
-        wire.from.tileX - wire.to.tileX,
-        wire.from.tileY - wire.to.tileY
-    ) * consts.WORLD_TILE_SIZE
-end
-
 
 function World:init()
     self.entities = objects.BufferedSet()
@@ -550,8 +540,8 @@ function World:_update(dt)
         local dstLP = worldutil.getLoadPercentage(wire.to)
         local lp1 = (wire.from.wireSpeedMultiplier + wire.to.wireSpeedMultiplier) / 2
         local lp2 = srcLP * dstLP * lp1
-        local wireLength = getWireLength(wire)
-        local padding = PHYSICAL_DATA_SIZE / wireLength
+        local wireLength = worldutil.getWireLength(wire)
+        local padding = worldutil.PHYSICAL_DATA_SIZE_IN_WIRE / wireLength
         local ndt = (World.WIRE_DPS * dt * lp2) / wireLength
 
         for i = #wire.positions, 1, -1 do
@@ -573,7 +563,7 @@ function World:_update(dt)
                     local wis = self.wireInput[machine]
                     for j = 1, #wis do
                         local i = (machine.inputCycle + j) % #wis + 1
-                        machine.inputCycle = i
+                        machine.inputCycle = i - 1
 
                         local wire = wis[i]
                         if g.isDataWireCompatible(wire, iset) then

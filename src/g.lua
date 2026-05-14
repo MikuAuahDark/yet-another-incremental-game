@@ -2169,6 +2169,76 @@ function g.connectWire(output, input)
     return true
 end
 
+---@param machine g.World.MachineData
+---@param shape g.Shape
+---@param color g.ShapeColor
+---@param amount integer
+---@return table<g.World.Wire2, integer> targetWires Wires to insert into (key is wire, value is amount to insert)
+---@return integer targetCount how much can be inserted in total
+function g.queryDataInsertionFor(machine, shape, color, amount)
+    ---@type table<g.World.Wire2, integer>
+    local result = {}
+    local total = 0
+
+    if machine.output then
+        local world = g.getMainWorld()
+        local cycle = 0
+        local j = 0
+        local wires = world.wireOutput[machine]
+        local newCycleValue = machine.outputCycle
+        if wires then
+            while cycle <= #wires do
+                local i = (machine.outputCycle + j) % #wires + 1
+                newCycleValue = i - 1
+                cycle = cycle + 1
+
+                local wire = wires[i]
+                if wire.criterion.shapes:contains(shape) and wire.criterion.colors:contains(color) then
+                    local current = result[wire] or 0
+                    local maxInsert = worldutil.getWireDataCapacity(wire) - current
+                    if maxInsert > 0 then
+                        cycle = 0
+                        result[wire] = current + 1
+                        total = total + 1
+                        if total >= amount then
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
+        if total >= amount then
+            -- commit new output cycle value
+            machine.outputCycle = newCycleValue
+        end
+    end
+
+    return result, total
+end
+
+---@param wire g.World.Wire2
+---@param shape g.Shape
+---@param color g.ShapeColor
+---@param amount integer?
+function g.insertDataIntoWire(wire, shape, color, amount)
+    amount = amount or 1
+    assert(amount >= 0, "invalid amount")
+
+    local maxAdd = worldutil.getWireDataCapacity(wire)
+    if amount > maxAdd then
+        return false
+    end
+
+    for _ = 1, amount do
+        table.insert(wire.shapes, 1, shape)
+        table.insert(wire.colors, 1, color)
+        table.insert(wire.positions, 1, 0)
+    end
+
+    return true
+end
+
 ---@param tx integer
 ---@param ty integer
 ---@return number
