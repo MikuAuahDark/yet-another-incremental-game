@@ -183,6 +183,8 @@ function Session.deserialize(data)
         end
 
         -- Spawn objects
+        ---@type table<integer, g.World.MachineData?>
+        local machines = {}
         if data.world.items then
             for k,v in pairs(data.world.items) do
                 ---@cast k string
@@ -190,9 +192,44 @@ function Session.deserialize(data)
                 if g.isValidMachine(v) then
                     local z = assert(tonumber(k))
                     local x, y = Z.decode(z)
-                    sess.mainWorld:putItem(v, x, y, not persistenceLookup[z])
+                    machines[z] = sess.mainWorld:putItem(v, x, y, not persistenceLookup[z])
                 else
                     log.warn("got invalid item '"..v.."'")
+                end
+            end
+        end
+
+        -- Connect
+        if data.world.wires then
+            for _, wz in ipairs(data.world.wires) do
+                local dstz, srcz = Z.decode_positive(wz)
+
+                if not g.connectWire(machines[dstz], machines[srcz]) then
+                    log.warn("Could not connect wire at "..tostring(dstz).." -> "..tostring(srcz))
+                end
+            end
+        end
+
+        -- Connect power networks
+        if data.world.powerNetworks then
+            for _, machinesInPN in ipairs(data.world.powerNetworks) do
+                ---@type g.World.PowerNetwork
+                local powerNetwork = {
+                    machines = objects.Set(),
+                    totalLoad = 0,
+                    totalPower = 0,
+                }
+
+                for _, z in ipairs(machinesInPN) do
+                    local m = machines[z]
+                    if not m then
+                        log.warn("Could not find machine at "..tostring(z))
+                    elseif m.powerGenerate or m.powerLoad then
+                        m.powerNetwork = powerNetwork
+                        powerNetwork.machines:add(m)
+                    else
+                        log.warn("Machine at "..tostring(z).." is not eligible for power network.")
+                    end
                 end
             end
         end
@@ -208,10 +245,13 @@ function Session:serialize()
         stats[k] = g.stats[k]
     end
 
-    -- Save world
+    -- Save the world? Save the cat!
+    -- Save items
     local items = {}
     ---@type integer[]
     local persistence = {}
+    ---@type objects.Set<g.World.PowerNetwork>
+    local powerNetworks = objects.Set()
     self.mainWorld.items:foreach(function(item, x, y)
         if item then
             local z = Z.encode(x, y)
@@ -219,8 +259,38 @@ function Session:serialize()
             if not item.removable then
                 persistence[#persistence+1] = z
             end
+
+            if item.powerNetwork then
+                powerNetworks:add(item.powerNetwork)
+            end
         end
     end)
+
+    -- Save data wires
+    ---@type objects.Set<integer>
+    local wires = objects.Set()
+    for _, wireList in pairs(self.mainWorld.wireInput) do
+        for _, wire in ipairs(wireList) do
+            local srcz = Z.encode(wire.from.tileX, wire.from.tileY)
+            local dstz = Z.encode(wire.to.tileX, wire.to.tileY)
+            local uniquenum = Z.encode_positive(dstz, srcz)
+            wires:add(uniquenum)
+        end
+    end
+    local wiresDataInteger = wires:totable()
+    table.sort(wiresDataInteger)
+
+    -- Save power network sets.
+    ---@type integer[][]
+    local newPN = {}
+    for _, pn in ipairs(powerNetworks) do
+        local machines = {}
+        for _, m in ipairs(pn.machines) do
+            machines[#machines+1] = Z.encode(m.tileX, m.tileY)
+        end
+        table.sort(machines)
+        newPN[#newPN+1] = machines
+    end
 
     return {
         prestige = self.prestige,
@@ -234,7 +304,9 @@ function Session:serialize()
         showTutorials = helper.shallowCopy(self.showTutorials),
         world = {
             items = items,
-            persistence = persistence
+            persistence = persistence,
+            wires = wiresDataInteger,
+            powerNetworks = newPN
         }
     }
 end
