@@ -390,15 +390,7 @@ function World:_update(dt)
     ]]
 
     -- Run power network update
-    ---@type objects.Set<g.World.PowerNetwork>
-    local allPowerNodes = objects.Set()
-    for _, machine in ipairs(allMachines) do
-        if machine.powerNetwork then
-            allPowerNodes:add(machine.powerNetwork)
-        end
-    end
-
-    for _, powerNetwork in ipairs(allPowerNodes) do
+    for _, powerNetwork in ipairs(self:_getAllPowerNetworks()) do
         local totalLoad = 0
         local totalPower = 0
 
@@ -857,6 +849,19 @@ function World:_draw()
     prof_pop() -- prof_push("world:_draw")
 end
 
+
+
+function World:_getAllPowerNetworks()
+    ---@type objects.Set<g.World.PowerNetwork>
+    local allPowerNodes = objects.Set()
+    self.items:foreach(function(machine, x, y)
+        if machine and machine.powerNetwork then
+            allPowerNodes:add(machine.powerNetwork)
+        end
+    end)
+
+    return allPowerNodes
+end
 
 ---@param powerNetwork g.World.PowerNetwork
 ---@param visibleArea kirigami.Region

@@ -2281,6 +2281,148 @@ function g.insertDataIntoWire(wire, shape, color, amount)
     return true
 end
 
+---@param machine g.World.MachineData
+function g.findNearestGeneratorOrRelay(machine)
+    local world = g.getMainWorld()
+    ---@type [g.World.MachineData, number][]
+    local candidates = {}
+
+    if machine.powerGenerate or machine.powerLoad then
+        local minfo = g.getMachineInfo(machine.type)
+
+        for _, powerNetwork in ipairs(world:_getAllPowerNetworks()) do
+            local candidate = nil
+            local candidateDistance = math.huge
+
+            for _, targMachine in ipairs(powerNetwork.machines) do
+                if targMachine.powerGenerate then -- Can be generator or relay
+                    local targetminfo = g.getMachineInfo(targMachine.type)
+                    local wireLength = math.max(minfo.wireLength, targetminfo.wireLength)
+                    local dist = worldutil.getDistance(
+                        "chessboard",
+                        machine.tileX - targMachine.tileX,
+                        machine.tileY - targMachine.tileY
+                    )
+                    if dist < candidateDistance and dist <= wireLength then
+                        candidate = targMachine
+                        candidateDistance = dist
+                    end
+                end
+            end
+
+            if candidate then
+                candidates[#candidates+1] = {candidate, candidateDistance}
+            end
+        end
+    end
+
+    if #candidates > 1 then
+        table.sort(candidates, function (a, b)
+            return a[2] < b[2]
+        end)
+    end
+
+    return candidates
+end
+
+---@param machine g.World.MachineData
+---@param pn g.World.PowerNetwork
+function g.addToPowerNetwork(machine, pn)
+    if machine.powerNetwork == pn then
+        return
+    end
+
+    -- If machine is consumer, then no merging. Just remove it out from its old power network
+    if not machine.powerGenerate and machine.powerLoad then
+        -- Consumer
+        g.removeFromPowerNetwork(machine)
+        pn.machines:add(machine)
+        machine.powerNetwork = pn
+        return
+    end
+
+    -- If machine is generator/relay, then handle merging
+    local oldPn = machine.powerNetwork
+    if oldPn and oldPn ~= pn then
+        -- Merge power networks
+        local machinesToMove = oldPn.machines:totable()
+        for _, otherMachine in ipairs(machinesToMove) do
+            pn.machines:add(otherMachine)
+            otherMachine.powerNetwork = pn
+        end
+    elseif not oldPn then
+        -- Just add this machine
+        pn.machines:add(machine)
+        machine.powerNetwork = pn
+    end
+end
+
+---@param machine g.World.MachineData
+function g.removeFromPowerNetwork(machine)
+    local pn = machine.powerNetwork
+    if not pn then
+        return
+    end
+
+    pn.machines:remove(machine)
+    machine.powerNetwork = nil
+    -- If machine is consumer, just remove it from the current power network.
+    if not machine.powerGenerate and machine.powerLoad then
+        return
+    end
+
+    ---@type table<g.World.MachineData, boolean>
+    local remaining = {}
+    for _, m in ipairs(pn.machines) do
+        remaining[m] = true
+    end
+
+    -- Split power networks
+    for _, startM in ipairs(pn.machines) do
+        if startM.powerGenerate and remaining[startM] then
+            ---@type g.World.PowerNetwork
+            local newPn = {
+                machines = objects.Set(),
+                totalPower = 0,
+                totalLoad = 0,
+            }
+            local queue = {startM}
+            remaining[startM] = nil
+
+            while #queue > 0 do
+                local currM = table.remove(queue, 1) --[[@as g.World.MachineData]]
+                currM.powerNetwork = newPn
+                newPn.machines:add(currM)
+
+                -- If the machine is generator/relay, traverse its neighbors.
+                -- Otherwise, it's a consumer and is a leaf node.
+                if currM.powerGenerate then
+                    local currMinfo = g.getMachineInfo(currM.type)
+                    for otherM, _ in pairs(remaining) do
+                        local otherMinfo = g.getMachineInfo(otherM.type)
+                        local dist = worldutil.getDistance(
+                            "chessboard",
+                            currM.tileX - otherM.tileX,
+                            currM.tileY - otherM.tileY
+                        )
+                        local wireLength = math.max(currMinfo.wireLength, otherMinfo.wireLength)
+                        if dist <= wireLength then
+                            remaining[otherM] = nil
+                            table.insert(queue, otherM)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Any leftovers are isolated machines (consumers)
+    for m, _ in pairs(remaining) do
+        m.powerNetwork = nil
+    end
+end
+
+
 ---@param tx integer
 ---@param ty integer
 ---@return number
