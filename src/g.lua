@@ -1616,20 +1616,24 @@ end
 ---@field color objects.Color
 ---@field price number
 ---@field getPriceMultiplier (fun(count:integer):number)?
----@field load number
+---@field load number?
 ---@field heat number?
 ---@field heatTolerance [number, number]?
 
 ---@class g._ServerDef: g._CommonSpecificItemDef<g.World.MachineData>
----@field emitShape [g.Shape, g.ShapeColor]
+---@field color objects.Color?
+---@field load number
+---@field emitShape g.Shape
+---@field emitShapeColor g.ShapeColor
 ---@field duration number
 
 ---@param id string
 ---@param name string
 ---@param def g._ServerDef
 function g.defineServer(id, name, def)
-    assert(g.SHAPES[def.emitShape[1]], "invalid shape")
-    assert(g.SHAPE_COLORS[def.emitShape[2]], "invalid shape color")
+    assert(g.SHAPES[def.emitShape], "invalid shape")
+    assert(g.SHAPE_COLORS[def.emitShapeColor], "invalid shape color")
+    def.color = def.color or g.SHAPE_COLORS[def.emitShapeColor].color
 
     defineItemUpgrades(id, name, worldutil.drawServerShape, def)
     g.defineMachine(id, name, {
@@ -1641,6 +1645,11 @@ function g.defineServer(id, name, def)
         heat = def.heat,
         heatTolerance = def.heatTolerance,
         processTime = def.duration,
+        output = {
+            amount = 1,
+            shape = {def.emitShape},
+            color = {def.emitShapeColor},
+        },
 
         onProcessFinished = function(inst)
             local insertList, total = g.queryDataInsertionFor(inst, def.emitShape[1], def.emitShape[2], 1)
@@ -1674,6 +1683,7 @@ end
 
 
 ---@class g._DataRewardProcDef: g._CommonSpecificItemDef<g.World.MachineData>
+---@field load number
 ---@field inputs [integer, g.Shape|"any", g.ShapeColor|"any"][] amount, shape, color
 ---@field rewards g.Bundle
 ---@field duration number
@@ -1729,6 +1739,7 @@ function g.defineDataRewardProcessor(id, name, def)
 end
 
 ---@class g._DataTransformerDef: g._CommonSpecificItemDef<g.World.MachineData>
+---@field load number
 ---@field inputs [integer, g.Shape|"any", g.ShapeColor|"any"][] amount, shape, color
 ---@field output [integer, g.Shape, g.ShapeColor] amount, shape, color
 ---@field duration number

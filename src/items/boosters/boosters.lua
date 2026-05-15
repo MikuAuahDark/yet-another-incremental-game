@@ -1,3 +1,4 @@
+--[[
 ---@param r kirigami.Region
 ---@param npipes integer
 ---@param lwidth number?
@@ -231,3 +232,4 @@ g.defineBooster("selective_tweaks", "Selective Tweaks", {
         return 1.07
     end
 })
+]]

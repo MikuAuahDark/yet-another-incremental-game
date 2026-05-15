@@ -138,7 +138,7 @@ local _mainPowerDecor = makeDrawDecorForPowerlines(3)
 g.definePowerGenerator("main_power", "Main Datacenter Power", {
     tags = {"datacenter_power"},
     color = objects.Color.WHITE,
-    price = 0,
+    price = 0, -- not meant to be user-placeable
     power = 80,
     wireLength = 4,
     draw = function(r)
@@ -153,7 +153,7 @@ local _subPowerDecor = makeDrawDecorForPowerlines(2)
 g.definePowerGenerator("sub_power", "Sub Datacenter Power", {
     tags = {"datacenter_power"},
     color = objects.Color.WHITE,
-    price = 0,
+    price = 0, -- not meant to be user-placeable
     power = 25,
     wireLength = 2,
     draw = function(r)
@@ -196,25 +196,3 @@ g.definePowerRelay("advanced_relay", "Advanced Relay", {
         love.graphics.circle("fill", cx, cy, 0.04 * sz)
     end
 })
-
--- g.definePowerRelay("he_relay", "High-End Relay", {
---     color = objects.Color("#606060"),
---     price = 15000,
---     wireLength = 9,
---     draw = function(r)
---         local sz = math.sqrt(r.w * r.h)
---         do
---             local col = gsman.mulColor(0, 0, 0, 0.5)
---             local _, a, _, b, _ = r:splitHorizontal(14, 1, 3, 1, 14)
---             love.graphics.rectangle("fill", a:get())
---             love.graphics.rectangle("fill", b:get())
---             _, a, _, b, _ = r:splitVertical(14, 1, 3, 1, 14)
---             love.graphics.rectangle("fill", a:get())
---             love.graphics.rectangle("fill", b:get())
---             col:pop()
---         end
---         drawRelay(r, 7, 0.055)
---         local cx, cy = r:getCenter()
---         love.graphics.circle("fill", cx, cy, 0.04 * sz)
---     end
--- })

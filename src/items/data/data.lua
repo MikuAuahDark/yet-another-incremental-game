@@ -42,13 +42,16 @@ local function drawDataOutputDecorator(r, n, dist, len, thickness, extradist)
 end
 
 
-g.defineDataOutput("basic_data", "Basic Data Output", {
+g.defineDataRewardProcessor("basic_data", "Basic Data Output", {
     price = 1,
     getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 1,
-    dataPerSecond = 4,
+    inputs = {
+        {1, "any", "any"},
+    },
+    rewards = {money = 0.05},
     wireLength = 2,
-    wireDPS = 10,
+    duration = 1,
     color = objects.Color("#ebc965"),
     draw = function(r)
         -- Draw decor
@@ -58,12 +61,16 @@ g.defineDataOutput("basic_data", "Basic Data Output", {
     end,
 })
 
-g.defineDataOutput("normal_data", "Data Output", {
+g.defineDataRewardProcessor("normal_data", "Data Output", {
     price = 150,
     getPriceMultiplier = helper.valueGetterNoSelf(0.1, 1),
     load = 2,
-    dataPerSecond = 45,
+    inputs = {
+        {2, "any", "any"},
+    },
+    rewards = {money = 0.1},
     wireLength = 2,
+    duration = 1,
     color = objects.Color("FFBAEB65"),
     draw = function(r)
         -- Draw decor
@@ -73,13 +80,16 @@ g.defineDataOutput("normal_data", "Data Output", {
     end,
 })
 
-g.defineDataOutput("advanced_data", "Advanced Data Output", {
+g.defineDataRewardProcessor("advanced_data", "Advanced Data Output", {
     price = 1000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.2, 1),
     load = 10,
-    dataPerSecond = 150,
+    inputs = {
+        {2, "any", "any"},
+    },
+    rewards = {money = 0.1},
     wireLength = 3,
-    wireDPS = 50,
+    duration = 0.5,
     color = objects.Color("#95c9c7"),
     draw = function(r)
         -- Draw decor
@@ -89,13 +99,16 @@ g.defineDataOutput("advanced_data", "Advanced Data Output", {
     end,
 })
 
-g.defineDataOutput("he_data", "High-End Data Output", {
+g.defineDataRewardProcessor("he_data", "High-End Data Output", {
     price = 6000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.3, 1),
     load = 30,
-    dataPerSecond = 750,
+    inputs = {
+        {2, "any", "any"},
+    },
+    rewards = {money = 0.1},
     wireLength = 4,
-    wireDPS = 100,
+    duration = 0.25,
     color = objects.Color("#E13B49"),
     draw = function(r)
         -- Draw decor
@@ -105,13 +118,16 @@ g.defineDataOutput("he_data", "High-End Data Output", {
     end,
 })
 
-g.defineDataOutput("quantum_data", "Quantum Data Output", {
+g.defineDataRewardProcessor("quantum_data", "Quantum Data Output", {
     price = 20000,
     getPriceMultiplier = helper.valueGetterNoSelf(0.5, 1),
     load = 50,
-    dataPerSecond = 4000,
+    inputs = {
+        {3, "any", "any"},
+    },
+    rewards = {money = 0.15},
     wireLength = 5,
-    wireDPS = 100,
+    duration = 0.1,
     color = objects.Color("#DAB5C1"),
     draw = function(r)
         -- Draw decor
