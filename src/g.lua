@@ -2290,7 +2290,7 @@ function g.findNearestGeneratorOrRelay(machine)
     if machine.powerGenerate or machine.powerLoad then
         local minfo = g.getMachineInfo(machine.type)
 
-        for _, powerNetwork in ipairs(world:_getAllPowerNetworks()) do
+        for _, powerNetwork in ipairs(world.powerNetworks) do
             local candidate = nil
             local candidateDistance = math.huge
 

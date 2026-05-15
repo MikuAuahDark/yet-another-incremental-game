@@ -250,18 +250,12 @@ function Session:serialize()
     local items = {}
     ---@type integer[]
     local persistence = {}
-    ---@type objects.Set<g.World.PowerNetwork>
-    local powerNetworks = objects.Set()
     self.mainWorld.items:foreach(function(item, x, y)
         if item then
             local z = Z.encode(x, y)
             items[tostring(z)] = item.type
             if not item.removable then
                 persistence[#persistence+1] = z
-            end
-
-            if item.powerNetwork then
-                powerNetworks:add(item.powerNetwork)
             end
         end
     end)
@@ -283,7 +277,7 @@ function Session:serialize()
     -- Save power network sets.
     ---@type integer[][]
     local newPN = {}
-    for _, pn in ipairs(powerNetworks) do
+    for _, pn in ipairs(self.mainWorld.powerNetworks) do
         local machines = {}
         for _, m in ipairs(pn.machines) do
             machines[#machines+1] = Z.encode(m.tileX, m.tileY)

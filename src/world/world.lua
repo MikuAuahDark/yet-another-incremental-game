@@ -310,11 +310,11 @@ function World:_update(dt)
     end
 
     -- Reset stuff
-    table.clear(self.powerNetworks)
     table.clear(self.itemCounts)
     table.clear(self.itemInventoryCounts)
     ---@type g.World.MachineData[]
     local allMachines = {}
+    local powerNetworks = objects.Set() --[[@as objects.Set<g.World.PowerNetwork>]]
     self.items:foreach(function(machine, x, y)
         if machine then
             if machine.removed then
@@ -333,9 +333,14 @@ function World:_update(dt)
                 machine.processSpeedMultiplier = 1
                 machine.problems:clear()
                 allMachines[#allMachines+1] = machine
+
+                if machine.powerNetwork then
+                    powerNetworks:add(machine.powerNetwork)
+                end
             end
         end
     end)
+    self.powerNetworks = powerNetworks:totable()
 
     -- Update power consumption
     for _, machine in ipairs(allMachines) do
@@ -390,7 +395,7 @@ function World:_update(dt)
     ]]
 
     -- Run power network update
-    for _, powerNetwork in ipairs(self:_getAllPowerNetworks()) do
+    for _, powerNetwork in ipairs(self.powerNetworks) do
         local totalLoad = 0
         local totalPower = 0
 
@@ -847,20 +852,6 @@ function World:_draw()
     self.particles:draw()
 
     prof_pop() -- prof_push("world:_draw")
-end
-
-
-
-function World:_getAllPowerNetworks()
-    ---@type objects.Set<g.World.PowerNetwork>
-    local allPowerNodes = objects.Set()
-    self.items:foreach(function(machine, x, y)
-        if machine and machine.powerNetwork then
-            allPowerNodes:add(machine.powerNetwork)
-        end
-    end)
-
-    return allPowerNodes
 end
 
 ---@param powerNetwork g.World.PowerNetwork
